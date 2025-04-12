@@ -1,11 +1,11 @@
-# Yeast cell Flux Balance Analysis (FBA)
+# Bioelectrodynamics of Yeast Cells
 
-This repository provides code implementation to evaluate the metabolite fluxes within Yeast cells and using the COBRA toolbox.
+This repository provides code implementation to evaluate bioelectrodynamic properties of yeast cells.
 
 ## Description
-This project evaluates the FBA of a Protrophic Yeast cell model.
-The Yeast cell model, described in [1, Fig. 2a)], is included within the Matlab file `model_aux.mat` and in the xml file `model_aux.xml`; both files are a replica of the same Yeast cell.
-Within the file `model_aux.mat` we find the `model_aux` Matlab struct, which comprises the model of the metabolic reactions within the cell.
+This project evaluates the bioelectric dynamic properties of a yeast cell model.
+The yeast cell model iMM904, given in the,  is included within the Matlab file `iMM904.mat`.
+The model of the genes, metabolites and metabolic reactions within the cells.
 
 The model is described with the following variables:
 
@@ -15,18 +15,6 @@ This summary typically includes details such as: Organism or System (which organ
 - `modelVersion`: Specify the version of the model reconstruction.
 Typically, it is a string that indicates a version number, revision date, or other identifier that distinguishes one version of the model from another.
 This metadata is important for: Tracking Changes (It helps document updates, corrections, or improvements made to the model over time),Reproducibility (Users can reference the exact model version used in their analyses, ensuring that results can be reproduced or compared with other studies), Curation and Communication (It provides clarity on which iteration of the model is being used, which is especially useful when models are updated or when multiple versions exist).
-
-Related to FBA techniques:
-- `S` matrix: the stoichiometric matrix
-  - If a component of `S`, denoted as $S_{ij}$, is negative, metabolite $i$ is a reactant in reaction $j$, and the absolute value represents the amount consumed.​
-  - $S_{ij}>0$ denotes metabolite $i$ is a product in reaction $j$, and the absolute value represents the amount produced.​
-  - $S_{ij}=0$ denotes metabolite $i$ does not participate in reaction $j$.
-
-- `b`: Array of doubles for the accumulation (positive) or depletion (negative) of the corresponding metabolites.
-The value of '0' Indicates no concentration change.
-- `csense`: List of indicators whether the `b` vector is a lower bound ('G'), upper bound ('L'), or hard constraint 'E' for the metabolites. It is a cell array of char.
-- `c`: Array of double to define the linear objective.
-- `osenseStr`: The objective sense either 'max' for maximisation or 'min' for minimisation.
 
 Related to the metabolites:
 - `mets`: cell array of strings that lists all the metabolite identifiers included in the model.
@@ -72,7 +60,16 @@ It is a cell array of char streams.
 It is a cell array of char streams.
 - `lb`: Array of doubles for the lower bounds of the reactions.
 - `ub`: Array of doubles for the upper bounds of the reactions.
+- `S` matrix: the stoichiometric matrix
+  - If a component of `S`, denoted as $S_{ij}$, is negative, metabolite $i$ is a reactant in reaction $j$, and the absolute value represents the amount consumed.​
+  - $S_{ij}>0$ denotes metabolite $i$ is a product in reaction $j$, and the absolute value represents the amount produced.​
+  - $S_{ij}=0$ denotes metabolite $i$ does not participate in reaction $j$.
 
+- `b`: Array of doubles for the accumulation (positive) or depletion (negative) of the corresponding metabolites.
+The value of '0' Indicates no concentration change.
+- `csense`: List of indicators whether the `b` vector is a lower bound ('G'), upper bound ('L'), or hard constraint 'E' for the metabolites. It is a cell array of char.
+- `c`: Array of double to define the linear objective.
+- `osenseStr`: The objective sense either 'max' for maximisation or 'min' for minimisation.
 
 
 Related to gene description:
