@@ -93,6 +93,12 @@ For instance, if a reaction can be catalyzed by geneX OR geneY (isoenzymes), the
 Fig. 1: Illustration of a Protrophic cell used in the SeMeCo experiment.
 </p> 
 
+## Usage
+
+This project directly runs from the file `A_Master_File.mlx` located in the folder code.
+As this code uses some COBRA toolbox functions, it is needed first to install it in matlab.
+Description for [installing COBRA in Matlab is in this link](https://opencobra.github.io/cobratoolbox/stable/installation.html).
+
 ## License
 ![Licence](https://img.shields.io/github/license/larymak/Python-project-Scripts)
 
