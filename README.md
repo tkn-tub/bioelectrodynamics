@@ -4,7 +4,7 @@ This repository provides code implementation to evaluate bioelectrodynamic prope
 
 ## Description
 This project evaluates the bioelectric dynamic properties of a yeast cell model.
-The yeast cell model iMM904, given in the,  is included within the Matlab file `iMM904.mat`.
+The yeast cell model iMM904, accesible in [BiGG Models repository](http://bigg.ucsd.edu/models/iMM904),  is included within the Matlab file `iMM904.mat`.
 The model of the genes, metabolites and metabolic reactions within the cells.
 
 The model is described with the following variables:
