@@ -74,14 +74,16 @@ The value of '0' Indicates no concentration change.
 
 Related to gene description:
 - `genes`: List of genes within the model. 
+- `grRules`: Describe how the genes combine to enable the reaction.
+It is a cell array of gene–reaction rules (GPRs) as human-readable strings, one per reaction.
+These rules describe which genes' products are needed for the reaction.
+- `rules`: The Gene-protein-reaction rules in a computer readable format present in the model.
+ a similar set of gene–reaction rules but in a format convenient for computation. Typically, this field contains the logical expressions with gene indices or IDs that can be evaluated in MATLAB. For instance, a rule might appear as x(1) & x(2) instead of "GeneA and GeneB", meaning gene 1 and gene 2 from the gene list are required.
+For instance, if a reaction can be catalyzed by geneX OR geneY (isoenzymes), the row will have '1's for both genes, and the rule would be “geneX or geneY”
 - `rxnGeneMat`: Matrix form of gene–reaction links, as an associations that link genes (which encode enzymes) to metabolic reaction.
+It is a binary matrix (dimensions: number of reactions × number of genes) encoding the gene associations in a simplified way. If entry (i,j) in this matrix is 1, it means gene j is associated with reaction i. (In other words, the j-th gene in model.genes is part of the GPR for the i-th reaction.) If it’s 0, that gene does not participate in that reaction. This matrix does not on its own capture the AND/OR logic (it just flags an association), but it’s very useful for quick lookups
 Ìt is a binary matrix with one row per reaction and one column per gene in the model​.
 An entry of '1' in this matrix indicates that a given gene is associated with (i.e. participates in or is required for) the corresponding reaction, while '0' means no association.
-- `rules`: The Gene-protein-reaction rules in a computer readable format present in your model.
-- `grRules`: Describe how the genes combine to enable the reaction.
-It is given as a logic rule.
-For instance, if a reaction can be catalyzed by geneX OR geneY (isoenzymes), the row will have '1's for both genes, and the rule would be “geneX or geneY”
-
 
     
 <figure>
