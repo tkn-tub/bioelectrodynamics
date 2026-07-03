@@ -1,0 +1,11 @@
+label,source_type,source_file,n_calpha,n_modes,min_frequency_thz,max_frequency_thz,mean_frequency_thz,modes_microwave_lt_0_1_thz,modes_thz_0_1_to_3_0_thz,modes_beyond_3_0_thz,negative_eigenvalues_clipped,elapsed_seconds,status,error
+3FKY,RCSB,structures/3FKY.pdb,6726,20172,0.028324988591096802,1.553756665997958,0.9932812134975391,19,20153,0,0,1426.647,ok,
+3PYM,RCSB,structures/3PYM.pdb,,,,,,,,,,,failed,"FileNotFoundError('Missing structure file: structures/3PYM.pdb. Run this script with --download-only first, or run without --no-download.')"
+9GR8,RCSB,structures/9GR8.pdb,,,,,,,,,,,failed,"FileNotFoundError('Missing structure file: structures/9GR8.pdb. Run this script with --download-only first, or run without --no-download.')"
+7AUI,RCSB,structures/7AUI.pdb,,,,,,,,,,,failed,"FileNotFoundError('Missing structure file: structures/7AUI.pdb. Run this script with --download-only first, or run without --no-download.')"
+YDL215C,AlphaFold/GitHub,structures/AF-P33327-F1-model_v6.pdb,,,,,,,,,,,failed,"FileNotFoundError('Missing structure file: structures/AF-P33327-F1-model_v6.pdb. Run this script with --download-only first, or run without --no-download.')"
+YPR021C,AlphaFold/GitHub,structures/AF-Q12482-F1-model_v6 .pdb,,,,,,,,,,,failed,"FileNotFoundError('Missing structure file: structures/AF-Q12482-F1-model_v6 .pdb. Run this script with --download-only first, or run without --no-download.')"
+YGR124W,AlphaFold/GitHub,structures/AF-P49090-F1-model_v6.pdb,,,,,,,,,,,failed,"FileNotFoundError('Missing structure file: structures/AF-P49090-F1-model_v6.pdb. Run this script with --download-only first, or run without --no-download.')"
+YGR061C,AlphaFold/GitHub,structures/AF-P38972-F1-model_v6.pdb,,,,,,,,,,,failed,"FileNotFoundError('Missing structure file: structures/AF-P38972-F1-model_v6.pdb. Run this script with --download-only first, or run without --no-download.')"
+YFL060C,AlphaFold/GitHub,structures/AF-P43544-F1-model_v6.pdb,,,,,,,,,,,failed,"FileNotFoundError('Missing structure file: structures/AF-P43544-F1-model_v6.pdb. Run this script with --download-only first, or run without --no-download.')"
+YDR017C,AlphaFold/GitHub,structures/AF-Q12494-F1-model_v6.pdb,,,,,,,,,,,failed,"FileNotFoundError('Missing structure file: structures/AF-Q12494-F1-model_v6.pdb. Run this script with --download-only first, or run without --no-download.')"
