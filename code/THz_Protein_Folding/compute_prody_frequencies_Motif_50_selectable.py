@@ -270,7 +270,7 @@ def main(argv: list[str] | None = None) -> int:
         "--outdir",
         type=Path,
         default=Path("../database/results_motif_52"),
-        help="Output directory for CSV/NPZ files. Default: ../database/results_motif_52",
+        help="Output directory for CSV/NPZ files. Default: ../database/results_motif_50",
     )
     parser.add_argument(
         "--n-modes",
