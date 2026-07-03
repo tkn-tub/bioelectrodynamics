@@ -1,0 +1,72 @@
+{
+  "script": "compute_prody_frequencies_Motif_52_selectable.py",
+  "timestamp_unix": 1783101054.6228492,
+  "n_modes_requested": "all",
+  "frequency_scale": 0.225,
+  "structures_dir": "structures",
+  "outdir": "../database/results_motif_52",
+  "jobs": [
+    {
+      "label": "1RY2",
+      "filename": "1RY2.pdb",
+      "url": "https://files.rcsb.org/download/1RY2.pdb",
+      "source_type": "RCSB"
+    },
+    {
+      "label": "2PFF",
+      "filename": "2PFF.pdb",
+      "url": "https://files.rcsb.org/download/2PFF.pdb",
+      "source_type": "RCSB"
+    },
+    {
+      "label": "4HNW",
+      "filename": "4HNW.pdb",
+      "url": "https://files.rcsb.org/download/4HNW.pdb",
+      "source_type": "RCSB"
+    },
+    {
+      "label": "3RKU",
+      "filename": "3RKU.pdb",
+      "url": "https://files.rcsb.org/download/3RKU.pdb",
+      "source_type": "RCSB"
+    },
+    {
+      "label": "YPL061W",
+      "filename": "AF-P54115-F1-model_v6.pdb",
+      "url": "https://raw.githubusercontent.com/tkn-tub/bioelectrodynamics/main/code/database/AF-P54115-F1-model_v6.pdb",
+      "source_type": "AlphaFold/GitHub"
+    },
+    {
+      "label": "YBR145W",
+      "filename": "AF-P38113-F1-model_v6.pdb",
+      "url": "https://raw.githubusercontent.com/tkn-tub/bioelectrodynamics/main/code/database/AF-P38113-F1-model_v6.pdb",
+      "source_type": "AlphaFold/GitHub"
+    },
+    {
+      "label": "YGR177C",
+      "filename": "AF-P53296-F1-model_v6.pdb",
+      "url": "https://raw.githubusercontent.com/tkn-tub/bioelectrodynamics/main/code/database/AF-P53296-F1-model_v6.pdb",
+      "source_type": "AlphaFold/GitHub"
+    },
+    {
+      "label": "YGL001C",
+      "filename": "AF-P53199-F1-model_v6.pdb",
+      "url": "https://raw.githubusercontent.com/tkn-tub/bioelectrodynamics/main/code/database/AF-P53199-F1-model_v6.pdb",
+      "source_type": "AlphaFold/GitHub"
+    },
+    {
+      "label": "YLR174W",
+      "filename": "AF-P41939-F1-model_v6.pdb",
+      "url": "https://raw.githubusercontent.com/tkn-tub/bioelectrodynamics/main/code/database/AF-P41939-F1-model_v6.pdb",
+      "source_type": "AlphaFold/GitHub"
+    },
+    {
+      "label": "YNR057C",
+      "filename": "AF-P53630-F1-model_v6.pdb",
+      "url": "https://raw.githubusercontent.com/tkn-tub/bioelectrodynamics/main/code/database/AF-P53630-F1-model_v6.pdb",
+      "source_type": "AlphaFold/GitHub"
+    }
+  ],
+  "python_version": "3.11.2 (main, Apr  8 2026, 01:58:00) [GCC 12.2.0]",
+  "numpy_version": "2.4.6"
+}
