@@ -267,7 +267,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--outdir",
         type=Path,
-        default=Path("../database/results_motif_1"),
+        default=Path("results"),
         help="Output directory for CSV/NPZ files. Default: results",
     )
     parser.add_argument(
