@@ -1,10 +1,10 @@
 {
-  "script": "compute_prody_frequencies_Motif_47.py",
-  "timestamp_unix": 1783082139.6555452,
+  "script": "compute_prody_frequencies_Motif_47_selectable.py",
+  "timestamp_unix": 1783090458.8786342,
   "n_modes_requested": "all",
   "frequency_scale": 0.225,
   "structures_dir": "structures",
-  "outdir": "../database/results_motif_2",
+  "outdir": "../database/results_motif_47",
   "jobs": [
     {
       "label": "3FKY",
@@ -38,8 +38,8 @@
     },
     {
       "label": "YPR021C",
-      "filename": "AF-Q12482-F1-model_v6 .pdb",
-      "url": "https://raw.githubusercontent.com/tkn-tub/bioelectrodynamics/main/code/database/AF-Q12482-F1-model_v6 .pdb",
+      "filename": "AF-Q12482-F1-model_v6.pdb",
+      "url": "https://raw.githubusercontent.com/tkn-tub/bioelectrodynamics/main/code/database/AF-Q12482-F1-model_v6.pdb",
       "source_type": "AlphaFold/GitHub"
     },
     {

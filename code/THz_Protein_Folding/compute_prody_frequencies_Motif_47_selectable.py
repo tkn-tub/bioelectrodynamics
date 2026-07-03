@@ -43,7 +43,7 @@ RCSB_STRUCTURES = ["3FKY", "3PYM", "9GR8", "7AUI"]
 # AlphaFold structures downloaded from the GitHub repository in the notebook.
 ALPHAFOLD_STRUCTURES = {
     "YDL215C": "AF-P33327-F1-model_v6.pdb",
-    "YPR021C": "AF-Q12482-F1-model_v6 .pdb",
+    "YPR021C": "AF-Q12482-F1-model_v6.pdb",
     "YGR124W": "AF-P49090-F1-model_v6.pdb",
     "YGR061C": "AF-P38972-F1-model_v6.pdb",
     "YFL060C": "AF-P43544-F1-model_v6.pdb",
@@ -267,8 +267,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--outdir",
         type=Path,
-        default=Path("../database/results_motif_2"),
-        help="Output directory for CSV/NPZ files. Default: results",
+        default=Path("../database/results_motif_47"),
+        help="Output directory for CSV/NPZ files. Default: ../database/results_motif_47",
     )
     parser.add_argument(
         "--n-modes",
@@ -307,6 +307,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Run only AlphaFold/GitHub structures from ALPHAFOLD_STRUCTURES.",
     )
+    parser.add_argument(
+        "--labels",
+        nargs="+",
+        default=None,
+        help=(
+            "Optional list of structure labels to run, e.g. --labels 3PYM "
+            "or --labels 3FKY 3PYM YDL215C. Matching is case-insensitive."
+        ),
+    )
 
     args = parser.parse_args(argv)
 
@@ -317,6 +326,16 @@ def main(argv: list[str] | None = None) -> int:
     include_alphafold = not args.only_rcsb
 
     jobs = build_jobs(include_rcsb=include_rcsb, include_alphafold=include_alphafold)
+
+    if args.labels:
+        requested_labels = {label.upper() for label in args.labels}
+        jobs = [job for job in jobs if job.label.upper() in requested_labels]
+        found_labels = {job.label.upper() for job in jobs}
+        missing_labels = sorted(requested_labels - found_labels)
+        if missing_labels:
+            parser.error(f"Unknown label(s): {', '.join(missing_labels)}")
+        if not jobs:
+            parser.error("No jobs selected after applying --labels.")
 
     manifest = {
         "script": Path(__file__).name,
