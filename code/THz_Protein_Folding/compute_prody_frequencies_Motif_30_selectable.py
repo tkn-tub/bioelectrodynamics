@@ -38,18 +38,15 @@ from prody import ANM, parsePDB
 # RCSB structures used in the notebook.
 # The first four were used in the combined VDOS plot.
 # 1TBU and 2THI also appear later in the notebook for individual calculations/animations.
-RCSB_STRUCTURES = ["3FKY", "3PYM"]
+RCSB_STRUCTURES = ["2AXQ", "1YAA", "3FKY", "3IG5", "9GR8"]
 
 # AlphaFold structures downloaded from the GitHub repository in the notebook.
 ALPHAFOLD_STRUCTURES = {
-    "YDL215C": "AF-P33327-F1-model_v6.pdb",
-    "YPR021C": "AF-Q12482-F1-model_v6.pdb",
-    "YGR124W": "AF-P49090-F1-model_v6.pdb",
-    "YGR061C": "AF-P38972-F1-model_v6.pdb",
-    "YFL060C": "AF-P43544-F1-model_v6.pdb",
-    "YLR017W": "AF-Q07938-F1-model_v6.pdb",
-    "YLR209C": "AF-Q05788-F1-model_v6.pdb",
-    "YDR441C": "AF-P36973-F1-model_v6.pdb",
+    "YPR021C": "AF-P33327-F1-model_v6.pdb",
+    "YLR174W": "AF-P49090-F1-model_v6.pdb",
+    "YGR019W": "AF-P17649-F1-model_v6.pdb",
+    "YAL062W": "AF-P39708-F1-model_v6.pdb",
+    "YKL132C": "AF-P36001-F1-model_v6.pdb",
 }
 
 ALPHAFOLD_BASE_URL = (
@@ -269,8 +266,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--outdir",
         type=Path,
-        default=Path("../database/results_motif_50"),
-        help="Output directory for CSV/NPZ files. Default: ../database/results_motif_50",
+        default=Path("../database/results_motif_30"),
+        help="Output directory for CSV/NPZ files. Default: ../database/results_30",
     )
     parser.add_argument(
         "--n-modes",

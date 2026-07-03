@@ -144,7 +144,7 @@ rxnLabels = ["r_DF (differentiator: fast)", ...
              "r_No (NN: merge/output)"];
 
 %Printing a particular motif
-for i = 50: 50 %[output:group:30832ef2]
+for i = 30: 30 %[output:group:30832ef2]
     rec = fullJoinRows(i);
     fprintf('\n============================================================\n'); %[output:90480593]
     fprintf(' MOTIF %d  (diff_idx=%d, cnt_idx=%d, total genes=%d)\n', ... %[output:2f5ab102]
@@ -546,7 +546,7 @@ end
 %   data: {"dataType":"text","outputData":{"text":"\n============================================================\n","truncated":false}}
 %---
 %[output:2f5ab102]
-%   data: {"dataType":"text","outputData":{"text":" MOTIF 50  (diff_idx=228, cnt_idx=5, total genes=15)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":" MOTIF 30  (diff_idx=245, cnt_idx=4, total genes=12)\n","truncated":false}}
 %---
 %[output:31d9fd73]
 %   data: {"dataType":"text","outputData":{"text":"============================================================\n","truncated":false}}
@@ -555,34 +555,34 @@ end
 %   data: {"dataType":"text","outputData":{"text":"\n--- Metabolites ---\n","truncated":false}}
 %---
 %[output:6fd3818a]
-%   data: {"dataType":"text","outputData":{"text":"  m_in  (differentiator input)                     | L-glutamate                    | C5H8NO4\n  m_Df  (fast intermediate)                        | ammonium                       | H4N\n  m_d   (differentiator output \/ counter input)    | L-glutamine                    | C5H10N2O3\n  m_Ds  (slow branch product)                      | L-aspartate                    | C4H6NO4\n  m_c   (counter output \/ NN input)                | phosphate                      | HO4P\n  m_Cs  (counter cofactor)                         | glyceraldehyde 3-phosphate     | C3H5O6P\n  m_Nc  (NN convergence output)                    | adenine                        | C5H5N5\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  m_in  (differentiator input)                     | L-glutamate                    | C5H8NO4\n  m_Df  (fast intermediate)                        | NADP(+)                        | C21H25N7O17P3\n  m_d   (differentiator output \/ counter input)    | 2-oxoglutarate                 | C5H4O5\n  m_Ds  (slow branch product)                      | L-aspartate                    | C4H6NO4\n  m_c   (counter output \/ NN input)                | L-glutamate                    | C5H8NO4\n  m_Cs  (counter cofactor)                         | ammonium                       | H4N\n  m_Nc  (NN convergence output)                    | phosphate                      | HO4P\n","truncated":false}}
 %---
 %[output:99e6fccd]
 %   data: {"dataType":"text","outputData":{"text":"\n--- Reactions ---\n","truncated":false}}
 %---
 %[output:964fb803]
-%   data: {"dataType":"text","outputData":{"text":"  r_DF (differentiator: fast)      : r_0470         | glutamate dehydrogenase (NAD)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_DF (differentiator: fast)      : r_0989         | saccharopine dehydrogenase (NADP, L-glutamate forming)\n","truncated":false}}
 %---
 %[output:579df49a]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YDL215C\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YNR050C\n","truncated":false}}
 %---
 %[output:04de2ea6]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 1.4.1.2\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 1.5.1.10\n","truncated":false}}
 %---
 %[output:1e2a13fd]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: H2O + C5H8NO4(m_in) + C21H26N7O14P2  ->  C5H4O5 + H4N(m_Df) + H + C21H27N7O14P2\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: H + C6H11NO3 + C5H8NO4(m_c) + C21H26N7O17P3  ->  H2O + C11H19N2O6 + C21H25N7O17P3(m_Df)\n","truncated":false}}
 %---
 %[output:87d38746]
 %   data: {"dataType":"text","outputData":{"text":"  r_DS (differentiator: slow)      : r_1118         | aspartate-glutamate transporter\n","truncated":false}}
 %---
 %[output:1e0be3a5]
-%   data: {"dataType":"text","outputData":{"text":"  r_Dp (differentiator: producer)  : r_0476         | glutamine synthetase\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_Dp (differentiator: producer)  : r_0659         | isocitrate dehydrogenase (NADP)\n","truncated":false}}
 %---
 %[output:794d8672]
-%   data: {"dataType":"text","outputData":{"text":"  r_Di (differentiator: integrator) : r_0211         | asparagine synthase (glutamine-hydrolysing)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_Di (differentiator: integrator) : r_0216         | aspartate transaminase\n","truncated":false}}
 %---
 %[output:5fc9c272]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C4H6NO4 + C5H8NO4(m_in)  ->  C4H6NO4(m_Ds) + C5H8NO4\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C4H6NO4 + C5H8NO4(m_c)  ->  C4H6NO4(m_Ds) + C5H8NO4\n","truncated":false}}
 %---
 %[output:92c5e06b]
 %   data: {"dataType":"text","outputData":{"text":"      EC : (none annotated)\n","truncated":false}}
@@ -591,94 +591,94 @@ end
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YPR021C\n","truncated":false}}
 %---
 %[output:6b91d1ff]
-%   data: {"dataType":"text","outputData":{"text":"  r_Cp (counter: producer)         : r_0079         | 5'-phosphoribosylformyl glycinamidine synthetase\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_Cp (counter: producer)         : r_0068         | 4-aminobutyrate transaminase\n","truncated":false}}
 %---
 %[output:8e909393]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: H4N(m_Df) + C10H12N5O13P3 + C5H8NO4(m_in)  ->  C10H12N5O10P2 + H + C5H10N2O3(m_d) + HO4P(m_c)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C6H5O7 + C21H25N7O17P3(m_Df)  ->  C5H4O5(m_d) + CO2 + C21H26N7O17P3\n","truncated":false}}
 %---
 %[output:2fa6c30a]
-%   data: {"dataType":"text","outputData":{"text":"  r_Cg (counter: gate)             : r_4211         | D-ribose 5-phosphate,D-glyceraldehyde 3-phosphate pyridoxal 5-phosphate-lyase (glutamine-hydrolyzing)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_Cg (counter: gate)             : r_0471         | glutamate dehydrogenase (NADP)\n","truncated":false}}
 %---
 %[output:962adbdf]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.1.2\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 1.1.1.42\n","truncated":false}}
 %---
 %[output:4ba27199]
-%   data: {"dataType":"text","outputData":{"text":"  r_Cr (counter: reset)            : r_0486         | glyceraldehyde-3-phosphate dehydrogenase\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_Cr (counter: reset)            : r_0476         | glutamine synthetase\n","truncated":false}}
 %---
 %[output:6ce76db4]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H12N5O13P3 + H2O + C4H6NO4(m_Ds) + C5H10N2O3(m_d)  ->  C10H12N5O7P + HO7P2 + H + C4H8N2O3 + C5H8NO4(m_in)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C5H4O5(m_d) + C4H6NO4(m_Ds)  ->  C5H8NO4(m_c) + C4H2O5\n","truncated":false}}
 %---
 %[output:8b427032]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YPR035W\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YLR174W\n","truncated":false}}
 %---
 %[output:3aefed9b]
-%   data: {"dataType":"text","outputData":{"text":"  r_Na (NN: neuron a)              : r_0075         | 5'-methylthioadenosine phosphorylase\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_Na (NN: neuron a)              : r_0460         | gamma-glutamylcysteine synthetase\n","truncated":false}}
 %---
 %[output:6e54ee94]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.5.4\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 2.6.1.1\n","truncated":false}}
 %---
 %[output:24f0d408]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C8H13N2O9P + C10H12N5O13P3 + H2O + C5H10N2O3(m_d)  ->  C8H15N3O8P + C10H12N5O10P2 + H + C5H8NO4(m_in) + HO4P(m_c)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C5H4O5(m_d) + C4H9NO2  ->  C5H8NO4(m_c) + C4H5O3\n","truncated":false}}
 %---
 %[output:2ad6032f]
-%   data: {"dataType":"text","outputData":{"text":"  r_Nb (NN: neuron b)              : r_4749         | adenosine phosphorylase\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_Nb (NN: neuron b)              : r_1031         | tetrahydrofolate:L-glutamate gamma-ligase (ADP-forming)\n","truncated":false}}
 %---
 %[output:925d121e]
-%   data: {"dataType":"text","outputData":{"text":"  r_No (NN: merge\/output)          : r_0139         | adenine phosphoribosyltransferase\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_No (NN: merge\/output)          : r_0089         | 5PP-IP5 pyrophosphorylation to 5,6-PP2-IP4\n","truncated":false}}
 %---
 %[output:5c949d59]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YGR124W or YPR145W\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YLR027C\n","truncated":false}}
 %---
 %[output:9e3a21a8]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C3H5O6P(m_Cs) + C5H10N2O3(m_d) + C5H9O8P  ->  H + 3 H2O + C5H8NO4(m_in) + HO4P(m_c) + C8H8NO6P\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C5H4O5(m_d) + H4N(m_Cs) + H + C21H26N7O17P3  ->  H2O + C5H8NO4(m_c) + C21H25N7O17P3(m_Df)\n","truncated":false}}
 %---
 %[output:981320ab]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.5.3\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 2.6.1.19\n","truncated":false}}
 %---
 %[output:65a81a21]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YGR061C\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YGR019W\n","truncated":false}}
 %---
 %[output:441b3eb8]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YFL060C or YNL334C\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YAL062W or YOR375C\n","truncated":false}}
 %---
 %[output:78aa188f]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C3H5O6P(m_Cs) + C21H26N7O14P2 + HO4P(m_c)  ->  C3H4O10P2 + H + C21H27N7O14P2\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: H4N(m_Cs) + C10H12N5O13P3 + C5H8NO4(m_c)  ->  C10H12N5O10P2 + H + C5H10N2O3 + HO4P(m_Nc)\n","truncated":false}}
 %---
 %[output:34d2911b]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YGR192C or YJL052W or YJR009C\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YPR035W\n","truncated":false}}
 %---
 %[output:762ff6e3]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 4.3.3.6;3.5.1.2\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 1.4.1.4\n","truncated":false}}
 %---
 %[output:20d37575]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YLR017W\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YJL101C\n","truncated":false}}
 %---
 %[output:941ae897]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C11H15N5O3S + HO4P(m_c)  ->  C5H5N5(m_Nc) + C6H11O7PS\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H12N5O13P3 + C3H7NO2S + C5H8NO4(m_c)  ->  C10H12N5O10P2 + H + C8H13N2O5S + HO4P(m_Nc)\n","truncated":false}}
 %---
 %[output:50c8e3c7]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YLR209C\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YKL132C or YOR241W\n","truncated":false}}
 %---
 %[output:3e2821ca]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YDR441C or YML022W\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YLR410W\n","truncated":false}}
 %---
 %[output:59b39ee9]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 1.2.1.12\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.1.2\n","truncated":false}}
 %---
 %[output:7cd4819f]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H13N5O4 + HO4P(m_c)  ->  C5H5N5(m_Nc) + C5H9O8P\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H12N5O13P3 + C5H8NO4(m_c) + C19H21N7O6  ->  C24H27N8O9 + C10H12N5O10P2 + H + HO4P(m_Nc)\n","truncated":false}}
 %---
 %[output:9b29afdd]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 2.4.2.28\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.2.2\n","truncated":false}}
 %---
 %[output:3802177c]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 2.4.2.1\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.2.17\n","truncated":false}}
 %---
 %[output:228a90b3]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 2.4.2.7\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 2.7.4.21;2.7.4.24\n","truncated":false}}
 %---
 %[output:5d38cde1]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C5H5N5(m_Nc) + C5H8O14P3  ->  C10H12N5O7P + HO7P2\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C6H6O27P7 + 2 H + HO4P(m_Nc)  ->  C6H7O30P8 + H2O\n","truncated":false}}
 %---
 %[output:30f0434f]
 %   data: {"dataType":"text","outputData":{"text":"\nSaved nn_full_motifs.mat (48 full motifs, ranked by gene complexity)\n","truncated":false}}
