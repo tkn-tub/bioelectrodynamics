@@ -38,7 +38,7 @@ from prody import ANM, parsePDB
 # RCSB structures used in the notebook.
 # The first four were used in the combined VDOS plot.
 # 1TBU and 2THI also appear later in the notebook for individual calculations/animations.
-RCSB_STRUCTURES = ["1RY2", "2PFF", "94HNW", "3RKU"]
+RCSB_STRUCTURES = ["1RY2", "2PFF", "4HNW", "3RKU"]
 
 # AlphaFold structures downloaded from the GitHub repository in the notebook.
 ALPHAFOLD_STRUCTURES = {
@@ -267,8 +267,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--outdir",
         type=Path,
-        default=Path("../database/results_motif_47"),
-        help="Output directory for CSV/NPZ files. Default: ../database/results_motif_47",
+        default=Path("../database/results_motif_52"),
+        help="Output directory for CSV/NPZ files. Default: ../database/results_motif_52",
     )
     parser.add_argument(
         "--n-modes",
