@@ -1,0 +1,6 @@
+# HPC calculation environment: no plotting packages needed.
+# Use Python 3.12 if available, because current PyPI wheels for ProDy are best supported there.
+ProDy==2.6.1
+numpy
+scipy
+biopython

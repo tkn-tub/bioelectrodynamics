@@ -1,0 +1,10 @@
+name: prody-hpc
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - prody
+  - numpy
+  - scipy
+  - biopython
+  - pip
