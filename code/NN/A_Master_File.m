@@ -144,7 +144,7 @@ rxnLabels = ["r_DF (differentiator: fast)", ...
              "r_No (NN: merge/output)"];
 
 %Printing a particular motif
-for i = 1: 1 %[output:group:30832ef2]
+for i = 37: 37 %[output:group:30832ef2]
     rec = fullJoinRows(i);
     fprintf('\n============================================================\n'); %[output:90480593]
     fprintf(' MOTIF %d  (diff_idx=%d, cnt_idx=%d, total genes=%d)\n', ... %[output:2f5ab102]
@@ -546,7 +546,7 @@ end
 %   data: {"dataType":"text","outputData":{"text":"\n============================================================\n","truncated":false}}
 %---
 %[output:2f5ab102]
-%   data: {"dataType":"text","outputData":{"text":" MOTIF 1  (diff_idx=245, cnt_idx=4, total genes=11)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":" MOTIF 37  (diff_idx=245, cnt_idx=4, total genes=12)\n","truncated":false}}
 %---
 %[output:31d9fd73]
 %   data: {"dataType":"text","outputData":{"text":"============================================================\n","truncated":false}}
@@ -612,7 +612,7 @@ end
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YLR174W\n","truncated":false}}
 %---
 %[output:20d37575]
-%   data: {"dataType":"text","outputData":{"text":"  r_Na (NN: neuron a)              : r_0346         | dihydrofolate synthase\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_Na (NN: neuron a)              : r_0460         | gamma-glutamylcysteine synthetase\n","truncated":false}}
 %---
 %[output:72e5a225]
 %   data: {"dataType":"text","outputData":{"text":"      EC : 2.6.1.1\n","truncated":false}}
@@ -621,10 +621,10 @@ end
 %   data: {"dataType":"text","outputData":{"text":"      Eqn: C5H4O5(m_d) + C4H9NO2  ->  C5H8NO4(m_c) + C4H5O3\n","truncated":false}}
 %---
 %[output:981320ab]
-%   data: {"dataType":"text","outputData":{"text":"  r_Nb (NN: neuron b)              : r_0460         | gamma-glutamylcysteine synthetase\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_Nb (NN: neuron b)              : r_1031         | tetrahydrofolate:L-glutamate gamma-ligase (ADP-forming)\n","truncated":false}}
 %---
 %[output:9b29afdd]
-%   data: {"dataType":"text","outputData":{"text":"  r_No (NN: merge\/output)          : r_0075         | 5'-methylthioadenosine phosphorylase\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"  r_No (NN: merge\/output)          : r_2008         | phosphate transport\n","truncated":false}}
 %---
 %[output:3aefed9b]
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YLR027C\n","truncated":false}}
@@ -651,34 +651,34 @@ end
 %   data: {"dataType":"text","outputData":{"text":"      EC : 1.4.1.4\n","truncated":false}}
 %---
 %[output:50c8e3c7]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YMR113W\n","truncated":false}}
-%---
-%[output:941ae897]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C14H13N6O3 + C10H12N5O13P3 + C5H8NO4(m_c)  ->  C10H12N5O10P2 + C19H19N7O6 + H + HO4P(m_Nc)\n","truncated":false}}
-%---
-%[output:762ff6e3]
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YJL101C\n","truncated":false}}
 %---
+%[output:941ae897]
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H12N5O13P3 + C3H7NO2S + C5H8NO4(m_c)  ->  C10H12N5O10P2 + H + C8H13N2O5S + HO4P(m_Nc)\n","truncated":false}}
+%---
+%[output:762ff6e3]
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YKL132C or YOR241W\n","truncated":false}}
+%---
 %[output:3802177c]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YLR017W\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YNR013C\n","truncated":false}}
 %---
 %[output:34d2911b]
 %   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.1.2\n","truncated":false}}
 %---
 %[output:7cd4819f]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H12N5O13P3 + C3H7NO2S + C5H8NO4(m_c)  ->  C10H12N5O10P2 + H + C8H13N2O5S + HO4P(m_Nc)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H12N5O13P3 + C5H8NO4(m_c) + C19H21N7O6  ->  C24H27N8O9 + C10H12N5O10P2 + H + HO4P(m_Nc)\n","truncated":false}}
 %---
 %[output:3e2821ca]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.2.12\n","truncated":false}}
-%---
-%[output:59b39ee9]
 %   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.2.2\n","truncated":false}}
 %---
+%[output:59b39ee9]
+%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.2.17\n","truncated":false}}
+%---
 %[output:228a90b3]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 2.4.2.28\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : (none annotated)\n","truncated":false}}
 %---
 %[output:5d38cde1]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C11H15N5O3S + HO4P(m_Nc)  ->  C5H5N5 + C6H11O7PS\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: HO4P(m_Nc)  ->  HO4P\n","truncated":false}}
 %---
 %[output:30f0434f]
 %   data: {"dataType":"text","outputData":{"text":"\nSaved nn_full_motifs.mat (48 full motifs, ranked by gene complexity)\n","truncated":false}}
