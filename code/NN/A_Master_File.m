@@ -144,7 +144,7 @@ rxnLabels = ["r_DF (differentiator: fast)", ...
              "r_No (NN: merge/output)"];
 
 %Printing a particular motif
-for i = 30: 30 %[output:group:30832ef2]
+for i = 1: 1 %[output:group:30832ef2]
     rec = fullJoinRows(i);
     fprintf('\n============================================================\n'); %[output:90480593]
     fprintf(' MOTIF %d  (diff_idx=%d, cnt_idx=%d, total genes=%d)\n', ... %[output:2f5ab102]
@@ -164,10 +164,10 @@ for i = 30: 30 %[output:group:30832ef2]
     for f = 1:numel(rxnFields)
         rIdx = rec.(rxnFields(f));
         if isnan(rIdx), continue; end
-        fprintf('  %-32s : %-14s | %s\n', rxnLabels(f), ... %[output:964fb803] %[output:87d38746] %[output:1e0be3a5] %[output:794d8672] %[output:6b91d1ff] %[output:2fa6c30a] %[output:4ba27199] %[output:3aefed9b] %[output:2ad6032f] %[output:925d121e]
-                model.rxns{rIdx}, model.rxnNames{rIdx}); %[output:964fb803] %[output:87d38746] %[output:1e0be3a5] %[output:794d8672] %[output:6b91d1ff] %[output:2fa6c30a] %[output:4ba27199] %[output:3aefed9b] %[output:2ad6032f] %[output:925d121e]
-        fprintf('      GPR: %s\n', safeGPR(model, rIdx)); %[output:579df49a] %[output:72e5a225] %[output:8b427032] %[output:5c949d59] %[output:65a81a21] %[output:441b3eb8] %[output:34d2911b] %[output:20d37575] %[output:50c8e3c7] %[output:3e2821ca]
-        fprintf('      EC : %s\n', safeECCode(model, rIdx)); %[output:04de2ea6] %[output:92c5e06b] %[output:962adbdf] %[output:6e54ee94] %[output:981320ab] %[output:762ff6e3] %[output:59b39ee9] %[output:9b29afdd] %[output:3802177c] %[output:228a90b3]
+        fprintf('  %-32s : %-14s | %s\n', rxnLabels(f), ... %[output:964fb803] %[output:87d38746] %[output:6b91d1ff] %[output:4ba27199] %[output:2ad6032f] %[output:8b427032] %[output:6e54ee94] %[output:20d37575] %[output:981320ab] %[output:9b29afdd]
+                model.rxns{rIdx}, model.rxnNames{rIdx}); %[output:964fb803] %[output:87d38746] %[output:6b91d1ff] %[output:4ba27199] %[output:2ad6032f] %[output:8b427032] %[output:6e54ee94] %[output:20d37575] %[output:981320ab] %[output:9b29afdd]
+        fprintf('      GPR: %s\n', safeGPR(model, rIdx)); %[output:579df49a] %[output:1e0be3a5] %[output:2fa6c30a] %[output:3aefed9b] %[output:962adbdf] %[output:5c949d59] %[output:441b3eb8] %[output:50c8e3c7] %[output:762ff6e3] %[output:3802177c]
+        fprintf('      EC : %s\n', safeECCode(model, rIdx)); %[output:04de2ea6] %[output:794d8672] %[output:92c5e06b] %[output:72e5a225] %[output:925d121e] %[output:65a81a21] %[output:34d2911b] %[output:3e2821ca] %[output:59b39ee9] %[output:228a90b3]
 
         labelMap = containers.Map('KeyType','double','ValueType','any');
         labelMap(rec.m_in) = 'm_in';
@@ -546,7 +546,7 @@ end
 %   data: {"dataType":"text","outputData":{"text":"\n============================================================\n","truncated":false}}
 %---
 %[output:2f5ab102]
-%   data: {"dataType":"text","outputData":{"text":" MOTIF 30  (diff_idx=245, cnt_idx=4, total genes=12)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":" MOTIF 1  (diff_idx=245, cnt_idx=4, total genes=11)\n","truncated":false}}
 %---
 %[output:31d9fd73]
 %   data: {"dataType":"text","outputData":{"text":"============================================================\n","truncated":false}}
@@ -575,110 +575,110 @@ end
 %[output:87d38746]
 %   data: {"dataType":"text","outputData":{"text":"  r_DS (differentiator: slow)      : r_1118         | aspartate-glutamate transporter\n","truncated":false}}
 %---
-%[output:1e0be3a5]
+%[output:6b91d1ff]
 %   data: {"dataType":"text","outputData":{"text":"  r_Dp (differentiator: producer)  : r_0659         | isocitrate dehydrogenase (NADP)\n","truncated":false}}
 %---
-%[output:794d8672]
+%[output:4ba27199]
 %   data: {"dataType":"text","outputData":{"text":"  r_Di (differentiator: integrator) : r_0216         | aspartate transaminase\n","truncated":false}}
 %---
 %[output:5fc9c272]
 %   data: {"dataType":"text","outputData":{"text":"      Eqn: C4H6NO4 + C5H8NO4(m_c)  ->  C4H6NO4(m_Ds) + C5H8NO4\n","truncated":false}}
 %---
-%[output:92c5e06b]
+%[output:794d8672]
 %   data: {"dataType":"text","outputData":{"text":"      EC : (none annotated)\n","truncated":false}}
 %---
-%[output:72e5a225]
+%[output:1e0be3a5]
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YPR021C\n","truncated":false}}
 %---
-%[output:6b91d1ff]
+%[output:2ad6032f]
 %   data: {"dataType":"text","outputData":{"text":"  r_Cp (counter: producer)         : r_0068         | 4-aminobutyrate transaminase\n","truncated":false}}
 %---
 %[output:8e909393]
 %   data: {"dataType":"text","outputData":{"text":"      Eqn: C6H5O7 + C21H25N7O17P3(m_Df)  ->  C5H4O5(m_d) + CO2 + C21H26N7O17P3\n","truncated":false}}
 %---
-%[output:2fa6c30a]
+%[output:8b427032]
 %   data: {"dataType":"text","outputData":{"text":"  r_Cg (counter: gate)             : r_0471         | glutamate dehydrogenase (NADP)\n","truncated":false}}
 %---
-%[output:962adbdf]
+%[output:92c5e06b]
 %   data: {"dataType":"text","outputData":{"text":"      EC : 1.1.1.42\n","truncated":false}}
 %---
-%[output:4ba27199]
+%[output:6e54ee94]
 %   data: {"dataType":"text","outputData":{"text":"  r_Cr (counter: reset)            : r_0476         | glutamine synthetase\n","truncated":false}}
 %---
 %[output:6ce76db4]
 %   data: {"dataType":"text","outputData":{"text":"      Eqn: C5H4O5(m_d) + C4H6NO4(m_Ds)  ->  C5H8NO4(m_c) + C4H2O5\n","truncated":false}}
 %---
-%[output:8b427032]
+%[output:2fa6c30a]
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YLR174W\n","truncated":false}}
 %---
-%[output:3aefed9b]
-%   data: {"dataType":"text","outputData":{"text":"  r_Na (NN: neuron a)              : r_0460         | gamma-glutamylcysteine synthetase\n","truncated":false}}
+%[output:20d37575]
+%   data: {"dataType":"text","outputData":{"text":"  r_Na (NN: neuron a)              : r_0346         | dihydrofolate synthase\n","truncated":false}}
 %---
-%[output:6e54ee94]
+%[output:72e5a225]
 %   data: {"dataType":"text","outputData":{"text":"      EC : 2.6.1.1\n","truncated":false}}
 %---
 %[output:24f0d408]
 %   data: {"dataType":"text","outputData":{"text":"      Eqn: C5H4O5(m_d) + C4H9NO2  ->  C5H8NO4(m_c) + C4H5O3\n","truncated":false}}
 %---
-%[output:2ad6032f]
-%   data: {"dataType":"text","outputData":{"text":"  r_Nb (NN: neuron b)              : r_1031         | tetrahydrofolate:L-glutamate gamma-ligase (ADP-forming)\n","truncated":false}}
+%[output:981320ab]
+%   data: {"dataType":"text","outputData":{"text":"  r_Nb (NN: neuron b)              : r_0460         | gamma-glutamylcysteine synthetase\n","truncated":false}}
 %---
-%[output:925d121e]
-%   data: {"dataType":"text","outputData":{"text":"  r_No (NN: merge\/output)          : r_0089         | 5PP-IP5 pyrophosphorylation to 5,6-PP2-IP4\n","truncated":false}}
+%[output:9b29afdd]
+%   data: {"dataType":"text","outputData":{"text":"  r_No (NN: merge\/output)          : r_0075         | 5'-methylthioadenosine phosphorylase\n","truncated":false}}
 %---
-%[output:5c949d59]
+%[output:3aefed9b]
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YLR027C\n","truncated":false}}
 %---
 %[output:9e3a21a8]
 %   data: {"dataType":"text","outputData":{"text":"      Eqn: C5H4O5(m_d) + H4N(m_Cs) + H + C21H26N7O17P3  ->  H2O + C5H8NO4(m_c) + C21H25N7O17P3(m_Df)\n","truncated":false}}
 %---
-%[output:981320ab]
+%[output:925d121e]
 %   data: {"dataType":"text","outputData":{"text":"      EC : 2.6.1.19\n","truncated":false}}
 %---
-%[output:65a81a21]
+%[output:962adbdf]
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YGR019W\n","truncated":false}}
 %---
-%[output:441b3eb8]
+%[output:5c949d59]
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YAL062W or YOR375C\n","truncated":false}}
 %---
 %[output:78aa188f]
 %   data: {"dataType":"text","outputData":{"text":"      Eqn: H4N(m_Cs) + C10H12N5O13P3 + C5H8NO4(m_c)  ->  C10H12N5O10P2 + H + C5H10N2O3 + HO4P(m_Nc)\n","truncated":false}}
 %---
-%[output:34d2911b]
+%[output:441b3eb8]
 %   data: {"dataType":"text","outputData":{"text":"      GPR: YPR035W\n","truncated":false}}
 %---
-%[output:762ff6e3]
+%[output:65a81a21]
 %   data: {"dataType":"text","outputData":{"text":"      EC : 1.4.1.4\n","truncated":false}}
 %---
-%[output:20d37575]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YJL101C\n","truncated":false}}
+%[output:50c8e3c7]
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YMR113W\n","truncated":false}}
 %---
 %[output:941ae897]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H12N5O13P3 + C3H7NO2S + C5H8NO4(m_c)  ->  C10H12N5O10P2 + H + C8H13N2O5S + HO4P(m_Nc)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C14H13N6O3 + C10H12N5O13P3 + C5H8NO4(m_c)  ->  C10H12N5O10P2 + C19H19N7O6 + H + HO4P(m_Nc)\n","truncated":false}}
 %---
-%[output:50c8e3c7]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YKL132C or YOR241W\n","truncated":false}}
+%[output:762ff6e3]
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YJL101C\n","truncated":false}}
 %---
-%[output:3e2821ca]
-%   data: {"dataType":"text","outputData":{"text":"      GPR: YLR410W\n","truncated":false}}
+%[output:3802177c]
+%   data: {"dataType":"text","outputData":{"text":"      GPR: YLR017W\n","truncated":false}}
 %---
-%[output:59b39ee9]
+%[output:34d2911b]
 %   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.1.2\n","truncated":false}}
 %---
 %[output:7cd4819f]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H12N5O13P3 + C5H8NO4(m_c) + C19H21N7O6  ->  C24H27N8O9 + C10H12N5O10P2 + H + HO4P(m_Nc)\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C10H12N5O13P3 + C3H7NO2S + C5H8NO4(m_c)  ->  C10H12N5O10P2 + H + C8H13N2O5S + HO4P(m_Nc)\n","truncated":false}}
 %---
-%[output:9b29afdd]
+%[output:3e2821ca]
+%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.2.12\n","truncated":false}}
+%---
+%[output:59b39ee9]
 %   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.2.2\n","truncated":false}}
 %---
-%[output:3802177c]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 6.3.2.17\n","truncated":false}}
-%---
 %[output:228a90b3]
-%   data: {"dataType":"text","outputData":{"text":"      EC : 2.7.4.21;2.7.4.24\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      EC : 2.4.2.28\n","truncated":false}}
 %---
 %[output:5d38cde1]
-%   data: {"dataType":"text","outputData":{"text":"      Eqn: C6H6O27P7 + 2 H + HO4P(m_Nc)  ->  C6H7O30P8 + H2O\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"      Eqn: C11H15N5O3S + HO4P(m_Nc)  ->  C5H5N5 + C6H11O7PS\n","truncated":false}}
 %---
 %[output:30f0434f]
 %   data: {"dataType":"text","outputData":{"text":"\nSaved nn_full_motifs.mat (48 full motifs, ranked by gene complexity)\n","truncated":false}}
