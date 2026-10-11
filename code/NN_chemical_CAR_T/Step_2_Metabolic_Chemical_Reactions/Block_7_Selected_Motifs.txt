@@ -1,0 +1,310 @@
+
+STRICT BLOCK 6 MOTIF REPORT
+Model: Puniya2021_TNM1055.xml
+Results: Block_6_no_internal_crosstalk.mat
+Resolved checkpoint: /home/ccs/torres-gomez/Downloads/bioelectrodynamics/code/NN_chemical_CAR_T/Block_6_no_internal_crosstalk.mat
+Topology: five_reaction_regulated_full_v2
+Available motifs: 98460
+Selected original rows: 1
+Cs support: The complete net Cs buffer term k_s*(Cs_baseline-Cs) is supplied externally.
+
+
+############################################################
+A) cAMP INPUT ADAPTER FOR SELECTED MOTIF 1
+############################################################
+Selected final motif row       : 1 / 98460
+Matching Block 0 paths to m_in : 2
+Printed matching path          : 1
+Stored Block 0 path index      : 176
+
+Input        : camp[c] | 3,5-Cyclic Adenosine Monophosphate
+Fixed m_in   : e4p[c] | D-Erythrose 4-Phosphate
+Metabolites  : camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> g3p[c] -> e4p[c]
+Reactions    : PDE1 -> NTD7 -> PUNP1 -> PPM -> TKT1 -> TALA
+
+--- Block 0 reactions ---
+
+  Adapter reaction 1 (forward): PDE1 | 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+      GPR: ( 5139 or 5142 or 5151 or 5153 or 5150 or 5143 or 5137 or 5144 or 5136 or 5140 or 10846 or 5141 or 5138 or 27115 or 50940 or 8622 )
+      EC : 3.1.4.17
+      Compartment(s): c
+      Eqn   : C10H11N5O6P(cAMP input) + H2O  ->  C10H12N5O7P(adapter_1) + H
+      Names : 3,5-Cyclic Adenosine Monophosphate(cAMP input) + Water  ->  Adenosine Monophosphate(adapter_1) + Proton
+
+  Adapter reaction 2 (forward): NTD7 | 5'-Nucleotidase (AMP)
+      GPR: ( 22978 or 93034 or 30833 or 84618 or 51251 )
+      EC : 3.1.3.5
+      Compartment(s): c
+      Eqn   : C10H12N5O7P(adapter_1) + H2O  ->  C10H13N5O4(adapter_2) + HO4P
+      Names : Adenosine Monophosphate(adapter_1) + Water  ->  Adenosine(adapter_2) + Orthophosphate
+
+  Adapter reaction 3 (forward): PUNP1 | Purine-Nucleoside Phosphorylase (Adenosine)
+      GPR: 4860
+      EC : 3.4.2.1
+      Compartment(s): c
+      Eqn   : C10H13N5O4(adapter_2) + HO4P  ->  C5H5N5 + C5H9O8P(adapter_3)
+      Names : Adenosine(adapter_2) + Orthophosphate  ->  Adenine + Alpha-D-Ribose 1-Phosphate(adapter_3)
+
+  Adapter reaction 4 (forward): PPM | Phosphopentomutase
+      GPR: ( 5236 or 55276 )
+      EC : 5.4.2.7
+      Compartment(s): c
+      Eqn   : C5H9O8P(adapter_3)  ->  C5H9O8P(adapter_4)
+      Names : Alpha-D-Ribose 1-Phosphate(adapter_3)  ->  Alpha-D-Ribose 5-Phosphate(adapter_4)
+
+  Adapter reaction 5 (forward): TKT1 | Transketolase
+      GPR: ( 7086 or 84076 or 8277 )
+      EC : 2.2.1.1
+      Compartment(s): c
+      Eqn   : C5H9O8P(adapter_4) + C5H9O8P  ->  C3H5O6P(adapter_5) + C7H13O10P
+      Names : Alpha-D-Ribose 5-Phosphate(adapter_4) + D-Xylulose 5-Phosphate  ->  Glyceraldehyde 3-Phosphate(adapter_5) + Sedoheptulose 7-Phosphate
+
+  Adapter reaction 6 (forward): TALA | Transaldolase
+      GPR: 6888
+      EC : 2.2.1.2
+      Compartment(s): c
+      Eqn   : C3H5O6P(adapter_5) + C7H13O10P  ->  C4H7O7P(m_in) + C6H11O9P
+      Names : Glyceraldehyde 3-Phosphate(adapter_5) + Sedoheptulose 7-Phosphate  ->  D-Erythrose 4-Phosphate(m_in) + D-Fructose 6-Phosphate
+
+
+############################################################
+B) SELECTED COMPLETE MOTIF 1 OF 98460
+Source: Block 6: strict cross-talk-filtered motifs
+############################################################
+motifIndexBeforeCrossTalkFilter        : 1
+motifIndexBeforeMembraneFilter         : 1
+block3_idx                             : 1
+block2_idx                             : 2
+block1_idx                             : 44
+nn_idx                                 : 1
+counter_idx                            : 2
+input_idx                              : 5
+adapterPathIndex                       : 176
+RegulatoryEvidenceComplete             : 0
+KineticsValidated                      : 0
+
+--- Metabolites ---
+  m_in   (Block 0 endpoint / differentiator 1 input)               | e4p[c]             | D-Erythrose 4-Phosphate                  | C4H7O7P
+  m_M1   (differentiator 1 memory species)                         | HC00361[c]         | Sedoheptulose 1,7-Bisphosphate           | C7H12O13P2
+  m_d1   (Y1: differentiator 1 output / Block 2 input)             | utp[c]             | Uridine-5'-TrIphosphate                  | C9H11N2O15P3
+  m_F1_delay (differentiator 1 fast branch pool)                   | f6p[c]             | D-Fructose 6-Phosphate                   | C6H11O9P
+  m_M2   (differentiator 2 intermediate)                           | cdp[c]             | Cytidine-5'-DIphosphate                  | C9H12N3O11P2
+  m_d2   (Y2: differentiator 2 output / sole counter regulator)    | dcdp[c]            | Deoxycytidine-5'-Diphosphate             | C9H12N3O10P2
+  m_c    (counter output / NN regulator)                           | asp_L[c]           | L-Aspartate                              | C4H6NO4
+  m_Cs   (buffered counter species)                                | gln_L[c]           | L-Glutamine                              | C5H10N2O3
+  m_Ni   (NN input-neuron species)                                 | 10fthf[c]          | 10-Formyltetrahydrofolate                | C20H21N7O7
+  m_Na   (NN upper-neuron species)                                 | 12ppd_R[c]         | (R)-Propane-1,2-Diol                     | C3H8O2
+  m_Nb   (NN lower-neuron species)                                 | 12ppd_S[c]         | (S)-Propane-1,2-Diol                     | C3H8O2
+  m_out  (NN output)                                               | 13dpg[c]           | 3-Phospho-D-Glyceroyl Phosphate          | C3H4O10P2
+  m_PC   (selected substrate of counter production)                | asp_L[m]           | L-Aspartate                              | C4H6NO4
+  m_PNi  (selected substrate of NN input production)               | atp[c]             | Adenosine Triphosphate                   | C10H12N5O13P3
+  m_PNa  (selected substrate of NN upper production)               | h[c]               | Proton                                   | H
+  m_PNb  (selected substrate of NN lower production)               | acetol[c]          | Hydroxyacetone                           | C3H6O2
+  m_PNo  (selected substrate of NN output production)              | g3p[c]             | Glyceraldehyde 3-Phosphate               | C3H5O6P
+
+--- Reactions ---
+
+  r_S1     (differentiator 1: X1 to M1)                 
+      ID  : r0407
+      Name: Sedoheptulose 1, 7-Bisphosphate D-Glyceraldehyde-3-Phosphate-Lyase Carbon Fixation
+      GPR : ( 230 or 229 or 226 )
+      EC  : 4.1.2.13
+      Direction: reverse
+      Compartment(s): c
+      Eqn   : C3H5O6P + C4H7O7P(m_in)  ->  C7H12O13P2(m_M1)
+      Names : Dihydroxyacetone Phosphate + D-Erythrose 4-Phosphate(m_in)  ->  Sedoheptulose 1,7-Bisphosphate(m_M1)
+
+  r_S2     (differentiator 1: M1 to Y1)                 
+      ID  : r0409
+      Name: UTP:Sedoheptulose 7-Phosphate 1-Phosphotransferase
+      GPR : 5211
+      EC  : 2.7.1.11
+      Direction: reverse
+      Compartment(s): c
+      Eqn   : C7H12O13P2(m_M1) + H(m_PNa) + C9H11N2O12P2  ->  C7H13O10P + C9H11N2O15P3(m_d1)
+      Names : Sedoheptulose 1,7-Bisphosphate(m_M1) + Proton(m_PNa) + Uridine Diphosphate  ->  Sedoheptulose 7-Phosphate + Uridine-5'-TrIphosphate(m_d1)
+
+  r_F      (differentiator 1: X1 to fast F1 pool)       
+      ID  : TKT2
+      Name: Transketolase
+      GPR : ( 7086 or 84076 or 8277 )
+      EC  : 2.2.1.1
+      Compartment(s): c
+      Eqn   : C4H7O7P(m_in) + C5H9O8P  ->  C6H11O9P(m_F1_delay) + C3H5O6P(m_PNo)
+      Names : D-Erythrose 4-Phosphate(m_in) + D-Xylulose 5-Phosphate  ->  D-Fructose 6-Phosphate(m_F1_delay) + Glyceraldehyde 3-Phosphate(m_PNo)
+
+  r_I      (differentiator 1: joint F1 and Y1 removal)  
+      ID  : r0191
+      Name: UTP:D-Fructose-6-Phosphate 1-Phosphotransferase
+      GPR : 5211
+      EC  : 2.7.1.11
+      Compartment(s): c
+      Eqn   : C6H11O9P(m_F1_delay) + C9H11N2O15P3(m_d1)  ->  C6H10O12P2 + H(m_PNa) + C9H11N2O12P2
+      Names : D-Fructose 6-Phosphate(m_F1_delay) + Uridine-5'-TrIphosphate(m_d1)  ->  D-Fructose 1,6-Bisphosphate + Proton(m_PNa) + Uridine Diphosphate
+
+  r_R      (differentiator 1: independent F1 removal)   
+      ID  : PFK26
+      Name: 6-Phosphofructo-2-Kinase
+      GPR : ( 5210 or 5207 or 5209 or 5208 )
+      EC  : 2.7.1.105
+      Compartment(s): c
+      Eqn   : C10H12N5O13P3(m_PNi) + C6H11O9P(m_F1_delay)  ->  C10H12N5O10P2 + C6H10O12P2 + H(m_PNa)
+      Names : Adenosine Triphosphate(m_PNi) + D-Fructose 6-Phosphate(m_F1_delay)  ->  Adenosine Diphosphate + Beta-D-Fructofuranose 2,6-Bisphosphate + Proton(m_PNa)
+
+  r_S1_2   (differentiator 2: Y1 to M2)                 
+      ID  : CYTK7
+      Name: Cytidylate Kinase (CMP, UTP)
+      GPR : 51727
+      EC  : 2.7.4.14
+      Compartment(s): c
+      Eqn   : C9H12N3O8P + C9H11N2O15P3(m_d1)  ->  C9H12N3O11P2(m_M2) + C9H11N2O12P2
+      Names : Cytidine 5'-Monophosphate + Uridine-5'-TrIphosphate(m_d1)  ->  Cytidine-5'-DIphosphate(m_M2) + Uridine Diphosphate
+
+  r_S2_2   (differentiator 2: M2 to Y2)                 
+      ID  : RNDR3
+      Name: Ribonucleoside-Diphosphate Reductase (CDP)
+      GPR : (( 6240 and 6241 ) or 50484 )
+      EC  : 1.7.14.1
+      Compartment(s): c
+      Eqn   : C9H12N3O11P2(m_M2) + XH2  ->  C9H12N3O10P2(m_d2) + H2O + X
+      Names : Cytidine-5'-DIphosphate(m_M2) + Reduced Thioredoxin  ->  Deoxycytidine-5'-Diphosphate(m_d2) + Water + Oxidized Thioredoxin
+
+  r_F2     (differentiator 2: fast Y1 to Y2)            
+      ID  : CYTK14
+      Name: Cytidylate Kinase (dCMP, UTP)
+      GPR : 51727
+      EC  : 2.7.4.14
+      Compartment(s): c
+      Eqn   : C9H12N3O7P + C9H11N2O15P3(m_d1)  ->  C9H12N3O10P2(m_d2) + C9H11N2O12P2
+      Names : Deoxycytidylic Acid + Uridine-5'-TrIphosphate(m_d1)  ->  Deoxycytidine-5'-Diphosphate(m_d2) + Uridine Diphosphate
+
+  r_I2     (differentiator 2: joint M2 and Y2 removal)  
+      ID  : CYTK5
+      Name: Cytidylate Kinase (dCMP)
+      GPR : 51727
+      EC  : 2.7.4.14
+      Direction: reverse
+      Compartment(s): c
+      Eqn   : C9H12N3O11P2(m_M2) + C9H12N3O10P2(m_d2)  ->  C9H12N3O14P3 + C9H12N3O7P
+      Names : Cytidine-5'-DIphosphate(m_M2) + Deoxycytidine-5'-Diphosphate(m_d2)  ->  Cytidine-5'-Triphosphate + Deoxycytidylic Acid
+
+  r_R2     (differentiator 2: independent Y2 removal)   
+      ID  : NDPK7
+      Name: Nucleoside-Diphosphate Kinase (ATP:dCDP)
+      GPR : ( 4832 or ( 4831 and 4830 ) or 10201 or 29922 )
+      EC  : 2.7.4.6
+      Compartment(s): c
+      Eqn   : C10H12N5O13P3(m_PNi) + C9H12N3O10P2(m_d2)  ->  C10H12N5O10P2 + C9H12N3O13P3
+      Names : Adenosine Triphosphate(m_PNi) + Deoxycytidine-5'-Diphosphate(m_d2)  ->  Adenosine Diphosphate + Deoxycytidine-5'-Triphosphate
+
+  r_Cp     (counter: C production)                      
+      ID  : ASPGLUm
+      Name: Aspartate-Glutamate Mitochondrial Shuttle
+      GPR : ( 8604 or 10165 )
+      EC  : 4.1.1.15
+      Compartment(s): c <-> m
+      Eqn   : C4H6NO4(m_PC) + C5H8NO4 + H(m_PNa)  ->  C4H6NO4(m_c) + C5H8NO4 + H
+      Names : L-Aspartate(m_PC) + L-Glutamate + Proton(m_PNa)  ->  L-Aspartate(m_c) + L-Glutamate + Proton
+
+  r_Cg     (counter: consumes C and Cs)                 
+      ID  : ASNS1
+      Name: Asparagine Synthase (Glutamine-Hydrolysing)
+      GPR : 440
+      EC  : 6.3.5.4
+      Compartment(s): c
+      Eqn   : C4H6NO4(m_c) + C10H12N5O13P3(m_PNi) + C5H10N2O3(m_Cs) + H2O  ->  C10H12N5O7P + C4H8N2O3 + C5H8NO4 + H(m_PNa) + HO7P2
+      Names : L-Aspartate(m_c) + Adenosine Triphosphate(m_PNi) + L-Glutamine(m_Cs) + Water  ->  Adenosine Monophosphate + L-Asparagine + L-Glutamate + Proton(m_PNa) + Diphosphate
+
+  r_Cr     (counter: regulated Cs removal)              
+      ID  : GLUPRT
+      Name: Glutamine Phosphoribosyldiphosphate Amidotransferase
+      GPR : 5471
+      EC  : 2.4.2.14
+      Compartment(s): c
+      Eqn   : C5H10N2O3(m_Cs) + H2O + C5H8O14P3  ->  C5H8NO4 + HO7P2 + C5H11NO7P
+      Names : L-Glutamine(m_Cs) + Water + 5-Phospho-Alpha-D-Ribose 1-Diphosphate  ->  L-Glutamate + Diphosphate + 5-Phospho-Beta-D-Ribosylamine
+
+  r_Ni     (NN: input-neuron production)                
+      ID  : FTHFL
+      Name: Formate-Tetrahydrofolate Ligase
+      GPR : ( 4522 or 286297 )
+      EC  : 6.3.2.17
+      Compartment(s): c
+      Eqn   : C10H12N5O13P3(m_PNi) + CH1O2 + C19H21N7O6  ->  C20H21N7O7(m_Ni) + C10H12N5O10P2 + HO4P
+      Names : Adenosine Triphosphate(m_PNi) + Formate + 5,6,7,8-Tetrahydrofolate  ->  10-Formyltetrahydrofolate(m_Ni) + Adenosine Diphosphate + Orthophosphate
+
+  r_NiDecay(NN: input-neuron removal)                   
+      ID  : AICART
+      Name: Phosphoribosylaminoimidazolecarboxamide Formyltransferase
+      GPR : 471
+      EC  : 2.1.2.3
+      Compartment(s): c
+      Eqn   : C20H21N7O7(m_Ni) + C9H13N4O8P  ->  C10H13N4O9P + C19H21N7O6
+      Names : 10-Formyltetrahydrofolate(m_Ni) + 5-Amino-1-(5-Phospho-D-Ribosyl)Imidazole-4-Carboxamide  ->  5-Formamido-1-(5-Phospho-D-Ribosyl)Imidazole-4-Carboxamide + 5,6,7,8-Tetrahydrofolate
+
+  r_Na     (NN: upper-neuron production)                
+      ID  : HMR_3855
+      Name: Propane-1, 2-Diol:NAD+ 1-Oxidoreductase
+      GPR : ( 231 or 57016 )
+      EC  : 1.1.1.21
+      Compartment(s): c
+      Eqn   : H(m_PNa) + C3H6O2 + C21H26N7O17P3  ->  C3H8O2(m_Na) + C21H25N7O17P3
+      Names : Proton(m_PNa) + (S)-Lactaldehyde + Nicotinamide Adenine Dinucleotide Phosphate - Reduced  ->  (R)-Propane-1,2-Diol(m_Na) + Nicotinamide Adenine Dinucleotide Phosphate
+
+  r_NaDecay(NN: upper-neuron removal)                   
+      ID  : ALCD21_D
+      Name: Alcohol Dehydrogenase (D-1, 2-Propanediol)
+      GPR : ( 127 or 284273 or 125 or 128 or 131 or ( 125 and 124 ) or 124 or 130 or 137872 or ( 125 and 126 ) or ( 126 and 124 ) or 126 )
+      EC  : 1.1.1.1
+      Compartment(s): c
+      Eqn   : C3H8O2(m_Na) + C21H26N7O14P2  ->  H(m_PNa) + C3H6O2 + C21H27N7O14P2
+      Names : (R)-Propane-1,2-Diol(m_Na) + Nicotinamide Adenine Dinucleotide  ->  Proton(m_PNa) + (R)-Lactaldehyde + Nicotinamide Adenine Dinucleotide - Reduced
+
+  r_Nb     (NN: lower-neuron production)                
+      ID  : ALR3
+      Name: Aldose Reductase (Acetol)
+      GPR : ( 10327 or 8574 or 231 )
+      EC  : 1.1.1.21
+      Compartment(s): c
+      Eqn   : C3H6O2(m_PNb) + H(m_PNa) + C21H26N7O17P3  ->  C3H8O2(m_Nb) + C21H25N7O17P3
+      Names : Hydroxyacetone(m_PNb) + Proton(m_PNa) + Nicotinamide Adenine Dinucleotide Phosphate - Reduced  ->  (S)-Propane-1,2-Diol(m_Nb) + Nicotinamide Adenine Dinucleotide Phosphate
+
+  r_NbDecay(NN: lower-neuron removal)                   
+      ID  : ALCD21_L
+      Name: Alcohol Dehydrogenase (L-1, 2-Propanediol)
+      GPR : ( 130 or 125 or ( 125 and 124 ) or 128 or 126 or 284273 or 137872 or 127 or 124 or ( 126 and 124 ) or ( 125 and 126 ) or 131 )
+      EC  : 1.1.1.1
+      Compartment(s): c
+      Eqn   : C3H8O2(m_Nb) + C21H26N7O14P2  ->  H(m_PNa) + C3H6O2 + C21H27N7O14P2
+      Names : (S)-Propane-1,2-Diol(m_Nb) + Nicotinamide Adenine Dinucleotide  ->  Proton(m_PNa) + (S)-Lactaldehyde + Nicotinamide Adenine Dinucleotide - Reduced
+
+  r_No     (NN: output production)                      
+      ID  : GAPD
+      Name: Glyceraldehyde-3-Phosphate Dehydrogenase
+      GPR : ( 2597 or 26330 )
+      EC  : 1.2.1.12
+      Compartment(s): c
+      Eqn   : C3H5O6P(m_PNo) + C21H26N7O14P2 + HO4P  ->  C3H4O10P2(m_out) + H(m_PNa) + C21H27N7O14P2
+      Names : Glyceraldehyde 3-Phosphate(m_PNo) + Nicotinamide Adenine Dinucleotide + Orthophosphate  ->  3-Phospho-D-Glyceroyl Phosphate(m_out) + Proton(m_PNa) + Nicotinamide Adenine Dinucleotide - Reduced
+
+  r_NoDecay(NN: output removal)                         
+      ID  : ACYP
+      Name: Acylphosphatase
+      GPR : ( 112611 or 98 or 97 or 97 )
+      EC  : 3.6.1.7
+      Compartment(s): c
+      Eqn   : C3H4O10P2(m_out) + H2O  ->  C3H4O7P + H(m_PNa) + HO4P
+      Names : 3-Phospho-D-Glyceroyl Phosphate(m_out) + Water  ->  3-Phospho-D-Glycerate + Proton(m_PNa) + Orthophosphate
+
+--- Nonconsuming regulatory connections ---
+  m_d2     (dcdp[c]) : r_Cp       (ASPGLUm) | inhibition | PENDING (no supplied regulatory evidence)
+  m_d2     (dcdp[c]) : r_Cr       (GLUPRT) | inhibition | PENDING (no supplied regulatory evidence)
+  m_c      (asp_L[c]) : r_Ni       (FTHFL) | activation | PENDING (no supplied regulatory evidence)
+  m_Ni     (10fthf[c]) : r_Na       (HMR_3855) | activation | PENDING (no supplied regulatory evidence)
+  m_Ni     (10fthf[c]) : r_Nb       (ALR3) | activation | PENDING (no supplied regulatory evidence)
+  m_Na     (12ppd_R[c]) : r_No       (GAPD) | activation | PENDING (no supplied regulatory evidence)
+  m_Nb     (12ppd_S[c]) : r_No       (GAPD) | activation | PENDING (no supplied regulatory evidence)
+
+############################################################
+END OF SELECTED MOTIF 1
+############################################################

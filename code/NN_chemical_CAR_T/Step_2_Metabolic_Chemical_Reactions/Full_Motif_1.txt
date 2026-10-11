@@ -1,0 +1,149 @@
+MINIMAL DIFFERENTIATORS + REGULATED COUNTER + HILL NN
+Selected row: 1
+block1_idx: 32
+block2_idx: 1
+block3_idx: 1
+counter_idx: 1
+nn_idx: 1
+motifIndexBeforeMembraneFilter: 1
+motifIndexBeforeCrossTalkFilter: 1
+Individual regulatory links supported by supplied evidence: 0
+Kinetics validated: 0
+
+BLOCK 0: cAMP TO THE FIXED INPUT
+Adapter path: 61
+metabolitePath: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> uri[c] -> ump[c]
+reactionPath: PDE1 -> NTD7 -> PUNP1 -> PYNP2r (reverse) -> r1156
+reactionNamePath: 3', 5'-Cyclic-Nucleotide Phosphodiesterase -> 5'-Nucleotidase (AMP) -> Purine-Nucleoside Phosphorylase (Adenosine) -> Pyrimidine-Nucleoside Phosphorylase (Uracil) (reverse) -> DUTP:Uridine 5-Phosphotransferase
+
+PROTECTED SIGNAL METABOLITES
+m_in | 3075 | ump[c] | Uridine-5'-Monophosphate | C9H11N2O9P
+m_M1 | 1581 | dcdp[c] | Deoxycytidine-5'-Diphosphate | C9H12N3O10P2
+m_Y1 | 1556 | ctp[c] | Cytidine-5'-Triphosphate | C9H12N3O14P3
+m_M2 | 1466 | cdpdag_hs[c] | Cytidine-5'-Diphosphate-Diacylglycerol | C12H17N3O11P2FULLRCO2FULLR2CO2
+m_Y2 | 1499 | cmp[c] | Cytidine 5'-Monophosphate | C9H12N3O8P
+m_c | 1250 | akg[c] | 2-Oxoglutarate | C5H4O5
+m_Cs | 1352 | asp_L[c] | L-Aspartate | C4H6NO4
+m_Ni | 1 | 10fthf[c] | 10-Formyltetrahydrofolate | C20H21N7O7
+m_Na | 9 | 12ppd_R[c] | (R)-Propane-1,2-Diol | C3H8O2
+m_Nb | 11 | 12ppd_S[c] | (S)-Propane-1,2-Diol | C3H8O2
+m_out | 25 | 13dpg[c] | 3-Phospho-D-Glyceroyl Phosphate | C3H4O10P2
+Physical cascade: X2=Y1; Y2=m_d2=m_d. Sole counter signal: m_d2. Counter output: m_c. NN output: m_out.
+
+BLOCK 1: THREE-REACTION DIFFERENTIATOR
+
+r_11 | 2915 | UMPK6 | UMP Kinase (dCTP) | direction +1
+EC: 2.7.4.14
+GPR: 51727
+dctp[c] + ump[c] -> dcdp[c] + udp[c]
+
+r_12 | 2831 | CYTK5 | Cytidylate Kinase (dCMP) | direction -1
+EC: 2.7.4.14
+GPR: 51727
+cdp[c] + dcdp[c] -> ctp[c] + dcmp[c]
+
+r_13 | 2907 | UMPK2 | UMP Kinase (CTP) | direction +1
+EC: 2.7.4.14
+GPR: 51727
+ctp[c] + ump[c] -> cdp[c] + udp[c]
+
+BLOCK 2: THREE-REACTION DIFFERENTIATOR
+
+r_21 | 2397 | CDS | Phosphatidate Cytidylyltransferase | direction +1
+EC: 2.7.7.41
+GPR: ( 1040 or 8760 )
+ctp[c] + h[c] + pa_hs[c] -> cdpdag_hs[c] + ppi[c]
+
+r_22 | 2396 | CDIPTr | Phosphatidylinositol Synthase (Homo Sapiens) | direction +1
+EC: 2.7.8.11
+GPR: 10423
+cdpdag_hs[c] + inost[c] -> cmp[c] + h[c] + pail_hs[c]
+
+r_23 | 2833 | CYTK6 | Cytidylate Kinase (CMP, CTP) | direction +1
+EC: 2.7.4.14
+GPR: 51727
+cmp[c] + ctp[c] -> 2 cdp[c]
+
+BLOCK 3: COUNTER AND Cs BUFFERING
+
+r_Cp | 2492 | PSERT | Phosphoserine Transaminase | direction +1
+EC: 2.6.1.52
+GPR: 29968
+3php[c] + glu_L[c] -> akg[c] + pser_L[c]
+
+r_Cg | 5 | ASPTA | Aspartate Transaminase | direction +1
+EC: 2.6.1.1
+GPR: 2805
+akg[c] + asp_L[c] -> glu_L[c] + oaa[c]
+
+r_Cr | 3 | ASNS1 | Asparagine Synthase (Glutamine-Hydrolysing) | direction +1
+EC: 6.3.5.4
+GPR: 440
+asp_L[c] + atp[c] + gln_L[c] + h2o[c] -> amp[c] + asn_L[c] + glu_L[c] + h[c] + ppi[c]
+
+r_CsSupply | 4603 | ASPGLUm | Aspartate-Glutamate Mitochondrial Shuttle | direction +1
+EC: 4.1.1.15
+GPR: ( 8604 or 10165 )
+asp_L[m] + glu_L[c] + h[c] -> asp_L[c] + glu_L[m] + h[m]
+
+r_CsLeak | 2380 | HMR_3831 | Aspartate Ammonia-Lyase | direction +1
+EC: 4.3.1.1
+GPR: 2271
+asp_L[c] -> fum[c] + nh4[c]
+
+BLOCK 4: HILL NN PRODUCTION AND REMOVAL
+
+r_Ni | 2342 | FTHFL | Formate-Tetrahydrofolate Ligase | direction +1
+EC: 6.3.2.17
+GPR: ( 4522 or 286297 )
+atp[c] + for[c] + thf[c] -> 10fthf[c] + adp[c] + pi[c]
+
+r_NiDecay | 3039 | AICART | Phosphoribosylaminoimidazolecarboxamide Formyltransferase | direction +1
+EC: 2.1.2.3
+GPR: 471
+10fthf[c] + aicar[c] -> fprica[c] + thf[c]
+
+r_Na | 3096 | HMR_3855 | Propane-1, 2-Diol:NAD+ 1-Oxidoreductase | direction +1
+EC: 1.1.1.21
+GPR: ( 231 or 57016 )
+h[c] + lald_L[c] + nadph[c] -> 12ppd_R[c] + nadp[c]
+
+r_NaDecay | 3088 | ALCD21_D | Alcohol Dehydrogenase (D-1, 2-Propanediol) | direction +1
+EC: 1.1.1.1
+GPR: ( 127 or 284273 or 125 or 128 or 131 or ( 125 and 124 ) or 124 or 130 or 137872 or ( 125 and 126 ) or ( 126 and 124 ) or 126 )
+12ppd_R[c] + nad[c] -> h[c] + lald_D[c] + nadh[c]
+
+r_Nb | 3093 | ALR3 | Aldose Reductase (Acetol) | direction +1
+EC: 1.1.1.21
+GPR: ( 10327 or 8574 or 231 )
+acetol[c] + h[c] + nadph[c] -> 12ppd_S[c] + nadp[c]
+
+r_NbDecay | 3089 | ALCD21_L | Alcohol Dehydrogenase (L-1, 2-Propanediol) | direction +1
+EC: 1.1.1.1
+GPR: ( 130 or 125 or ( 125 and 124 ) or 128 or 126 or 284273 or 137872 or 127 or 124 or ( 126 and 124 ) or ( 125 and 126 ) or 131 )
+12ppd_S[c] + nad[c] -> h[c] + lald_L[c] + nadh[c]
+
+r_No | 2511 | GAPD | Glyceraldehyde-3-Phosphate Dehydrogenase | direction +1
+EC: 1.2.1.12
+GPR: ( 2597 or 26330 )
+g3p[c] + nad[c] + pi[c] -> 13dpg[c] + h[c] + nadh[c]
+
+r_NoDecay | 2498 | ACYP | Acylphosphatase | direction +1
+EC: 3.6.1.7
+GPR: ( 112611 or 98 or 97 or 97 )
+13dpg[c] + h2o[c] -> 3pg[c] + h[c] + pi[c]
+
+NONCONSUMING REGULATORY LINKS
+m_d2 (cmp[c]) -> r_Cp (PSERT): inhibition | PENDING: verify this natural interaction or engineer it
+m_d2 (cmp[c]) -> r_Cr (ASNS1): inhibition | PENDING: verify this natural interaction or engineer it
+m_c (akg[c]) -> r_Ni (FTHFL): activation | PENDING: verify this natural interaction or engineer it
+m_Ni (10fthf[c]) -> r_Na (HMR_3855): activation | PENDING: verify this natural interaction or engineer it
+m_Ni (10fthf[c]) -> r_Nb (ALR3): activation | PENDING: verify this natural interaction or engineer it
+m_Na (12ppd_R[c]) -> r_No (GAPD): activation | PENDING: verify this natural interaction or engineer it
+m_Nb (12ppd_S[c]) -> r_No (GAPD): activation | PENDING: verify this natural interaction or engineer it
+
+Kinetic requirements still to verify/tune:
+Counter gate: 1-h2(m_d2) on Cp and Cr; no Y1-to-counter regulation.
+Cs supply and basal removal approximate k_s*(Cs_baseline-Cs).
+NN: Hill(C), Hill(Ni), Hill(Ni), Hill(weight*(Na+Nb)); independent removal.
+Precursor concentrations, baseline balance, rate parameters and leakage must be checked.
