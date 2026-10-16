@@ -1,0 +1,201 @@
+############################################################
+FULL CHEMICAL CHAIN (IFFL mapping, cAMP-ranked)
+Exported 16-Oct-2026 14:19:36
+Selection 1 of 3435 | input L-Asparagine | cAMP steps 3 | block genes 7
+############################################################
+
+SELECTED MOTIF: SIGNAL METABOLITES
+  m_in    | asn_L[c]             | L-Asparagine                               | C4H8N2O3       | c
+  m_Fd    | pro_L[c]             | L-Proline                                  | C5H9NO2        | c
+  m_Sf    | met_L[c]             | L-Methionine                               | C5H11NO2S      | c
+  m_D1    | ala_L[c]             | L-Alanine                                  | C3H7NO2        | c
+  m_D2    | ser_L[c]             | L-Serine                                   | C3H7NO3        | c
+  m_c     | phe_L[c]             | L-Phenylalanine                            | C9H11NO2       | c
+  m_I     | akg[c]               | 2-Oxoglutarate                             | C5H4O5         | c
+  m_out   | CE2866[c]            | 3,3-Diiodo-L-Thyronine                     | C15H13I2NO4    | c
+  m_aux   | 3mhis[c]             | 3-Methylhistidine                          | C7H11N3O2      | c
+  m_aux   | 3mhis[e]             | 3-Methylhistidine                          | C7H11N3O2      | e
+  m_aux   | phe_L[e]             | L-Phenylalanine                            | C9H11NO2       | e
+  m_aux   | cgly[e]              | L-Cysteinylglycine                         | C5H10N2O3S     | e
+  m_aux   | gluala[e]            | 5-L-Glutamyl-L-Alanine                     | C8H13N2O5      | e
+  m_aux   | gthrd[c]             | Reduced Glutathione                        | C10H16N3O6S    | c
+  m_aux   | 4mtob[c]             | 4-Methyl-Thio-Oxo-Butyrate                 | C5H7O3S        | c
+  m_aux   | pyr[c]               | Pyruvate                                   | C3H3O3         | c
+  m_aux   | glu_L[c]             | L-Glutamate                                | C5H8NO4        | c
+  m_aux   | phpyr[c]             | Keto-Phenylpyruvate                        | C9H7O3         | c
+  m_aux   | chol[c]              | Choline                                    | C5H14NO        | c
+  m_aux   | pchol_hs[c]          | Phosphatidylcholine                        | C8H18NO4PFULLRCO2FULLR2CO2 | c
+  m_aux   | ps_hs[c]             | Phosphatidylserine                         | C6H11NO6PFULLRCO2FULLR2CO2 | c
+  m_aux   | CE2870[c]            | 3,3-Diiodo-L-Thyronine 4-O-Sulfate         | C15H12I2NO7S   | c
+  m_aux   | pap[c]               | Adenosine 3,5-Bismonophosphate             | C10H11N5O10P2  | c
+  m_aux   | paps[c]              | 3'-Phosphoadenylyl Sulfate                 | C10H11N5O10P2  | c
+  m_aux   | ser_L[e]             | L-Serine                                   | C3H7NO3        | e
+  m_aux   | gly[c]               | Glycine                                    | C2H5NO2        | c
+  m_aux   | gly[e]               | Glycine                                    | C2H5NO2        | e
+  m_aux   | ala_L[e]             | L-Alanine                                  | C3H7NO2        | e
+  m_aux   | met_L[e]             | L-Methionine                               | C5H11NO2S      | e
+  m_aux   | asn_L[e]             | L-Asparagine                               | C4H8N2O3       | e
+  m_aux   | pro_L[e]             | L-Proline                                  | C5H9NO2        | e
+
+------------------------------------------------------------
+BLOCK 0: cAMP INPUT CONNECTION (OUTPUT m_in = L-Asparagine)
+------------------------------------------------------------
+  Status: reachable, collision-free | conversion steps: 3
+  Metabolite path: camp[c] -> adp[c] -> atp[c] -> asn_L[c]
+  Reaction path  : CAMPt -> PYK -> ASNS1
+  Routes through AMP (amp[c]): 0
+
+  r_CAMP (input connector)
+      ID  : CAMPt
+      Name: CAMP Transport (ATP-Dependent)
+      EC  : 
+      Bounds: [0, 1000]
+      IDs   : atp[c] + camp[c] + h2o[c]  ->  adp[c] + camp[e] + h[c] + pi[c]
+      Names : Adenosine Triphosphate + 3,5-Cyclic Adenosine Monophosphate + Water  ->  Adenosine Diphosphate + 3,5-Cyclic Adenosine Monophosphate + Proton + Orthophosphate
+
+  r_CAMP (input connector)
+      ID  : PYK
+      Name: Pyruvate Kinase
+      EC  : 3.4.2.1
+      Bounds: [0, 1000]
+      IDs   : adp[c] + h[c] + pep[c]  ->  atp[c] + pyr[c]
+      Names : Adenosine Diphosphate + Proton + Phosphoenolpyruvate  ->  Adenosine Triphosphate + Pyruvate
+
+  r_CAMP (input connector)
+      ID  : ASNS1
+      Name: Asparagine Synthase (Glutamine-Hydrolysing)
+      EC  : 6.3.5.4
+      Bounds: [0, 1000]
+      IDs   : asp_L[c] + atp[c] + gln_L[c] + h2o[c]  ->  amp[c] + asn_L[c](m_in) + glu_L[c] + h[c] + ppi[c]
+      Names : L-Aspartate + Adenosine Triphosphate + L-Glutamine + Water  ->  Adenosine Monophosphate + L-Asparagine(m_in) + L-Glutamate + Proton + Diphosphate
+
+
+------------------------------------------------------------
+BLOCK 1: DIFFERENTIATOR 1 (IFFL, OUTPUT m_d1)
+------------------------------------------------------------
+
+  fast branch
+      ID  : r1832
+      Name: Y+Lat2 Utilized Transport
+      EC  : 
+      Bounds: [0, 1000]
+      IDs   : asn_L[c](m_in) + na1[e] + pro_L[e]  ->  asn_L[e] + na1[c] + pro_L[c](m_Fd)
+      Names : L-Asparagine(m_in) + Sodium + L-Proline  ->  L-Asparagine + Sodium + L-Proline(m_Fd)
+
+  ...
+      ID  : r1742
+      Name: Y+Lat2 Utilized Transport
+      EC  : 
+      Bounds: [0, 1000]
+      IDs   : asn_L[c](m_in) + met_L[e] + na1[e]  ->  asn_L[e] + met_L[c](m_Sf) + na1[c]
+      Names : L-Asparagine(m_in) + L-Methionine + Sodium  ->  L-Asparagine + L-Methionine(m_Sf) + Sodium
+
+  slow branch
+      ID  : METTRANSc
+      Name: Methionine Transaminase
+      EC  : 3.1.1.3
+      Bounds: [-1000, 1000]
+      IDs   : met_L[c](m_Sf) + pyr[c]  ->  4mtob[c] + ala_L[c](m_D1)
+      Names : L-Methionine(m_Sf) + Pyruvate  ->  4-Methyl-Thio-Oxo-Butyrate + L-Alanine(m_D1)
+
+  r_I (saturated degrader, activated by m_Fd)
+      ID  : GTMLTe
+      Name: G-Glutamyltransferase, Extracellular
+      EC  : 2.3.2.2
+      Bounds: [0, 1000]
+      IDs   : ala_L[c](m_D1) + gthrd[c]  ->  cgly[e] + gluala[e]
+      Names : L-Alanine(m_D1) + Reduced Glutathione  ->  L-Cysteinylglycine + 5-L-Glutamyl-L-Alanine
+
+
+------------------------------------------------------------
+BLOCK 2: DIFFERENTIATOR 2 (INPUT m_d1, OUTPUT m_d2)
+------------------------------------------------------------
+
+  fast branch
+      ID  : r1690
+      Name: Y+Lat2 Utilized Transport
+      EC  : 
+      Bounds: [0, 1000]
+      IDs   : ala_L[e] + met_L[c](m_Sf) + na1[e]  ->  ala_L[c](m_D1) + met_L[e] + na1[c]
+      Names : L-Alanine + L-Methionine(m_Sf) + Sodium  ->  L-Alanine(m_D1) + L-Methionine + Sodium
+
+  ...
+      ID  : r1687
+      Name: Y+Lat2 Utilized Transport
+      EC  : 
+      Bounds: [0, 1000]
+      IDs   : ala_L[e] + gly[c] + na1[e]  ->  ala_L[c](m_D1) + gly[e] + na1[c]
+      Names : L-Alanine + Glycine + Sodium  ->  L-Alanine(m_D1) + Glycine + Sodium
+
+  slow branch
+      ID  : r1674
+      Name: Y+Lat2 Utilized Transport
+      EC  : 
+      Bounds: [0, 1000]
+      IDs   : gly[e] + na1[e] + ser_L[c](m_D2)  ->  gly[c] + na1[c] + ser_L[e]
+      Names : Glycine + Sodium + L-Serine(m_D2)  ->  Glycine + Sodium + L-Serine
+
+  r_I_2 (activated by m_Fd2)
+      ID  : SERt4
+      Name: L-Serine via Sodium Symport
+      EC  : 2.5.1.6
+      Bounds: [0, 1000]
+      IDs   : na1[e] + ser_L[e]  ->  na1[c] + ser_L[c](m_D2)
+      Names : Sodium + L-Serine  ->  Sodium + L-Serine(m_D2)
+
+
+------------------------------------------------------------
+BLOCK 3: COUNTER (OUTPUT m_c)
+------------------------------------------------------------
+
+  r_c (activated by m_d2)
+      ID  : 3MHISt3
+      Name: Transport of Methyl-Histidine by System L Transport (Lat2)
+      EC  : 3.1.1.4
+      Bounds: [-1000, 1000]
+      IDs   : 3mhis[e] + phe_L[c](m_c)  ->  3mhis[c] + phe_L[e]
+      Names : 3-Methylhistidine + L-Phenylalanine(m_c)  ->  3-Methylhistidine + L-Phenylalanine
+
+  r_I1 (reset, consumes m_c)
+      ID  : PHETA1
+      Name: Phenylalanine Transaminase
+      EC  : 2.6.1.58
+      Bounds: [-1000, 1000]
+      IDs   : akg[c](m_I) + phe_L[c](m_c)  ->  glu_L[c] + phpyr[c]
+      Names : 2-Oxoglutarate(m_I) + L-Phenylalanine(m_c)  ->  L-Glutamate + Keto-Phenylpyruvate
+
+  r_I2 (sequestration, consumes m_d2)
+      ID  : PSSA1_hs
+      Name: Phosphatidylserine Synthase Homo Sapiens
+      EC  : 2.7.8.8
+      Bounds: [-1000, 1000]
+      IDs   : pchol_hs[c] + ser_L[c](m_D2)  ->  chol[c] + ps_hs[c]
+      Names : Phosphatidylcholine + L-Serine(m_D2)  ->  Choline + Phosphatidylserine
+
+
+------------------------------------------------------------
+BLOCK 4: SINGLE NEURON (OUTPUT m_out)
+------------------------------------------------------------
+
+  r_Nw (weight, activated by m_c)
+      ID  : RE0908C
+      Name: Steryl-Sulfatase
+      EC  : 3.1.6.2
+      Bounds: [-1000, 1000]
+      IDs   : CE2870[c] + h2o[c]  ->  CE2866[c](m_out) + h[c] + so4[c]
+      Names : 3,3-Diiodo-L-Thyronine 4-O-Sulfate + Water  ->  3,3-Diiodo-L-Thyronine(m_out) + Proton + Sulfate
+
+  r_Nr (removal, consumes m_out)
+      ID  : RE0912C
+      Name: RE0912C
+      EC  : 3.1.2.2
+      Bounds: [0, 1000]
+      IDs   : CE2866[c](m_out) + paps[c]  ->  CE2870[c] + h[c] + pap[c]
+      Names : 3,3-Diiodo-L-Thyronine(m_out) + 3'-Phosphoadenylyl Sulfate  ->  3,3-Diiodo-L-Thyronine 4-O-Sulfate + Proton + Adenosine 3,5-Bismonophosphate
+
+
+ASSUMPTIONS AND INTERFACES
+Differentiator subtraction is by activation (IFFL): m_Fd gates degradation of m_d1.
+Counter and neuron READS are by activation; housekeeping (reset/seq/removal) is mass-flow.
+Connectivity validated: 1. Kinetics validated: 0. Activation strength validated: 0.
+Name-matched BRENDA regulation; verify AC strength and [X] << K_M before building.

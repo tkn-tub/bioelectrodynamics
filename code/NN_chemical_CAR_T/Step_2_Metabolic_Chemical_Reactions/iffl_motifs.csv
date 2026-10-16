@@ -1,0 +1,501 @@
+EC,anchor,dFast,dSlow,fastChain,input,m_Fd,m_d1,nGenes,slowChain
+2.3.3.8,ACITL,1,2,r2087,"2-Hydroxybutyrate","Acetate","Citrate",4,r2109>r2373
+2.3.3.8,ACITL,1,2,r2094,"Acetate","Acetate","Citrate",4,r2101>r2373
+2.3.3.8,ACITL,1,2,ACt2m,"Acetate","Acetate","Citrate",4,r2101>r2373
+2.3.3.8,ACITL,1,2,PEPtr,"Phosphoenolpyruvate","Phosphoenolpyruvate","Citrate",4,r2394>r2371
+2.3.3.8,ACITL,1,2,r2394,"Cis-Aconitate","Phosphoenolpyruvate","Citrate",4,r2377>r2371
+1.4.1.3,GLUDxm,1,2,ASPte,"L-Aspartate","L-Aspartate","L-Glutamate",4,3SALAASPm>ASPTAm
+1.4.1.3,GLUDxm,1,2,r1815,"L-Cysteine","L-Leucine","L-Glutamate",4,CYSTA>ASPGLUm
+1.4.1.3,GLUDxm,1,2,3MHISt2,"L-Leucine","L-Leucine","L-Glutamate",4,LEUt5m>LEUTAm
+1.8.1.7,GTHO,1,2,r0568,"Gamma-L-Glutamyl-L-Cysteine","L-Cysteine","Glutathione Disulfide (Oxidized Glutathione)",4,GTHS>HMR_0960
+1.8.1.7,GTHO,1,2,r1679,"L-Cysteine","L-Cysteine","Glutathione Disulfide (Oxidized Glutathione)",4,r0027>CYSGLTH
+1.8.1.7,GTHOm,1,2,CYSGLTH,"Reduced Glutathione","L-Cysteine","Glutathione Disulfide (Oxidized Glutathione)",4,GTHRDt>HMR_0963
+2.7.7.41,CDS,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidate",4,SMS>DAGK_hs
+2.7.7.41,CDSm,1,2,CEPTC,"Diglyceride","Phosphatidylcholine","Phosphatidate",4,DAGK_hs>PA_HStm
+2.7.7.15,CHLPCTD,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Choline Phosphate",4,PSSA1_hs>CHOLK
+6.2.1.1,ACS,1,2,ALDD2xm,"Acetaldehyde","Acetate","Acetate",4,ACALDtm>ALDD2x
+6.2.1.1,ACSm,1,2,CITL,"Citrate","Acetate","Acetate",4,CITtam>r1109
+1.4.3.14,LYSOXp,1,2,r1926,"L-Citrulline","L-Glutamine","L-Lysine",4,r1666>LYStip
+1.4.3.14,LYSOXp,1,2,r1916,"L-Citrulline","Glycine","L-Lysine",4,r1666>LYStip
+1.4.3.14,LYSOXp,1,2,r1671,"L-Citrulline","L-Histidine","L-Lysine",4,r1666>LYStip
+1.4.3.14,LYSOXp,1,2,r1665,"L-Lysine","L-Histidine","L-Lysine",4,LYStiDF>LYStip
+2.6.1.1,3SALATAi,1,2,r2379,"Cis-Aconitate","(S)-Malate","2-Oxoglutarate",4,r2377>AKGMALtm
+1.1.1.40,METAT,1,2,ASPte,"L-Aspartate","L-Aspartate","L-Methionine",4,ASNS1>UNK3r
+1.1.1.40,METAT,1,2,3SALAASPm,"L-Aspartate","L-Aspartate","L-Methionine",4,ASNS1>UNK3r
+1.1.1.40,METAT,1,2,r2373,"2-Oxoglutarate","Citrate","L-Methionine",4,ASPTA>UNK3r
+1.1.1.40,METAT,1,2,HMR_3831,"L-Aspartate","Fumarate","L-Methionine",4,ASNS1>UNK3r
+1.1.1.40,METAT,1,2,PHETA1m,"L-Phenylalanine","L-Glutamate","L-Methionine",4,r1456>r1737
+1.1.1.40,METAT,1,2,HMR_4776,"2-Oxoglutarate","Succinate","L-Methionine",4,ASPTA>UNK3r
+3.1.6.8,R_group_phosphotase_1,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","R Total",4,SMS>SPHMDAc
+6.2.1.1,r0097,1,2,ALDD2xm,"Acetaldehyde","Acetate","Acetate",4,ACALDtm>ALDD2x
+6.3.4.4,ADSS,1,2,r0191,"D-Fructose 6-Phosphate","D-Fructose 1,6-Bisphosphate","L-Aspartate",4,GF6PTA>ASPGLUm
+1.1.1.21,PPDOy,1,2,ALCD22_L,"(S)-Lactaldehyde","Methylglyoxal","(R)-Lactaldehyde",4,HMR_3855>ALCD21_D
+4.1.1.15,3SALAOX,1,2,r2093,"2-Oxoglutarate","2-Oxoglutarate","3-Sulfino-L-Alanine",4,ASPTA>HMR_3864
+4.1.1.15,3SALAOX,1,2,r2373,"2-Oxoglutarate","2-Oxoglutarate","3-Sulfino-L-Alanine",4,ASPTA>HMR_3864
+4.1.1.15,3SALAOX,1,2,AKGtp,"2-Oxoglutarate","2-Oxoglutarate","3-Sulfino-L-Alanine",4,ASPTA>HMR_3864
+2.3.1.86,r1536,1,2,CYSGLTH,"Reduced Glutathione","L-Cysteine","Urate",4,GTHDH>RE2605C
+4.1.1.15,ASPGLUm,1,2,PSERT,"L-Glutamate","2-Oxoglutarate","L-Aspartate",4,ASPGLUm>3SALAASPm
+1.8.1.4,OIVD1m,1,2,r1800,"L-Leucine","L-Cysteine","4-Methyl-2-Oxopentanoate",4,LEUt5m>LEUTAm
+1.8.1.4,OIVD2m,1,2,r1803,"L-Valine","L-Cysteine","3-Methyl-2-Oxobutanoate",4,VALt5m>VALTAm
+1.8.1.4,OIVD3m,1,2,r1806,"L-Isoleucine","L-Cysteine","3-Methyl-2-Oxopentanoate",4,ILEt5m>ILETAm
+2.6.1.1,ASPTA,1,2,r2379,"Cis-Aconitate","(S)-Malate","2-Oxoglutarate",4,r2377>AKGMALtm
+2.6.1.1,ASPTAm,1,2,r2391,"Cis-Aconitate","(S)-Malate","2-Oxoglutarate",4,r2389>r2373
+3.5.99.6,G6PDA,1,2,HMR_7748,"Beta-D-Glucose-6-Phosphate","D-Glucose 6-Phosphate","D-Glucosamine-6-Phosphate",4,HMR_7749>GF6PTA
+2.7.1.1,r0363,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0354>NDPK9
+2.7.1.1,r0363,1,2,GLCter,"D-Glucose","D-Glucose","Iinosine-5'-Triphosphate",4,r0354>NDPK9
+2.7.1.1,r0363,1,2,HEX4,"D-Mannose","D-Mannose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0360>NDPK9
+2.7.1.1,r0364,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","Deoxyadenosine Triphosphate",4,r0355>NDPK8
+2.7.1.1,r0364,1,2,GLCter,"D-Glucose","D-Glucose","Deoxyadenosine Triphosphate",4,r0355>NDPK8
+2.7.1.1,r0364,1,2,HEX4,"D-Mannose","D-Mannose 6-Phosphate","Deoxyadenosine Triphosphate",4,r0361>NDPK8
+2.1.1.6,RE1630C,1,2,r1953,"L-Arginine","L-Cysteine","S-Adenosyl-L-Methionine",4,METyLATthc>METAT
+2.1.1.6,RE1630C,1,2,r1679,"L-Cysteine","L-Cysteine","S-Adenosyl-L-Methionine",4,r1739>METAT
+2.1.1.6,RE2386C,1,2,r1953,"L-Arginine","L-Cysteine","S-Adenosyl-L-Methionine",4,METyLATthc>METAT
+2.1.1.6,RE2386C,1,2,r1679,"L-Cysteine","L-Cysteine","S-Adenosyl-L-Methionine",4,r1739>METAT
+4.1.1.50,ADMDC,1,2,ORNDC,"Ornithine","Putrescine","S-Adenosyl-L-Methionine",4,r1934>METAT
+1.5.1.2,r0615,1,2,ORNDC,"Ornithine","Putrescine","Trans-4-Hydroxy-L-Proline",4,r1964>HMR_4776
+1.5.1.2,r0617,1,2,ORNDC,"Ornithine","Putrescine","Trans-4-Hydroxy-L-Proline",4,r1964>HMR_4776
+1.1.1.30,BDHm,1,2,r2090,"2-Hydroxybutyrate","(S)-Lactate","(R)-3-Hydroxybutyrate",4,r2133>BHBtm
+4.2.1.2,FUMm,1,2,r2381,"2-Oxoglutarate","Citrate","Fumarate",4,HMR_4777>r0509
+1.1.1.41,ICDHxm,1,2,r2371,"Cis-Aconitate","Citrate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,ICDHyrm,1,2,r2377,"2-Oxoglutarate","Cis-Aconitate","Isocitric Acid",4,r2373>r2385
+1.1.1.42,ICDHyrm,1,2,HC00342te,"Cis-Aconitate","Cis-Aconitate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,ICDHyrm,1,2,r2371,"Cis-Aconitate","Cis-Aconitate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,ICDHyrm,1,2,r2371,"Cis-Aconitate","Citrate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,ICDHyrm,1,2,ASPTA,"2-Oxoglutarate","L-Glutamate","Isocitric Acid",4,r2373>r2385
+1.1.1.37,MDH,1,2,r2381,"2-Oxoglutarate","Citrate","(S)-Malate",4,AKGMALtm>CITtam
+1.1.1.37,MDHm,1,2,r2371,"Cis-Aconitate","Citrate","(S)-Malate",4,r2391>AKGMALtm
+1.1.1.37,MDHm,1,2,r2384,"Oxalate","Citrate","(S)-Malate",4,r2388>r0913
+1.3.5.1,r0509,1,2,r0915,"Succinate","Succinate","Ubiquinone-10",4,r0509>CYOR_u10mi
+1.3.5.1,r0509,1,2,HMR_4776,"2-Oxoglutarate","Succinate","Succinate",4,r2373>HMR_4777
+2.3.2.2,GGT6,1,2,r1953,"L-Arginine","L-Cysteine","L-Glutamate",4,GLNyLATthc>ASNS1
+2.3.2.2,GGT6,1,2,r1769,"L-Phenylalanine","L-Cysteine","L-Glutamate",4,PHEt4>PHETA1
+2.3.2.2,GGT6,1,2,r1764,"L-Phenylalanine","L-Glutamine","L-Glutamate",4,PHEt4>PHETA1
+2.3.2.2,GGT6,1,2,r1666,"L-Citrulline","L-Lysine","L-Glutamate",4,r1926>ASNS1
+2.3.2.2,GGT6,1,2,r1952,"L-Cysteine","L-Lysine","L-Glutamate",4,CYSt4>CYSTA
+2.3.2.2,GGT6,1,2,LYStn,"L-Lysine","L-Lysine","L-Glutamate",4,r1922>ASNS1
+2.3.2.2,GGT6,1,2,LYStip,"L-Lysine","L-Lysine","L-Glutamate",4,r1922>ASNS1
+2.3.2.2,GGT6,1,2,r1823,"L-Alanine","L-Proline","L-Glutamate",4,r1763>PHETA1
+2.3.2.2,GGT6,1,2,r1801,"L-Cysteine","L-Proline","L-Glutamate",4,CYSt4>CYSTA
+3.1.3.46,FBP26,1,2,FBA,"D-Fructose 1,6-Bisphosphate","Dihydroxyacetone Phosphate","Beta-D-Fructofuranose 2,6-Bisphosphate",4,FBP>PFK26
+2.7.1.1,HEX7,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","D-Fructose",4,SBTR>SBTD_D2
+2.7.1.1,HEX7,1,2,GLCter,"D-Glucose","D-Glucose","D-Fructose",4,SBTR>SBTD_D2
+2.7.1.105,PFK26,1,2,RE1342C,"D-Sorbitol","D-Glucose","D-Fructose 6-Phosphate",4,SBTD_D2>HEX7
+2.7.1.105,PFK26,1,2,GLCter,"D-Glucose","D-Glucose","D-Fructose 6-Phosphate",4,HEX1>PGI
+2.7.1.1,r0357,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","D-Fructose",4,SBTR>SBTD_D2
+2.7.1.1,r0357,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0354>NDPK9
+2.7.1.1,r0357,1,2,GLCter,"D-Glucose","D-Glucose","D-Fructose",4,SBTR>SBTD_D2
+2.7.1.1,r0357,1,2,GLCter,"D-Glucose","D-Glucose","Iinosine-5'-Triphosphate",4,r0354>NDPK9
+2.7.1.1,r0357,1,2,HEX4,"D-Mannose","D-Mannose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0360>NDPK9
+2.7.1.1,r0358,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","Deoxyadenosine Triphosphate",4,r0355>NDPK8
+2.7.1.1,r0358,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","D-Fructose",4,SBTR>SBTD_D2
+2.7.1.1,r0358,1,2,GLCter,"D-Glucose","D-Glucose","Deoxyadenosine Triphosphate",4,r0355>NDPK8
+2.7.1.1,r0358,1,2,GLCter,"D-Glucose","D-Glucose","D-Fructose",4,SBTR>SBTD_D2
+2.7.1.1,r0358,1,2,HEX4,"D-Mannose","D-Mannose 6-Phosphate","Deoxyadenosine Triphosphate",4,r0361>NDPK8
+2.7.1.1,r0360,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0354>NDPK9
+2.7.1.1,r0360,1,2,GLCter,"D-Glucose","D-Glucose","Iinosine-5'-Triphosphate",4,r0354>NDPK9
+2.7.1.1,r0360,1,2,HEX4,"D-Mannose","D-Mannose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0360>NDPK9
+2.7.1.1,r0361,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","Deoxyadenosine Triphosphate",4,r0355>NDPK8
+2.7.1.1,r0361,1,2,GLCter,"D-Glucose","D-Glucose","Deoxyadenosine Triphosphate",4,r0355>NDPK8
+2.7.1.1,r0361,1,2,HEX4,"D-Mannose","D-Mannose 6-Phosphate","Deoxyadenosine Triphosphate",4,r0361>NDPK8
+3.5.1.2,GLUNm,1,2,r1953,"L-Arginine","L-Cysteine","L-Glutamine",4,GLNyLATthc>GLNtm
+1.11.1.9,GTHP,1,2,r1953,"L-Arginine","L-Cysteine","Reduced Glutathione",4,r1913>GTHS
+1.11.1.9,GTHP,1,2,CYSGLTH,"Reduced Glutathione","L-Cysteine","Hydrogen Peroxide",4,GTHDH>ASCBOX
+1.11.1.9,GTHP,1,2,r1679,"L-Cysteine","L-Cysteine","Reduced Glutathione",4,GLUCYS>GTHS
+1.11.1.9,GTHP,1,2,r1493,"Reduced Glutathione","Reduced Glutathione","Hydrogen Peroxide",4,GTHDH>ASCBOX
+1.11.1.9,GTHP,1,2,GTHRDt,"Reduced Glutathione","Reduced Glutathione","Hydrogen Peroxide",4,GTHDH>ASCBOX
+1.11.1.9,GTHPe,1,2,r0568,"Gamma-L-Glutamyl-L-Cysteine","L-Cysteine","Reduced Glutathione",4,GTHS>r1493
+1.11.1.9,GTHPm,1,2,r0568,"Gamma-L-Glutamyl-L-Cysteine","L-Cysteine","Reduced Glutathione",4,GTHS>GTHRDt
+2.3.2.2,GTMLTe,1,2,CYSGLTH,"Reduced Glutathione","L-Cysteine","L-Alanine",4,GTMLTe>GGLUCT
+2.3.2.2,GTMLTe,1,2,r1953,"L-Arginine","L-Cysteine","Reduced Glutathione",4,r1913>GTHS
+2.3.2.2,GTMLTe,1,2,r1679,"L-Cysteine","L-Cysteine","L-Alanine",4,r1739>METTRANSc
+2.3.2.2,GTMLTe,1,2,r1679,"L-Cysteine","L-Cysteine","Reduced Glutathione",4,GLUCYS>GTHS
+2.3.2.2,GTMLTe,1,2,GLNS,"L-Glutamate","L-Glutamine","L-Alanine",4,UNK3r>METTRANSc
+2.3.2.2,GTMLTe,1,2,GLNyLATthc,"L-Arginine","L-Glutamine","Reduced Glutathione",4,r1913>GTHS
+2.3.2.2,GTMLTe,1,2,r1673,"Glycine","L-Glutamine","L-Alanine",4,r1672>ALAt4
+2.3.2.2,GTMLTe,1,2,r1673,"Glycine","L-Glutamine","Reduced Glutathione",4,GLYt4>GTHS
+2.3.2.2,GTMLTe,1,2,GLNtm,"L-Glutamine","L-Glutamine","Reduced Glutathione",4,r1673>GTHS
+2.3.2.2,GTMLTe,1,2,r1666,"L-Citrulline","L-Lysine","Reduced Glutathione",4,r1916>GTHS
+2.3.2.2,GTMLTe,1,2,r1922,"L-Glutamine","L-Lysine","L-Alanine",4,GLNt4>r0156
+2.3.2.2,GTMLTe,1,2,r1912,"Glycine","L-Lysine","Reduced Glutathione",4,GLYt4>GTHS
+2.3.2.2,GTMLTe,1,2,LYStn,"L-Lysine","L-Lysine","Reduced Glutathione",4,r1912>GTHS
+2.3.2.2,GTMLTe,1,2,LYStip,"L-Lysine","L-Lysine","Reduced Glutathione",4,r1912>GTHS
+2.3.2.2,GTMLTe,1,2,r1832,"L-Asparagine","L-Proline","L-Alanine",4,r1742>METTRANSc
+2.3.2.2,GTMLTe,1,2,r1823,"L-Alanine","L-Proline","Reduced Glutathione",4,r1672>GTHS
+2.3.2.2,GTMLTe,1,2,r1711,"L-Glutamine","L-Proline","L-Alanine",4,GLNt4>r0156
+2.3.2.2,GTMLTe,1,2,r1681,"Glycine","L-Proline","Reduced Glutathione",4,GLYt4>GTHS
+2.3.2.2,GTMLTe,1,2,PROtm,"L-Proline","L-Proline","Reduced Glutathione",4,r1681>GTHS
+1.8.1.7,r0021,1,2,r1953,"L-Arginine","L-Cysteine","Reduced Glutathione",4,r1913>GTHS
+1.8.1.7,r0021,1,2,r1679,"L-Cysteine","L-Cysteine","Reduced Glutathione",4,GLUCYS>GTHS
+1.8.1.7,r0022,1,2,r0568,"Gamma-L-Glutamyl-L-Cysteine","L-Cysteine","Reduced Glutathione",4,GTHS>GTHRDt
+2.7.1.107,DAGK_hs,1,2,SPHMYLN_HsATPte,"Sphingomyelin ","Sphingomyelin ","Diglyceride",4,HMR_0795>SMS
+2.7.1.107,DAGK_hs,1,2,SPHMYLNtg,"Sphingomyelin ","Sphingomyelin ","Diglyceride",4,HMR_0795>SMS
+2.7.1.107,DAGK_hs,1,2,SPHMYLNtl,"Sphingomyelin ","Sphingomyelin ","Diglyceride",4,HMR_0795>SMS
+2.7.1.107,DAGK_hs,1,2,HMR_0771,"Sphingomyelin ","Sphingomyelin ","Diglyceride",4,HMR_0795>SMS
+2.7.1.82,ETHAK,1,2,r1953,"L-Arginine","L-Cysteine","Ethanolamine",4,r1928>PSSA2_hs
+3.1.1.4,PAILAR_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","1-Phosphatidyl-1D-Myo-Inositol",4,PI45P4P>HMR_6583
+3.1.1.4,PAILPALM_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","1-Phosphatidyl-1D-Myo-Inositol",4,PI45P4P>HMR_6583
+3.1.1.4,PCHOL2LINL_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOL2LINL_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOL2OLE_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOL2OLE_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOL2PALM_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOL2PALM_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOL2STE_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOL2STE_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLAR_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLAR_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLDEIC_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLDEIC_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLDET_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLDET_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLDOC_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLDOC_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLHEP_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLHEP_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLLINL_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLLINL_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLMYR_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLMYR_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN15_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN15_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN183_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN183_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN1836_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN1836_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN19_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN19_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN201_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN201_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN203_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN203_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN204_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN204_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN205_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN205_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN224_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN224_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN225_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN225_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN2254_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN2254_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN226_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN226_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN24_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN24_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN261_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN261_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN28_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN28_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLN281_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLN281_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLOLE_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLOLE_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLPALM_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLPALM_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLPALME_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLPALME_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PCHOLSTE_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PCHOLSTE_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+3.1.1.4,PE203_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PE203_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PE203_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PE203_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PE203_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PE203_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PE224_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PE224_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PE224_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PE224_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PE224_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PE224_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PE226_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PE226_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PE226_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PE226_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PE226_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PE226_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PE2LINL_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PE2LINL_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PE2LINL_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PE2LINL_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PE2LINL_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PE2LINL_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEAR_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEAR_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEAR_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEAR_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEAR_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEAR_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH12_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEDH12_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEDH12_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH12_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH12_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH12_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH13_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEDH13_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEDH13_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH13_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH13_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH13_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH14_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEDH14_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEDH14_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH14_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH14_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH14_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH15_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEDH15_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEDH15_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH15_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH15_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH15_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH161_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEDH161_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEDH161_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH161_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH161_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH161_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH17_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEDH17_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEDH17_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH17_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH17_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH17_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH203_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEDH203_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEDH203_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH203_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEDH203_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEDH203_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PELINL_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PELINL_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PELINL_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PELINL_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PELINL_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PELINL_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEOLE_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEOLE_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEOLE_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEOLE_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEOLE_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEOLE_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEPALM_HSPLA2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI4PLC>CEPTE
+3.1.1.4,PEPALM_HSPLA2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylethanolamine",4,PI45PLC>CEPTE
+3.1.1.4,PEPALM_HSPLA2,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEPALM_HSPLA2,1,2,PSSA1_hs,"Phosphatidylcholine","Phosphatidylserine","Phosphatidylethanolamine",4,SMS>CEPTE
+3.1.1.4,PEPALM_HSPLA2,1,2,r1674,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PEPALM_HSPLA2,1,2,r1435,"L-Serine","L-Serine","Phosphatidylethanolamine",4,PSSA1_hs>PSDm_hsc
+3.1.1.4,PLA2_2,1,2,PI4P5K,"1-Phosphatidyl-1D-Myo-Inositol 4-Phosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI4PLC>CEPTC
+3.1.1.4,PLA2_2,1,2,PAIL45P_HStn,"Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylinositol 4,5-Bisphosphate","Phosphatidylcholine",4,PI45PLC>CEPTC
+2.1.2.1,GHMT2rm,1,2,r1669,"L-Citrulline","L-Arginine","L-Serine",4,r1931>r1435
+2.1.2.1,GHMT2rm,1,2,ALAyLATthc,"L-Arginine","L-Arginine","L-Serine",4,r1928>r1435
+4.2.3.1,THRS,1,2,METAT,"L-Methionine","S-Adenosyl-L-Methionine","O-Phosphonato-L-Homoserine",4,r1886>HMR_9718
+2.7.1.1,r0354,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0354>NDPK9
+2.7.1.1,r0354,1,2,GALC,"D-Galactosyl-N-Acylsphingosine","D-Galactose","D-Glucose",4,HMR_0793>GLCtly
+2.7.1.1,r0354,1,2,GLCter,"D-Glucose","D-Glucose","Iinosine-5'-Triphosphate",4,r0354>NDPK9
+2.7.1.1,r0354,1,2,HEX4,"D-Mannose","D-Mannose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0360>NDPK9
+2.7.1.1,r0355,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","Deoxyadenosine Triphosphate",4,r0355>NDPK8
+2.7.1.1,r0355,1,2,GALC,"D-Galactosyl-N-Acylsphingosine","D-Galactose","D-Glucose",4,HMR_0793>GLCtly
+2.7.1.1,r0355,1,2,GLCter,"D-Glucose","D-Glucose","Deoxyadenosine Triphosphate",4,r0355>NDPK8
+2.7.1.1,r0355,1,2,HEX4,"D-Mannose","D-Mannose 6-Phosphate","Deoxyadenosine Triphosphate",4,r0361>NDPK8
+2.4.1.47,RE2677C,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","N-Acylsphingosine",4,SMS>HMR_0795
+2.6.1.1,3SPYRSP,1,2,r2391,"Cis-Aconitate","(S)-Malate","3-Sulfinopyruvate",4,r2389>3SALATAi
+2.6.1.1,LCYSTAT,1,2,r2379,"Cis-Aconitate","(S)-Malate","2-Oxoglutarate",4,r2377>AKGMALtm
+3.1.1.3,METDECARc,1,2,PSSA2_hs,"L-Serine","Ethanolamine","4-Methyl-Thio-Oxo-Butyrate",4,r1735>METTRANSc
+2.1.1.13,METS,1,2,AMETt,"S-Adenosyl-L-Methionine","S-Adenosyl-L-Methionine","L-Homocysteine",4,RE1630C>AHC
+2.1.1.13,METS,1,2,AMETr,"S-Adenosyl-L-Methionine","S-Adenosyl-L-Methionine","L-Homocysteine",4,RE1630C>AHC
+1.11.1.7,PRDX,1,2,CYSGLTH,"Reduced Glutathione","L-Cysteine","Hydrogen Peroxide",4,GTHDH>ASCBOX
+1.1.1.42,r0083,1,2,r2389,"2-Oxoglutarate","Cis-Aconitate","Oxalosuccinate",4,r2385>r0423
+1.1.1.42,r0083,1,2,HMR_4957,"Citrate","Citrate","Oxalosuccinate",4,ACONTm>r0423
+1.1.1.42,r0083,1,2,r2381,"2-Oxoglutarate","Citrate","Oxalosuccinate",4,r2385>r0423
+1.1.1.42,r0083,1,2,ASPTAm,"2-Oxoglutarate","L-Glutamate","Oxalosuccinate",4,r2385>r0423
+1.1.1.42,r0423,1,2,r2377,"2-Oxoglutarate","Cis-Aconitate","Isocitric Acid",4,r2373>r2385
+1.1.1.42,r0423,1,2,HC00342te,"Cis-Aconitate","Cis-Aconitate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,r0423,1,2,r2371,"Cis-Aconitate","Cis-Aconitate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,r0423,1,2,r2371,"Cis-Aconitate","Citrate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,r0423,1,2,ASPTA,"2-Oxoglutarate","L-Glutamate","Isocitric Acid",4,r2373>r2385
+1.1.1.42,r0424,1,2,r2377,"2-Oxoglutarate","Cis-Aconitate","Isocitric Acid",4,r1147>HMR_6986
+1.1.1.42,r0424,1,2,HC00342te,"Cis-Aconitate","Cis-Aconitate","Isocitric Acid",4,r2372>HMR_6986
+1.1.1.42,r0424,1,2,r2371,"Cis-Aconitate","Cis-Aconitate","Isocitric Acid",4,r2372>HMR_6986
+1.1.1.42,r0424,1,2,r2371,"Cis-Aconitate","Citrate","Isocitric Acid",4,r2372>HMR_6986
+1.1.1.42,r0424,1,2,CITtam,"Citrate","Citrate","Isocitric Acid",4,ACONT>HMR_6986
+1.1.1.42,r0424,1,2,ASPTA,"2-Oxoglutarate","L-Glutamate","Isocitric Acid",4,r1147>HMR_6986
+1.1.1.42,r0425,1,2,r2377,"2-Oxoglutarate","Cis-Aconitate","Isocitric Acid",4,r2373>r2385
+1.1.1.42,r0425,1,2,HC00342te,"Cis-Aconitate","Cis-Aconitate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,r0425,1,2,r2371,"Cis-Aconitate","Cis-Aconitate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,r0425,1,2,r2371,"Cis-Aconitate","Citrate","Isocitric Acid",4,r2372>r2385
+1.1.1.42,r0425,1,2,ASPTA,"2-Oxoglutarate","L-Glutamate","Isocitric Acid",4,r2373>r2385
+2.7.1.11,r0611,1,2,HEX7,"D-Fructose","D-Fructose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0357>NDPK9
+2.7.1.11,r0611,1,2,HEX1,"D-Glucose","D-Glucose 6-Phosphate","Iinosine-5'-Triphosphate",4,r0354>NDPK9
+2.1.1.6,RE2127C,1,2,r1953,"L-Arginine","L-Cysteine","S-Adenosyl-L-Methionine",4,METyLATthc>METAT
+2.1.1.6,RE2127C,1,2,r1679,"L-Cysteine","L-Cysteine","S-Adenosyl-L-Methionine",4,r1739>METAT
+3.1.3.5,NTD9,1,2,ASPGLUm,"L-Glutamate","L-Aspartate","Guanosine-5'-Monophosphate",4,GLNS>GMPS2
+3.1.3.5,NTD9,1,2,r1913,"L-Arginine","Glycine","Guanosine-5'-Monophosphate",4,GLNyLATthc>GMPS2
+3.1.3.5,NTD9,1,2,r1702,"L-Glutamine","Glycine","Guanosine-5'-Monophosphate",4,GLNt4>GMPS2
+3.1.3.5,NTD9,1,2,GLYtm,"Glycine","Glycine","Guanosine-5'-Monophosphate",4,r1702>GMPS2
+3.1.3.5,NTD9,1,2,GLYtp,"Glycine","Glycine","Guanosine-5'-Monophosphate",4,r1702>GMPS2
+3.1.3.5,NTD9,1,2,HISyLATtc,"L-Arginine","L-Histidine","Guanosine-5'-Monophosphate",4,GLNyLATthc>GMPS2
+3.1.3.5,NTD9,1,2,r1925,"L-Glutamine","L-Histidine","Guanosine-5'-Monophosphate",4,GLNt4>GMPS2
+1.1.1.44,GND,1,2,PGI,"D-Glucose 6-Phosphate","D-Fructose 6-Phosphate","6-Phospho-D-Gluconate",4,G6PDH2c>PGL
+1.1.1.44,GNDc,1,2,PGI,"D-Glucose 6-Phosphate","D-Fructose 6-Phosphate","6-Phospho-D-Gluconate",4,G6PDH2c>PGL
+1.1.1.44,GNDer,1,2,GLCNte,"D-Gluconate","D-Gluconate","6-Phospho-D-Gluconate",4,RE0124C>HMR_3953
+4.1.1.4,ADCim,1,2,r2115,"(R)-3-Hydroxybutyrate","Acetate","Acetoacetate",4,BHBtm>BDHm
+4.1.1.4,ADCim,1,2,r2131,"(R)-3-Hydroxybutyrate","Butyrate","Acetoacetate",4,BHBtm>BDHm
+4.1.1.4,ADCim,1,2,r2125,"Acetoacetate","Butyrate","Acetoacetate",4,ACACt2>ACACt2m
+2.1.2.2,GARFT,1,2,HISyLATtc,"L-Arginine","L-Histidine","N1-(5-Phospho-D-Ribosyl)Glycinamide",4,r1913>PRAGSr
+2.1.2.2,GARFT,1,2,r1915,"Glycine","L-Histidine","N1-(5-Phospho-D-Ribosyl)Glycinamide",4,GLYt4>PRAGSr
+2.1.2.2,GARFT,1,2,r1748,"L-Alanine","L-Tryptophan","N1-(5-Phospho-D-Ribosyl)Glycinamide",4,r1672>PRAGSr
+2.1.2.2,GARFT,1,2,r1676,"Glycine","L-Tryptophan","N1-(5-Phospho-D-Ribosyl)Glycinamide",4,GLYt4>PRAGSr
+2.1.3.2,ASPCTr,1,2,r0156,"L-Glutamine","L-Alanine","L-Aspartate",4,ASNS1>ASPGLUm
+2.1.3.2,ASPCTr,1,2,ALAyLATthc,"L-Arginine","L-Alanine","Carbamoyl Phosphate",4,GLNyLATthc>CBPS
+2.1.3.2,ASPCTr,1,2,ASPGLUm,"L-Glutamate","L-Aspartate","Carbamoyl Phosphate",4,GLNS>CBPS
+2.1.3.2,ASPCTr,1,2,HMR_4776,"2-Oxoglutarate","Succinate","L-Aspartate",4,ASPTA>ASPGLUm
+2.1.3.2,ASPCTr,1,2,HMR_4776,"L-Proline","Succinate","Carbamoyl Phosphate",4,r1711>CBPS
+4.4.1.5,LGTHL,1,2,ALCD22_D,"(R)-Lactaldehyde","Methylglyoxal","Reduced Glutathione",4,LALDO>GLYOX
+4.4.1.5,LGTHL,1,2,MTHGXLt,"Methylglyoxal","Methylglyoxal","Reduced Glutathione",4,LGTHL>GLYOX
+1.1.1.40,ME1m,1,2,r2371,"Cis-Aconitate","Citrate","(S)-Malate",4,r2391>AKGMALtm
+1.1.1.40,ME1m,1,2,r2384,"Oxalate","Citrate","(S)-Malate",4,r2388>r0913
+1.1.1.40,ME1m,1,2,ASPTA,"2-Oxoglutarate","L-Glutamate","(S)-Malate",4,r2373>AKGMALtm
+1.1.1.40,ME1m,1,2,r2390,"Cis-Aconitate","Succinate","(S)-Malate",4,r2391>AKGMALtm
+1.1.1.40,ME2m,1,2,r2371,"Cis-Aconitate","Citrate","(S)-Malate",4,r2391>AKGMALtm
+1.1.1.40,ME2m,1,2,r2384,"Oxalate","Citrate","(S)-Malate",4,r2388>r0913
+1.1.1.40,ME2m,1,2,ASPTA,"2-Oxoglutarate","L-Glutamate","(S)-Malate",4,r2373>AKGMALtm
+1.1.1.40,ME2m,1,2,r2390,"Cis-Aconitate","Succinate","(S)-Malate",4,r2391>AKGMALtm
+3.1.3.4,r0787,1,2,SPHS1Pt2e,"Sphingosine 1-Phosphate","Sphingosine 1-Phosphate","(2S,3R)-2-Azaniumyl-3-Hydroxyoctadecyl Phosphate",4,r0786>r0537
+3.1.3.4,r0787,1,2,SPHS1Ptr,"Sphingosine 1-Phosphate","Sphingosine 1-Phosphate","(2S,3R)-2-Azaniumyl-3-Hydroxyoctadecyl Phosphate",4,r0786>r0537
+2.4.1.11,GLGNS1,1,2,PGMT,"D-Glucose 1-Phosphate","D-Glucose 6-Phosphate","Primed Glycogenin (Glycogenin-8[1,4-Glc])",4,GALU>GGNG
+2.4.1.1,GLPASE1,1,2,UGLT,"Uridine-5'-Diphosphate-Glucose","D-Glucose 1-Phosphate","Glycogen, Structure 2 (Glycogenin-1,6-{7[1,4-Glc], 4[1,4-Glc]})",4,GLGNS1>GLBRAN
+3.1.1.4,34HPLte,1,2,r1723,"L-Tyrosine","L-Serine","3-(4-Hydroxyphenyl)Lactate",4,TYRTA>HMR_6782
+3.1.1.4,3MHISt1,1,2,PSSA1_hs,"L-Serine","Phosphatidylserine","3-Methylhistidine",4,r1810>3MHISt2
+3.1.1.4,3MHISt1,1,2,r1928,"L-Arginine","L-Serine","3-Methylhistidine",4,HISyLATtc>3MHISc
+3.1.1.4,3MHISt1,1,2,r1810,"L-Leucine","L-Serine","3-Methylhistidine",4,LEUt4>3MHISt2
+3.1.1.4,3MHISt1,1,2,r1435,"L-Serine","L-Serine","3-Methylhistidine",4,r1810>3MHISt2
+3.1.1.4,3MHISt2,1,2,r1930,"L-Histidine","L-Serine","3-Methylhistidine",4,3MHISc>3MHISt1
+3.1.1.4,3MHISt2,1,2,r1717,"L-Serine","L-Serine","L-Leucine",4,r1725>LEUt4
+3.1.1.4,3MHISt2,1,2,r1674,"Glycine","L-Serine","L-Leucine",4,r1680>LEUt4
+3.1.1.4,3MHISt3,1,2,r1930,"L-Histidine","L-Serine","3-Methylhistidine",4,3MHISc>3MHISt1
+3.1.1.4,3MHISt3,1,2,r1717,"L-Serine","L-Serine","L-Phenylalanine",4,r1722>PHEt4
+3.1.1.4,3MHISt3,1,2,r1674,"Glycine","L-Serine","L-Phenylalanine",4,r1677>PHEt4
+1.1.1.30,BHBt,1,2,r2090,"2-Hydroxybutyrate","(S)-Lactate","(R)-3-Hydroxybutyrate",4,r2133>r2100
+1.1.1.30,BHBt,1,2,L_LACtm,"(S)-Lactate","(S)-Lactate","(R)-3-Hydroxybutyrate",4,r2097>r2129
+1.1.1.30,BHBt,1,2,HMR_4776,"2-Oxoglutarate","Succinate","(R)-3-Hydroxybutyrate",4,r2093>r2108
+2.5.1.6,SERt4,1,2,METyLATthc,"L-Arginine","L-Methionine","L-Serine",4,r1928>r1674
+2.5.1.6,SERt4,1,2,r1690,"L-Alanine","L-Methionine","L-Serine",4,r1687>r1674
+3.1.3.2,3SALAASPm,1,2,r2373,"2-Oxoglutarate","Citrate","L-Aspartate",4,ASPTA>ASPGLUm
+3.1.3.2,3SALAASPm,1,2,r2093,"2-Oxoglutarate","Pyruvate","L-Aspartate",4,ASPTA>ASPGLUm
+3.1.3.2,3SALAASPm,1,2,HMR_4776,"2-Oxoglutarate","Succinate","L-Aspartate",4,ASPTA>ASPGLUm
+2.1.1.4,ACt2m,1,2,ASPTA,"2-Oxoglutarate","Oxaloacetate","Acetate",4,r2373>CITL
+2.1.1.4,ACt2m,1,2,r1109,"Citrate","Oxaloacetate","Acetate",4,HMR_4957>CITL
+1.4.3.5,PYRt2m,1,2,CYSGLTH,"Reduced Glutathione","L-Cysteine","Pyruvate",4,r2520>r2093
+3.1.3.4,PPAP,1,2,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidate",4,SMS>DAGK_hs
+2.6.1.7,3HKYNAKGAT,1,2,r0568,"Gamma-L-Glutamyl-L-Cysteine","L-Cysteine","2-Oxoglutarate",4,GTHS>r2520
+2.6.1.7,3HKYNAKGAT,1,2,r1679,"L-Cysteine","L-Cysteine","2-Oxoglutarate",4,CYSTA>PSERT
+2.6.1.7,3HKYNAKGAT,1,2,r1754,"L-Cysteine","L-Tryptophan","2-Oxoglutarate",4,CYSTA>PSERT
+2.6.1.7,KYNAKGAT,1,2,r0568,"Gamma-L-Glutamyl-L-Cysteine","L-Cysteine","2-Oxoglutarate",4,GTHS>r2520
+2.6.1.7,KYNAKGAT,1,2,r1679,"L-Cysteine","L-Cysteine","2-Oxoglutarate",4,CYSTA>PSERT
+2.6.1.7,KYNAKGAT,1,2,r1754,"L-Cysteine","L-Tryptophan","2-Oxoglutarate",4,CYSTA>PSERT
+2.7.1.11,r0647,1,2,r2371,"Cis-Aconitate","Citrate","Xanthurenic Acid",4,r2389>RE2349C
+2.7.1.11,r0647,1,2,r2381,"2-Oxoglutarate","Citrate","Xanthurenic Acid",4,AKGMALtm>RE2349C
+2.6.1.7,RE1233C,1,2,r0568,"Gamma-L-Glutamyl-L-Cysteine","L-Cysteine","2-Oxoglutarate",4,GTHS>r2520
+2.6.1.7,RE1233C,1,2,r1679,"L-Cysteine","L-Cysteine","2-Oxoglutarate",4,CYSTA>PSERT
+2.6.1.7,RE1233C,1,2,r1754,"L-Cysteine","L-Tryptophan","2-Oxoglutarate",4,CYSTA>PSERT
+2.6.1.7,RE2349C,1,2,r0568,"Gamma-L-Glutamyl-L-Cysteine","L-Cysteine","2-Oxoglutarate",4,GTHS>r2520
+2.6.1.7,RE2349C,1,2,r1679,"L-Cysteine","L-Cysteine","2-Oxoglutarate",4,CYSTA>PSERT
+2.6.1.7,RE2349C,1,2,r1754,"L-Cysteine","L-Tryptophan","2-Oxoglutarate",4,CYSTA>PSERT
+2.3.1.1,ACTYRm,1,2,r1669,"L-Citrulline","L-Arginine","L-Tyrosine",4,r1951>r1078
+2.3.1.1,ACTYRm,1,2,ALAyLATthc,"L-Arginine","L-Arginine","L-Tyrosine",4,r1948>r1078
+2.1.1.6,DOPAMT,1,2,r1953,"L-Arginine","L-Cysteine","S-Adenosyl-L-Methionine",4,METyLATthc>METAT
+2.1.1.6,DOPAMT,1,2,r1679,"L-Cysteine","L-Cysteine","S-Adenosyl-L-Methionine",4,r1739>METAT
+2.1.1.6,RE1923C,1,2,r1953,"L-Arginine","L-Cysteine","S-Adenosyl-L-Methionine",4,METyLATthc>METAT
+2.1.1.6,RE1923C,1,2,r1679,"L-Cysteine","L-Cysteine","S-Adenosyl-L-Methionine",4,r1739>METAT
+2.1.1.6,RE2122C,1,2,r1953,"L-Arginine","L-Cysteine","S-Adenosyl-L-Methionine",4,METyLATthc>METAT
+2.1.1.6,RE2122C,1,2,r1679,"L-Cysteine","L-Cysteine","S-Adenosyl-L-Methionine",4,r1739>METAT
+2.7.1.68,RE2130C,1,2,r0944,"Spermidine","Spermidine","Formaldehyde",4,SPMDOX>PRDX
+2.7.1.68,RE2130C,1,2,SPRMS,"Spermidine","Spermine","Formaldehyde",4,SPMDOX>PRDX
+1.11.1.7,RE3095C,1,2,CYSGLTH,"Reduced Glutathione","L-Cysteine","Hydrogen Peroxide",4,GTHDH>ASCBOX
+4.2.1.3,ACONT,1,2,CYSGLTH,"Reduced Glutathione","L-Cysteine","Citrate",4,r2520>r2373
+2.4.1.18,GLBRAN,1,2,PGMT,"D-Glucose 1-Phosphate","D-Glucose 6-Phosphate","Glycogen, Structure 1 (Glycogenin-11[1,4-Glc])",4,GALU>GLGNS1
+3.1.1.4,3MOXTYRt,1,2,r1720,"L-Methionine","L-Serine","3-Methoxytyramine",4,METAT>DOPAMT
+3.1.1.4,AMETt,1,2,PSSA1_hs,"L-Serine","Phosphatidylserine","S-Adenosyl-L-Methionine",4,r1735>METAT
+3.1.1.4,AMETt,1,2,r1928,"L-Arginine","L-Serine","S-Adenosyl-L-Methionine",4,METyLATthc>METAT
+3.1.1.4,AMETt,1,2,r1735,"L-Methionine","L-Serine","S-Adenosyl-L-Methionine",4,METt4>METAT
+3.1.1.4,AMETt,1,2,r1435,"L-Serine","L-Serine","S-Adenosyl-L-Methionine",4,r1735>METAT
+1.8.1.4,ORNtiDF,1,2,r1953,"L-Arginine","L-Cysteine","Ornithine",4,ALAyLATthc>r1667
+5.3.99.4,PHEACGLNt,1,2,GTHS,"Glycine","Reduced Glutathione","(2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate",4,r1702>PHACCOAGLNAC
+2.7.8.8,PSt3,1,2,HMR_0469,"Phosphatidylethanolamine","Phosphatidylethanolamine","Phosphatidylserine",4,PSSA2_hs>PSHSABCtc
+2.7.8.8,PSt3,1,2,PE_HStm,"Phosphatidylethanolamine","Phosphatidylethanolamine","Phosphatidylserine",4,PSSA2_hs>PSHSABCtc
+2.7.8.8,PSt3,1,2,PE_HSter,"Phosphatidylethanolamine","Phosphatidylethanolamine","Phosphatidylserine",4,PSSA2_hs>PSHSABCtc
+1.8.1.9,r1493,1,2,r1953,"L-Arginine","L-Cysteine","Reduced Glutathione",4,r1913>GTHS
+1.8.1.9,r1493,1,2,r1679,"L-Cysteine","L-Cysteine","Reduced Glutathione",4,GLUCYS>GTHS
+3.1.2.2,SUCSALte,1,2,r2381,"2-Oxoglutarate","Citrate","Succinic Semialdehyde",4,ABTArm>SUCSALtm
+3.1.2.2,SUCSALte,1,2,AKGMALtm,"2-Oxoglutarate","(S)-Malate","Succinic Semialdehyde",4,ABTArm>SUCSALtm
+3.1.2.2,SUCSALte,1,2,HMR_4777,"2-Oxoglutarate","Succinate","Succinic Semialdehyde",4,ABTArm>SUCSALtm
+3.1.1.4,ACGLYtc,1,2,r1717,"Glycine","L-Serine","Acetyl-Glycine",4,GLYtm>GLYACm
+1.1.1.42,ILEt5m,1,2,r0641,"Leukotriene C4","L-Glutamate","L-Isoleucine",4,LTC4CP>r1897
+1.1.1.42,ILEt5m,1,2,ASPGLUm,"L-Glutamate","L-Glutamate","L-Isoleucine",4,GLNS>r1899
+1.1.1.42,ILEt5m,1,2,GLUtr,"L-Glutamate","L-Glutamate","L-Isoleucine",4,GLNS>r1899
+1.1.1.45,H2O2tn,1,2,CYSGLTH,"Reduced Glutathione","L-Cysteine","Hydrogen Peroxide",4,GTHDH>ASCBOX
+2.7.1.91,FAS180,1,3,CHSTEROLtrc,"Cholesterol","Cholesterol","Hexadecanoate (N-C16:0)",5,r1164>r1172>HDCAter
+2.7.1.91,FAS180,1,3,CHSTEROLt2,"Cholesterol","Cholesterol","Hexadecanoate (N-C16:0)",5,r1164>r1172>HDCAter
+2.7.1.91,FAS180,1,3,SPHS1Pt2e,"Sphingosine 1-Phosphate","Sphingosine 1-Phosphate","Hexadecanoate (N-C16:0)",5,SPHS1Ptr>SGPL12r>HDCAter
+2.7.1.91,RE2675C2,1,3,PSSA1_hs,"L-Serine","Phosphatidylserine","Dihydroceramide",5,SERPT>3DSPHR>DSAT
+1.1.1.21,PRFGS,1,3,MGSA2,"Glyceraldehyde 3-Phosphate","Methylglyoxal","L-Glutamine",5,TALA>GF6PTA>GLNS
+1.2.1.16,r0179,1,3,CYSGLTH,"Reduced Glutathione","L-Cysteine","Succinic Semialdehyde",5,r2520>r2373>ABTArm
+2.7.7.41,CDS,1,3,SPHMYLN_HsATPte,"Sphingomyelin ","Sphingomyelin ","Phosphatidate",5,HMR_0795>SMS>DAGK_hs
+2.7.7.41,CDS,1,3,SPHMYLNtg,"Sphingomyelin ","Sphingomyelin ","Phosphatidate",5,HMR_0795>SMS>DAGK_hs
+2.7.7.41,CDS,1,3,SPHMYLNtl,"Sphingomyelin ","Sphingomyelin ","Phosphatidate",5,HMR_0795>SMS>DAGK_hs
+2.7.7.41,CDS,1,3,HMR_0771,"Sphingomyelin ","Sphingomyelin ","Phosphatidate",5,HMR_0795>SMS>DAGK_hs
+2.7.7.41,CDSm,1,3,PCHOLHSTDe,"Phosphatidylcholine","Phosphatidylcholine","Phosphatidate",5,SMS>DAGK_hs>PA_HStm
+1.1.1.27,LDH_L,1,3,r0191,"D-Fructose 6-Phosphate","D-Fructose 1,6-Bisphosphate","Pyruvate",5,GF6PTA>PSERT>r2093
+1.1.1.27,LDH_L,1,3,FDPte,"D-Fructose 1,6-Bisphosphate","D-Fructose 1,6-Bisphosphate","Pyruvate",5,FBA>MGSA>r0055
+1.4.3.14,LYSOXp,1,3,r1673,"Glycine","L-Glutamine","L-Lysine",5,r1912>LYStiDF>LYStip
+1.4.3.14,LYSOXp,1,3,r1687,"L-Alanine","Glycine","L-Lysine",5,r1917>LYStiDF>LYStip
+2.6.1.1,3SALATAi,1,3,ETOHtx,"Ethanol","Ethanol","2-Oxoglutarate",5,ALCD2if>ALDD2x>r2101
+2.6.1.1,3SALATAi,1,3,r2391,"Cis-Aconitate","(S)-Malate","3-Sulfino-L-Alanine",5,r2389>ASPTA>HMR_3864
+1.1.1.40,METAT,1,3,r2381,"2-Oxoglutarate","Citrate","L-Methionine",5,AKGMALtm>ASPTA>UNK3r
+1.1.1.40,METAT,1,3,HMR_7748,"Beta-D-Glucose-6-Phosphate","D-Glucose 6-Phosphate","L-Methionine",5,HMR_7749>GF6PTA>UNK3r
+1.1.1.40,METAT,1,3,HMR_4777,"2-Oxoglutarate","Succinate","L-Methionine",5,AKGMALtm>ASPTA>UNK3r
+6.3.4.4,ADSS,1,3,FDPte,"D-Fructose 1,6-Bisphosphate","D-Fructose 1,6-Bisphosphate","L-Aspartate",5,FBP>GF6PTA>ASPGLUm
+2.7.1.40,RE2954C,1,3,ASPGLUm,"L-Aspartate","L-Aspartate","Phosphoenolpyruvate",5,ASPTAm>PEPCKm>CITtbm
+2.7.1.40,RE2954C,1,3,CYSGLTH,"Reduced Glutathione","L-Cysteine","Phosphoenolpyruvate",5,r2520>r2373>CITtbm
+2.7.1.40,RE2954C,1,3,TRIOK,"D-Glyceraldehyde","Glyceraldehyde 3-Phosphate","Phosphoenolpyruvate",5,r0392>GLYCK2>ENO
+2.7.1.40,RE2954C,1,3,GLNS,"L-Glutamate","L-Glutamine","Phosphoenolpyruvate",5,PSERT>r2373>CITtbm
+2.7.1.40,RE2954C,1,3,METS,"5-Methyltetrahydrofolate","L-Methionine","Deoxythymidine-5'-Diphosphate",5,DHPR2>TMDS>DTMPK
+2.7.1.40,RE2954C,1,3,UNK3r,"L-Glutamate","L-Methionine","Phosphoenolpyruvate",5,PSERT>r2373>CITtbm
+4.1.1.15,ASPGLUm,1,3,r2093,"2-Oxoglutarate","2-Oxoglutarate","L-Aspartate",5,ASPTA>ASPGLUm>3SALAASPm
+4.1.1.15,ASPGLUm,1,3,r2373,"2-Oxoglutarate","2-Oxoglutarate","L-Aspartate",5,ASPTA>ASPGLUm>3SALAASPm
+4.1.1.15,ASPGLUm,1,3,AKGtp,"2-Oxoglutarate","2-Oxoglutarate","L-Aspartate",5,ASPTA>ASPGLUm>3SALAASPm
+1.8.1.4,OIVD1m,1,3,r1679,"L-Cysteine","L-Cysteine","4-Methyl-2-Oxopentanoate",5,r1815>LEUt5m>LEUTAm
+1.8.1.4,OIVD2m,1,3,r1679,"L-Cysteine","L-Cysteine","3-Methyl-2-Oxobutanoate",5,r1860>VALt5m>VALTAm
+1.8.1.4,OIVD3m,1,3,r1679,"L-Cysteine","L-Cysteine","3-Methyl-2-Oxopentanoate",5,r1905>ILEt5m>ILETAm
+1.2.1.3,r0643,1,3,GTHDH,"Reduced Glutathione","L-Ascorbate","2-Methyl-3-Oxopropanoate",5,r2520>r2373>r0483
+2.6.1.1,ASPTA,1,3,ETOHtx,"Ethanol","Ethanol","2-Oxoglutarate",5,ALCD2if>ALDD2x>r2101
+2.6.1.1,ASPTA,1,3,r2391,"Cis-Aconitate","(S)-Malate","L-Aspartate",5,r2389>ASPTA>ASPGLUm
+2.7.1.1,r0363,1,3,RE1342C,"D-Sorbitol","D-Glucose","Iinosine-5'-Triphosphate",5,SBTD_D2>r0357>NDPK9
+2.7.1.1,r0364,1,3,RE1342C,"D-Sorbitol","D-Glucose","Deoxyadenosine Triphosphate",5,SBTD_D2>r0358>NDPK8
+2.7.1.1,r0364,1,3,GLYC3Ptm,"Glycerol 3-Phosphate","Glycerol 3-Phosphate","Deoxyadenosine Triphosphate",5,PGPPT>CYTK8>NDPK8
+4.1.1.50,ADMDC,1,3,HMR_4422,"Ornithine","Putrescine","S-Adenosyl-L-Methionine",5,ORNtiDF>r1934>METAT
+4.1.1.50,ADMDC,1,3,r2093,"2-Oxoglutarate","Pyruvate","S-Adenosyl-L-Methionine",5,ASPTA>UNK3r>METAT
+4.1.1.50,ADMDC,1,3,PYRt2m,"Pyruvate","Pyruvate","S-Adenosyl-L-Methionine",5,METTRANSc>r1733>METAT
+4.1.1.50,ADMDC,1,3,PYRt2p,"Pyruvate","Pyruvate","S-Adenosyl-L-Methionine",5,METTRANSc>r1733>METAT
+1.5.1.2,r0615,1,3,HMR_4422,"Ornithine","Putrescine","Trans-4-Hydroxy-L-Proline",5,ORNtiDF>r1964>HMR_4776
+1.5.1.2,r0616,1,3,ORNDC,"Ornithine","Putrescine","Trans-4-Hydroxy-L-Proline",5,r1964>PROtm>HMR_4777
+1.5.1.2,r0617,1,3,HMR_4422,"Ornithine","Putrescine","Trans-4-Hydroxy-L-Proline",5,ORNtiDF>r1964>HMR_4776
+1.5.1.2,r0618,1,3,ORNDC,"Ornithine","Putrescine","Trans-4-Hydroxy-L-Proline",5,r1964>PROtm>HMR_4777
+1.1.1.30,BDHm,1,3,r2112,"Acetate","(S)-Lactate","(R)-3-Hydroxybutyrate",5,r2115>BHBt>BHBtm
+4.2.1.2,FUM,1,3,r2373,"2-Oxoglutarate","Citrate","Fumarate",5,ASPTA>ASPGLUm>HMR_3831
+4.2.1.2,FUM,1,3,r2093,"2-Oxoglutarate","Pyruvate","Fumarate",5,ASPTA>ASPGLUm>HMR_3831
+4.2.1.2,FUMm,1,3,r2080,"Acetoacetate","Acetate","Fumarate",5,ACACt2m>OCOAT1m>r0509
+4.2.1.2,FUMm,1,3,r1109,"Citrate","Acetate","Fumarate",5,r2373>HMR_4777>r0509
+4.2.1.2,FUMm,1,3,r2371,"Cis-Aconitate","Citrate","Fumarate",5,r2390>r2375>r0509
+4.2.1.2,FUMm,1,3,r2079,"Acetoacetate","Pyruvate","Fumarate",5,ACACt2m>OCOAT1m>r0509
+4.2.1.2,FUMm,1,3,ME1m,"(S)-Malate","Pyruvate","Fumarate",5,r2387>r2375>r0509
+1.1.1.42,ICDHyrm,1,3,GLUtr,"L-Glutamate","L-Glutamate","Isocitric Acid",5,ASPGLUm>GLUDxm>r2385
+1.1.1.37,MDH,1,3,CYSGLTH,"Reduced Glutathione","L-Cysteine","(S)-Malate",5,r2520>r2373>CITtam
+1.1.1.37,MDH,1,3,r0509,"Succinate","Fumarate","(S)-Malate",5,r0915>HMR_4957>CITtam
+1.1.1.37,MDHm,1,3,CYSGLTH,"Reduced Glutathione","L-Cysteine","(S)-Malate",5,r2520>r2373>AKGMALtm
+1.3.5.1,r0509,1,3,SUCCtp,"Succinate","Succinate","Ubiquinone-10",5,r2375>r0509>CYOR_u10mi
+2.3.2.2,GGT6,1,3,RE1342C,"D-Sorbitol","D-Glucose","L-Glutamate",5,SBTD_D2>HEX7>GF6PTA
+2.3.2.2,GGT6,1,3,GLCter,"D-Glucose","D-Glucose","L-Glutamate",5,HEX1>PGI>GF6PTA
+1.5.1.5,MTHFD,1,3,r1792,"Glycine","L-Cysteine","5,10-Methylenetetrahydrofolate",5,PRAGSr>GARFT>FldAct

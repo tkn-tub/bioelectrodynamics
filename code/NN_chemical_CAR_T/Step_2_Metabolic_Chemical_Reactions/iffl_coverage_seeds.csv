@@ -1,0 +1,821 @@
+rxn,EC,role,regulators,nConsumed
+FAEL183,2.3.1.86,AC,cysteine,5
+FAEL184,2.3.1.86,AC,cysteine,5
+FAEL204,2.3.1.86,AC,cysteine,5
+FAEL205,2.3.1.86,AC,cysteine,5
+ASNS1,6.3.5.4,AC,glycerol,4
+RE2235C,1.14.14.1,AC,methanol,4
+RE3013C,1.14.14.1,AC,methanol,4
+RE1826C,1.1.1.1,AC,ethanol,4
+r1253,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,4
+r1254,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,4
+FAS100COA,2.3.1.86,AC,cysteine,4
+FAS120COA,2.3.1.86,AC,cysteine,4
+FAS140COA,2.3.1.86,AC,cysteine,4
+FAS160COA,2.3.1.86,AC,cysteine,4
+FAS180,2.7.1.91,AC,ceramide 1 phosphate; cholesterol; phosphatidylserine; sphingosine 1 phosphate,4
+FAS180COA,2.3.1.86,AC,cysteine,4
+FAS80COA_L,2.3.1.86,AC,cysteine,4
+RE2675C2,2.7.1.91,AC,ceramide 1 phosphate; cholesterol; phosphatidylserine; sphingosine 1 phosphate,4
+3HPPPNOHc,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,4
+PRFGS,1.1.1.21,AC,methylglyoxal; peroxynitrite; pyridoxal 5 phosphate; sorbitol; sulfate,4
+RE1303C,1.11.1.7,AC,cysteine; glucose,4
+RE3286C,1.14.14.1,AC,methanol,3
+RE3287C,1.14.14.1,AC,methanol,3
+RE3288C,1.14.14.1,AC,methanol,3
+RE3289C,1.14.14.1,AC,methanol,3
+P5CR,1.5.1.2,AC,putrescine; spermidine; spermine,3
+BAMPPALDOX,1.2.1.36,AC,cholesterol,3
+SPMDOX,1.5.99.6,AC,spermidine,3
+r0688,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+RE3346C,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+r0463,2.3.3.10,AC,chloride; sulfate,3
+ACITL,2.3.3.8,AC,acetate; fructose 6 phosphate; glucose 1 phosphate; glucose 6 phosphate; phosphoenolpyruvate; ribulose 5 phosphate; xylulose 5 phosphate,3
+r0590,2.7.7.3,AC,cysteine; deoxycholate,3
+RE3012C,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+RE3012R,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+ADRNCPT2,2.3.1.21,AC,carnitine; palmitoylcarnitine,3
+ARACHCPT2,1.1.1.21,AC,methylglyoxal; peroxynitrite; pyridoxal 5 phosphate; sorbitol; sulfate,3
+DCSPTN1CPT2,2.7.1.74,AC,deoxyguanosine,3
+ELAIDCPT2,2.6.1.1,AC,ethanol; malate,3
+FACOAL140i,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL150,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL160i,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL170,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL180i,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL1812,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL1813,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL181i,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL1821,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL1822,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL1831,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL1832,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL184,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL200,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL203,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL204,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL2042,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL205,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL224,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL2251,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL2252,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL226,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL241,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL244_1,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL245_1,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL245_2,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL246_1,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+FACOAL260,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+r0311,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+r0431,2.3.1.21,AC,carnitine; palmitoylcarnitine,3
+r0432,2.3.1.21,AC,carnitine; palmitoylcarnitine,3
+r1251,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+r1252,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+r1255,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+r1257,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+r1259,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+r1260,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+r1262,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+r1487,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+RE2912M,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+RE3103C,1.13.11.31,AC,2 arachidonoylglycerol,3
+RE3104C,3.3.2.9,AC,ethanol,3
+RE3106C,3.3.2.9,AC,ethanol,3
+RE3110C,3.3.2.9,AC,ethanol,3
+RE3112C,1.13.11.34,AC,adenosine; phosphatidylcholine,3
+RE3121C,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+RE3132R,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+RE3146R,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+RE3151C,1.1.1.145,AC,testosterone,3
+RE3152C,1.1.1.145,AC,testosterone,3
+RE3160R,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+RE3166C,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+RE3171C,1.3.3.6,AC,propionate,3
+TETTET6CPT2,3.6.1.15,AC,2 oxoglutarate; choline; fructose 1 6 bisphosphate; glucose; taurine,3
+RE0581C,1.1.1.2,AC,adenosine,3
+FTHFLm,6.3.4.3,AC,spermine,3
+SBTR,1.1.1.21,AC,methylglyoxal; peroxynitrite; pyridoxal 5 phosphate; sorbitol; sulfate,3
+GALOR,1.1.1.21,AC,methylglyoxal; peroxynitrite; pyridoxal 5 phosphate; sorbitol; sulfate,3
+GALT,2.7.7.12,AC,cysteine; galactose,3
+GALU,2.7.7.9,AC,erythrose 4 phosphate; fructose 6 phosphate,3
+GLUDxm,1.4.1.3,AC,aspartate; leucine,3
+GLUDym,1.4.1.4,AC,ethanol; methanol,3
+GTHO,1.8.1.7,AC,cysteine; melatonin,3
+GTHOm,1.8.1.7,AC,cysteine; melatonin,3
+r0179,1.2.1.16,AC,cysteine,3
+CDS,2.7.7.41,AC,phosphatidylcholine; sphingomyelin,3
+CDSm,2.7.7.41,AC,phosphatidylcholine; sphingomyelin,3
+CHLPCTD,2.7.7.15,AC,phosphatidylcholine; phosphatidylglycerol; phosphatidylserine,3
+PETHCT,2.7.7.14,AC,phosphatidylglycerol,3
+ACS,6.2.1.1,AC,acetate,3
+ACSm,6.2.1.1,AC,acetate,3
+ALDD2x,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+ALDD2xm,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+ALDD2y,1.2.1.4,AC,ethanol,3
+GAPD,1.2.1.12,AC,acetone; ethanol; methanol,3
+LDH_L,1.1.1.27,AC,fructose 1 6 bisphosphate,3
+GCALDD,1.2.1.21,AC,pyridoxal; pyridoxal 5 phosphate; pyridoxine,3
+GCALDDm,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+HPYRR2x,1.1.1.27,AC,fructose 1 6 bisphosphate,3
+CPPPGO,1.3.3.3,AC,methionine; oxygen; phosphatidate; phosphatidylcholine; phosphatidylethanolamine; pyruvate; s adenosyl l methionine,3
+RE3411C,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,3
+LYSOXp,1.4.3.14,AC,adenine; glutamine; glycine; histidine,3
+3SALATAi,2.6.1.1,AC,ethanol; malate,3
+METAT,1.1.1.40,AC,aspartate; citrate; fumarate; glucose 6 phosphate; glutamate; methanol; succinate,3
+R_group_phosphotase_1,3.1.6.8,AC,phosphatidylcholine; psychosine; sphingomyelin,3
+r0097,6.2.1.1,AC,acetate,3
+r0319,2.7.7.12,AC,cysteine; galactose,3
+r0392,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+r0642,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+TRDR2,1.8.1.9,AC,cysteine,3
+TRDR3,1.8.1.9,AC,cysteine,3
+ADSS,6.3.4.4,AC,fructose 1 6 bisphosphate,3
+AMPDA,3.5.4.6,AC,adenine; adenosine; citrate; glucose; glycerol; hypoxanthine,3
+DADA,3.5.4.4,AC,adenine; inosine; n acetyl d glucosamine,3
+IMPD,1.1.1.205,AC,cysteine,3
+TRDR,1.8.1.9,AC,cysteine,3
+ARABR,1.1.1.21,AC,methylglyoxal; peroxynitrite; pyridoxal 5 phosphate; sorbitol; sulfate,3
+ADA,3.5.4.4,AC,adenine; inosine; n acetyl d glucosamine,3
+ADAe,3.5.4.4,AC,adenine; inosine; n acetyl d glucosamine,3
+r0276,1.7.1.7,AC,cysteine,3
+GLUPRT,2.4.2.14,AC,glutamine,3
+PRAGSr,6.4.1.3,AC,biotin,3
+DCMPDA,3.5.4.12,AC,deoxycytidine 5 triphosphate; glycerol,3
+RE2954C,2.7.1.40,AC,alanine; asparagine; aspartate; cysteine; dihydroxyacetone phosphate; erythrose 4 phosphate; fructose 1 6 bisphosphate; fructose 6 phosphate; glucose 1 phosphate; glucose 6 phosphate; glutamine; glyceraldehyde 3 phosphate; glycerol 3 phosphate; glycine; isoleucine; methionine; phosphoenolpyruvate; ribose 5 phosphate; ribulose 5 phosphate; serine,3
+ALR2,1.1.1.21,AC,methylglyoxal; peroxynitrite; pyridoxal 5 phosphate; sorbitol; sulfate,3
+ALR3,1.1.1.21,AC,methylglyoxal; peroxynitrite; pyridoxal 5 phosphate; sorbitol; sulfate,3
+LALDO,1.1.1.1,AC,ethanol,3
+LCADi,1.2.1.21,AC,pyridoxal; pyridoxal 5 phosphate; pyridoxine,3
+LCADi_D,1.2.1.21,AC,pyridoxal; pyridoxal 5 phosphate; pyridoxine,3
+LCADim,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+PPDOy,1.1.1.21,AC,methylglyoxal; peroxynitrite; pyridoxal 5 phosphate; sorbitol; sulfate,3
+UDPGD,1.1.1.22,AC,diphosphate; lactose,3
+3SALAOX,4.1.1.15,AC,2 oxoglutarate,3
+12HPETATP,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,3
+15HPETATP,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,3
+21HPRGNLONEt1,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,3
+5HPETATP,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,3
+7DHCHSTEROLt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,3
+CE7081tm,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,3
+MEPIVESSte,1.1.1.37,AC,citrate; cysteine; fumarate; malate,3
+r1162,4.1.3.6,AC,pantothenate,3
+r1514,1.3.3.6,AC,propionate,3
+r1515,1.3.3.6,AC,propionate,3
+r1516,1.3.3.6,AC,propionate,3
+r1517,1.3.3.6,AC,propionate,3
+r1518,1.3.3.6,AC,propionate,3
+r1519,1.3.3.6,AC,propionate,3
+r1529,2.3.1.86,AC,cysteine,3
+r1536,2.3.1.86,AC,cysteine,3
+CHSTEROLtg,2.8.2.2,AC,cysteine,3
+ASPGLUm,4.1.1.15,AC,2 oxoglutarate,3
+ALDD20x,1.1.1.1,AC,ethanol,3
+2H3MVc,1.1.1.27,AC,fructose 1 6 bisphosphate,3
+2HIVc,1.1.1.27,AC,fructose 1 6 bisphosphate,3
+MCCCrm,6.4.1.4,AC,biotin,3
+MMTSADm,3.2.1.113,AC,phosphatidylcholine; phosphatidylethanolamine,3
+OIVD1m,1.8.1.4,AC,cysteine,3
+OIVD2m,1.8.1.4,AC,cysteine,3
+OIVD3m,1.8.1.4,AC,cysteine,3
+r0643,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,3
+RADH2,1.2.3.1,AC,testosterone,3
+RE1901R,1.2.1.36,AC,cholesterol,3
+RE1903R,1.2.1.36,AC,cholesterol,3
+RE3050R,1.2.1.36,AC,cholesterol,3
+PYAM5POr,1.4.3.5,AC,2 aminobutanoate; alanine; cysteine; valine,3
+r0388,1.4.3.5,AC,2 aminobutanoate; alanine; cysteine; valine,3
+ASPTA,2.6.1.1,AC,ethanol; malate,2
+ASPTAm,2.6.1.1,AC,ethanol; malate,2
+G6PDA,3.5.99.6,AC,glucosamine 6 phosphate; glucose 6 phosphate; mannose 6 phosphate,2
+GF6PTA,2.6.1.16,AC,picolinic acid,2
+HEX10,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+r0363,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+r0364,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+RE1630C,2.1.1.6,AC,cysteine,2
+RE2386C,2.1.1.6,AC,cysteine,2
+RE3033C,1.13.11.34,AC,adenosine; phosphatidylcholine,2
+RE3038C,3.3.2.9,AC,ethanol,2
+RE3040C,3.3.2.9,AC,ethanol,2
+RE3044C,1.13.11.34,AC,adenosine; phosphatidylcholine,2
+RE3475C,1.13.11.34,AC,adenosine; phosphatidylcholine,2
+RE3525M,1.13.11.31,AC,2 arachidonoylglycerol,2
+RE3525R,1.13.11.31,AC,2 arachidonoylglycerol,2
+RE3526M,1.13.11.31,AC,2 arachidonoylglycerol,2
+ADMDC,4.1.1.50,AC,putrescine; pyruvate; spermidine; spermine,2
+MTAP,2.4.2.28,AC,putrescine; spermidine; spermine,2
+r0615,1.5.1.2,AC,putrescine; spermidine; spermine,2
+r0616,1.5.1.2,AC,putrescine; spermidine; spermine,2
+r0617,1.5.1.2,AC,putrescine; spermidine; spermine,2
+r0618,1.5.1.2,AC,putrescine; spermidine; spermine,2
+r0739,1.1.1.1,AC,ethanol,2
+RE2649M,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+BDHm,1.1.1.30,AC,3 hydroxybutyrate; glycerol; lactate; phosphatidylcholine; reduced glutathione; succinate,2
+MEVK1x,2.7.1.36,AC,cysteine; testosterone,2
+PMEVKx,2.7.4.2,AC,testosterone,2
+XOLEST182CEH,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+XOLEST183CEH,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+XOLEST205CEH,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+XOLEST226CEH,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+FUM,4.2.1.2,AC,acetate; citrate; pyruvate,2
+FUMm,4.2.1.2,AC,acetate; citrate; pyruvate,2
+ICDHxm,1.1.1.41,AC,citrate,2
+ICDHyrm,1.1.1.42,AC,cis aconitate; citrate; glutamate,2
+MDH,1.1.1.37,AC,citrate; cysteine; fumarate; malate,2
+MDHm,1.1.1.37,AC,citrate; cysteine; fumarate; malate,2
+r0509,1.3.5.1,AC,diphosphate; fumarate; malonate; menaquinone 9; succinate; succinyl coenzyme a,2
+LAPCOAl,3.1.3.2,AC,acetate; adenine; adenosine; ascorbate; citrate; guanine; guanosine; methanol; pyruvate; spermidine; spermine; succinate; taurocholic acid,2
+r0033,2.7.1.24,AC,cysteine,2
+r0578,2.7.1.33,AC,cholesterol; palmitoylcarnitine,2
+r0579,2.7.1.33,AC,cholesterol; palmitoylcarnitine,2
+ALOX5,1.13.11.34,AC,adenosine; phosphatidylcholine,2
+GGT6,2.3.2.2,AC,cysteine; glucose; glutamine; lysine; proline,2
+LTA4H,3.3.2.6,AC,leukotriene a4,2
+LTC4CP,2.3.2.2,AC,cysteine; glucose; glutamine; lysine; proline,2
+LTD4DP,2.3.2.2,AC,cysteine; glucose; glutamine; lysine; proline,2
+RE2799C,1.1.1.188,AC,chloride,2
+RE3011R,1.1.1.1,AC,ethanol,2
+RE3485C,1.13.11.34,AC,adenosine; phosphatidylcholine,2
+RE3488C,1.14.99.1,AC,arachidonate; cysteine; dopamine; kynurenine; melatonin; peroxynitrite; phenylalanine; reduced glutathione; tryptophan; tyrosine,2
+RE3491C,3.3.2.6,AC,leukotriene a4,2
+RE3493C,1.3.3.6,AC,propionate,2
+ACOAO7p,1.3.3.6,AC,propionate,2
+ADRNCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+ARACHCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C160CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C160CPT2,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C161CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C161CPT12,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C161CPT2,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C161CPT22,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C180CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C180CPT2,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C181CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C181CPT2,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C204CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C204CPT2,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+C226CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+CE4843HYDc,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+CLPNDCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+DCSPTN1CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+DLNLCGCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+EIC21114TRc,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+EICOSTETCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+ELAIDCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+HDCAc,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+HPDCACRNCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+HXCOAc,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+LNELDCCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+LNLCCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+LNLNCACPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+LNLNCGCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+LNLNCGCPT2,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+MCDm,4.1.1.9,AC,carnitine,2
+MCDp,4.1.1.9,AC,carnitine,2
+PTDCACRNCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+r0433,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+r0434,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+r0437,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+r0438,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+r0441,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+r0443,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+r0444,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+r0641,2.3.2.2,AC,cysteine; glucose; glutamine; lysine; proline,2
+r1447,1.3.3.6,AC,propionate,2
+r1448,1.3.3.6,AC,propionate,2
+r1449,1.3.3.6,AC,propionate,2
+r1450,1.3.3.6,AC,propionate,2
+r1451,1.3.3.6,AC,propionate,2
+RE2985M,1.3.3.6,AC,propionate,2
+RE2998M,1.3.3.6,AC,propionate,2
+RE3624M,1.3.3.6,AC,propionate,2
+RE3626M,1.3.3.6,AC,propionate,2
+RTOTAL3CRNCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+STRDNCCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+TETDECA511ACc,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+TETPENT3CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+TETPENT6CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+TETTET6CPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+TMNDNCCPT1,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+RE3245C,1.14.18.1,AC,ascorbate; dopa; ethanol; fructose; glucose; methanol; ribose,2
+MTHFD,1.5.1.5,AC,cysteine; formaldehyde,2
+FBP26,3.1.3.46,AC,benzoate; citrate; dihydroxyacetone phosphate; formate; glycerol 2 phosphate; phosphoenolpyruvate,2
+HEX7,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+PFK26,2.7.1.105,AC,glucose; pyruvate,2
+r0191,2.7.1.11,AC,citrate; fructose 1 6 bisphosphate; fructose 6 phosphate; glucose 6 phosphate; glycerol; phosphatidylserine; trehalose,2
+r0357,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+r0358,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+r0360,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+r0361,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+RE1342C,1.1.1.21,AC,methylglyoxal; peroxynitrite; pyridoxal 5 phosphate; sorbitol; sulfate,2
+SBTD_D2,1.1.1.14,AC,cysteine; sorbitol,2
+GALK,2.7.1.6,AC,cysteine,2
+LACZe,3.2.1.23,AC,cysteine; ethanol; fructose; glucose; maltose,2
+UGLT,2.7.7.12,AC,cysteine; galactose,2
+GLUNm,3.5.1.2,AC,citrate; cysteine; fructose 6 phosphate; glucose 6 phosphate; glutamine; glycerol; glyoxylate; lactate; malate; oxaloacetate; phosphoenolpyruvate; sulfate,2
+GTHP,1.11.1.9,AC,cysteine; reduced glutathione,2
+GTHPe,1.11.1.9,AC,cysteine; reduced glutathione,2
+GTHPm,1.11.1.9,AC,cysteine; reduced glutathione,2
+GTMLTe,2.3.2.2,AC,cysteine; glucose; glutamine; lysine; proline,2
+r0021,1.8.1.7,AC,cysteine; melatonin,2
+r0022,1.8.1.7,AC,cysteine; melatonin,2
+DAGK_hs,2.7.1.107,AC,cholesterol; deoxycholate; glucose; phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; sphingomyelin; sphingosine,2
+ETHAK,2.7.1.82,AC,cysteine,2
+PAFH,3.1.1.47,AC,deoxycholate,2
+PAILAR_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PAILPALM_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOL2LINL_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOL2OLE_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOL2PALM_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOL2STE_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLAR_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLDEIC_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLDET_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLDOC_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLHEP_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLLINL_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLMYR_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN15_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN183_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN1836_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN19_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN201_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN203_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN204_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN205_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN224_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN225_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN2254_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN226_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN24_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN261_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN28_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLN281_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLOLE_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLPALM_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLPALME_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PCHOLSTE_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PE203_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PE224_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PE226_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PE2LINL_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEAR_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEDH12_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEDH13_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEDH14_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEDH15_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEDH161_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEDH17_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEDH203_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PELINL_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEOLE_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEPALM_HSPLA2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PGPP_hsc,3.2.1.18,AC,galactose; lactose,2
+PI4P5K,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+PIK4,2.7.1.67,AC,spermidine; spermine,2
+PLA2_2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PSDm_hsc,3.2.1.18,AC,galactose; lactose,2
+PSSA1_hs,2.7.8.8,AC,phosphatidylethanolamine; phosphatidylglycerol,2
+PSSA2_hs,2.7.8.8,AC,phosphatidylethanolamine; phosphatidylglycerol,2
+GHMT2rm,2.1.2.1,AC,5 6 7 8 tetrahydrofolate; arginine; pyridoxal 5 phosphate; serine,2
+PGCD,1.1.1.95,AC,alanine; cysteine; homocysteine; homoserine; methionine; valine,2
+THRS,4.2.3.1,AC,s adenosyl l methionine,2
+ALCD2if,1.1.1.1,AC,ethanol,2
+ALCD2yf,1.1.1.2,AC,adenosine,2
+CAT2p,1.11.1.6,AC,histidine; phosphatidylcholine; retinal,2
+FBP,3.1.3.11,AC,3 methylhistidine; alanine; citrate; cysteine; linoleate; phosphoenolpyruvate; sulfate,2
+DPGase,5.4.2.4,AC,phosphoenolpyruvate,2
+PEPCKm,4.1.1.32,AC,reduced glutathione,2
+r0173,1.1.1.27,AC,fructose 1 6 bisphosphate,2
+r0354,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+r0355,2.7.1.1,AC,citrate; fructose; galactose; glucose; glucose 6 phosphate; glycerol 3 phosphate; mannose 6 phosphate; phosphoenolpyruvate; ribose,2
+RE2677C,2.4.1.47,AC,phosphatidylcholine; phosphatidylethanolamine,2
+RE2677N,2.4.1.47,AC,phosphatidylcholine; phosphatidylethanolamine,2
+RE2717L,3.2.1.46,AC,phosphatidylcholine; phosphatidylserine,2
+GLYCK2,2.7.1.31,AC,reduced thioredoxin,2
+HPYRDC,4.1.1.40,AC,4 aminobutanoate; ethanolamine; galactosamine; glucosamine,2
+HPYRDCm,4.1.1.40,AC,4 aminobutanoate; ethanolamine; galactosamine; glucosamine,2
+PPPGOm,1.3.3.4,AC,cysteine; ubiquinone 10,2
+UPPDC1,4.1.1.37,AC,reduced glutathione,2
+RE3629C,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+RE3630C,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+MI13PP,3.1.3.64,AC,phosphatidylserine,2
+MI145PK,2.7.1.127,AC,1d myo inositol 1 3 4 5 tetrakisphosphate,2
+PI34P5Kn,2.6.1.58,AC,pyridoxal 5 phosphate,2
+PI3P3Pn,2.6.1.58,AC,pyridoxal 5 phosphate,2
+PI3P4K,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+PI3P4Kn,1.14.16.1,AC,glycerol; isoleucine; leucine; methionine; phenylalanine,2
+PI3P5K,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+PI45P5P,3.1.3.36,AC,phosphatidylcholine; phosphatidylserine; reduced glutathione,2
+PI45P5Pn,3.1.3.36,AC,phosphatidylcholine; phosphatidylserine; reduced glutathione,2
+PI45PLC,3.1.4.11,AC,deoxycholate; dopamine; estradiol; lysophosphatidic acid; phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; phosphatidylserine; spermine; sphingosine 1 phosphate; xanthurenic acid,2
+PI4P3K,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+PI4P5Kn,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+PI4PLC,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+PI4PP,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+PIK3,2.7.1.137,AC,adenosine,2
+PIK3n,2.7.1.137,AC,adenosine,2
+PIK4n,2.7.1.67,AC,spermidine; spermine,2
+PIK5,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+PIK5n,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+PIPLC,3.1.4.3,AC,acetone; cholesterol; ethanol; methanol; phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine; putrescine; sorbitol; spermidine; spermine,2
+GALASE17ly,3.2.1.23,AC,cysteine; ethanol; fructose; glucose; maltose,2
+GALASE18ly,3.2.1.23,AC,cysteine; ethanol; fructose; glucose; maltose,2
+GALASE19ly,3.2.1.18,AC,galactose; lactose,2
+NACHEX23ly,3.2.1.52,AC,acetate; cysteine; fructose; galactosamine; galactose; glucosamine; glucose; lactose; maltose,2
+NACHEX24ly,3.2.1.52,AC,acetate; cysteine; fructose; galactosamine; galactose; glucosamine; glucose; lactose; maltose,2
+NACHEX25ly,3.2.1.52,AC,acetate; cysteine; fructose; galactosamine; galactose; glucosamine; glucose; lactose; maltose,2
+NACHEX26ly,3.2.1.52,AC,acetate; cysteine; fructose; galactosamine; galactose; glucosamine; glucose; lactose; maltose,2
+NACHEXA20ly,3.2.1.52,AC,acetate; cysteine; fructose; galactosamine; galactose; glucosamine; glucose; lactose; maltose,2
+NACHEXA21ly,3.2.1.52,AC,acetate; cysteine; fructose; galactosamine; galactose; glucosamine; glucose; lactose; maltose,2
+RE3258C,3.3.2.9,AC,ethanol,2
+RE3259C,3.3.2.9,AC,ethanol,2
+3SPYRSP,2.6.1.1,AC,ethanol; malate,2
+LCYSTAT,2.6.1.1,AC,ethanol; malate,2
+MCLOR,1.1.1.27,AC,fructose 1 6 bisphosphate,2
+METDECARc,3.1.1.3,AC,acetone; ethanol; ethanolamine; glycerol; high density lipoprotein; hydrogen peroxide; maltose; methanol; sorbitol; taurocholic acid,2
+METS,2.1.1.13,AC,putrescine; s adenosyl l methionine; spermidine; spermine,2
+METTRANSc,3.1.1.3,AC,acetone; ethanol; ethanolamine; glycerol; high density lipoprotein; hydrogen peroxide; maltose; methanol; sorbitol; taurocholic acid,2
+r0027,1.8.1.9,AC,cysteine,2
+RE1933C,3.1.1.2,AC,cysteine; ethanol; high density lipoprotein; phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; pyridoxal 5 phosphate; sphingomyelin,2
+ALCD1,1.1.1.1,AC,ethanol,2
+FldAct,3.2.1.18,AC,galactose; lactose,2
+H2CO3Dm,4.2.1.1,AC,adrenaline; dopa; dopamine; histidine; phenylalanine,2
+PPAn,3.6.1.1,AC,diphosphate; malate,2
+PRDX,1.11.1.7,AC,cysteine; glucose,2
+r0068,6.2.1.1,AC,acetate,2
+r0083,1.1.1.42,AC,cis aconitate; citrate; glutamate,2
+r0084,1.1.1.42,AC,cis aconitate; citrate; glutamate,2
+r0408,2.7.1.11,AC,citrate; fructose 1 6 bisphosphate; fructose 6 phosphate; glucose 6 phosphate; glycerol; phosphatidylserine; trehalose,2
+r0409,2.7.1.11,AC,citrate; fructose 1 6 bisphosphate; fructose 6 phosphate; glucose 6 phosphate; glycerol; phosphatidylserine; trehalose,2
+r0423,1.1.1.42,AC,cis aconitate; citrate; glutamate,2
+r0424,1.1.1.42,AC,cis aconitate; citrate; glutamate,2
+r0425,1.1.1.42,AC,cis aconitate; citrate; glutamate,2
+r0610,2.7.1.11,AC,citrate; fructose 1 6 bisphosphate; fructose 6 phosphate; glucose 6 phosphate; glycerol; phosphatidylserine; trehalose,2
+r0611,2.7.1.11,AC,citrate; fructose 1 6 bisphosphate; fructose 6 phosphate; glucose 6 phosphate; glycerol; phosphatidylserine; trehalose,2
+r0627,3.2.1.23,AC,cysteine; ethanol; fructose; glucose; maltose,2
+r0737,3.2.1.23,AC,cysteine; ethanol; fructose; glucose; maltose,2
+r0774,4.1.1.37,AC,reduced glutathione,2
+r1164,2.3.1.26,AC,cholesterol; low density lipoprotein; phosphatidylethanolamine,2
+r1165,2.3.1.26,AC,cholesterol; low density lipoprotein; phosphatidylethanolamine,2
+r1166,2.3.1.26,AC,cholesterol; low density lipoprotein; phosphatidylethanolamine,2
+r1167,2.3.1.26,AC,cholesterol; low density lipoprotein; phosphatidylethanolamine,2
+r1168,2.3.1.26,AC,cholesterol; low density lipoprotein; phosphatidylethanolamine,2
+r1169,2.3.1.26,AC,cholesterol; low density lipoprotein; phosphatidylethanolamine,2
+r1170,2.3.1.26,AC,cholesterol; low density lipoprotein; phosphatidylethanolamine,2
+r1171,2.3.1.26,AC,cholesterol; low density lipoprotein; phosphatidylethanolamine,2
+r1172,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+r1174,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+r1175,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+r1177,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+r1179,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+r1181,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+r1182,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+r1183,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,2
+r1378,1.1.1.284,AC,formaldehyde,2
+r1392,3.2.1.33,AC,maltotetraose,2
+r1446,1.3.3.6,AC,propionate,2
+RE0383C,1.1.1.2,AC,adenosine,2
+RE1860E,3.1.4.37,AC,ethanol,2
+RE2127C,2.1.1.6,AC,cysteine,2
+NT5C,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+r0527,3.5.1.42,AC,diphosphate,2
+DOLK_L,2.7.1.108,AC,phosphatidylcholine; phosphatidylethanolamine,2
+ADK1m,2.7.4.3,AC,2 oxoglutarate; alanine; cis aconitate; citrate; cysteine; fumarate; histidine; malate; threonine,2
+ADK3,2.7.4.3,AC,2 oxoglutarate; alanine; cis aconitate; citrate; cysteine; fumarate; histidine; malate; threonine,2
+ADKd,2.7.4.3,AC,2 oxoglutarate; alanine; cis aconitate; citrate; cysteine; fumarate; histidine; malate; threonine,2
+ADNK1,4.6.1.1,AC,adrenaline; bicarbonate; dopamine; ethanol; glucose; pyruvate; sphingosine 1 phosphate,2
+ADNK1m,2.7.1.20,AC,carbamoyl phosphate; dihydroxyacetone phosphate; phosphoenolpyruvate,2
+ADSK,2.7.1.25,AC,ascorbate; cysteine,2
+DADNK,2.7.1.76,AC,deoxycytidine; deoxyguanosine,2
+DCK1n,2.7.1.74,AC,deoxyguanosine,2
+DCK2n,2.7.1.74,AC,deoxyguanosine,2
+DTMPK,1.4.3.3,AC,malate,2
+NDP7er,3.6.1.6,AC,pyridoxal 5 phosphate,2
+NDP8,3.6.1.6,AC,pyridoxal 5 phosphate,2
+NDPK2,3.6.1.6,AC,pyridoxal 5 phosphate,2
+NDPK3,3.6.1.6,AC,pyridoxal 5 phosphate,2
+NDPK4,3.6.1.6,AC,pyridoxal 5 phosphate,2
+NTD10,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD12,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD2e,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD6,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD7,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD7e,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD8,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD9,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+URIDK3,3.2.1.18,AC,galactose; lactose,2
+GUAPRT,2.4.2.8,AC,acetate,2
+HXPRT,2.4.2.8,AC,acetate,2
+PPA,3.6.1.1,AC,diphosphate; malate,2
+PPAm,3.6.1.1,AC,diphosphate; malate,2
+ABTD1,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+G6PDH2r,1.1.1.49,AC,glucosamine 6 phosphate; glycerol; spermidine; trehalose,2
+GND,1.1.1.44,AC,aspartate; fructose 6 phosphate; gluconate; histidine; tryptophan,2
+GNDc,1.1.1.44,AC,aspartate; fructose 6 phosphate; gluconate; histidine; tryptophan,2
+GNDer,1.1.1.44,AC,aspartate; fructose 6 phosphate; gluconate; histidine; tryptophan,2
+GULN3D,1.1.1.45,AC,cysteine,2
+TKT1,2.2.1.1,AC,cysteine; ethanol; hydrogen peroxide; thiamin,2
+TKT2,2.2.1.1,AC,cysteine; ethanol; hydrogen peroxide; thiamin,2
+XYLTD_Dr,1.1.1.9,AC,arabinose; cysteine; glucose; glycerol; glycine,2
+PHETA1,2.6.1.58,AC,pyridoxal 5 phosphate,2
+PHETA1m,2.6.1.58,AC,pyridoxal 5 phosphate,2
+PHLAC,1.1.1.28,AC,acetate; fructose 1 6 bisphosphate,2
+RE2972M,2.7.1.67,AC,spermidine; spermine,2
+RE2973N,2.7.1.137,AC,adenosine,2
+RE2974N,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+2HBO,1.1.1.27,AC,fructose 1 6 bisphosphate,2
+ADCim,4.1.1.4,AC,acetate; butyrate,2
+NTD11,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+r0009,3.6.1.1,AC,diphosphate; malate,2
+r0047,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+r0812,1.3.1.70,AC,phosphatidylcholine,2
+GARFT,2.1.2.2,AC,glycine; histidine; tryptophan,2
+DHPM1,3.5.2.2,AC,uracil,2
+NTD1,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD2,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD3,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD4,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+NTD5,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,2
+r0377,2.7.1.74,AC,deoxyguanosine,2
+TMDPP,2.4.2.4,AC,thymine,2
+ASPCTr,2.1.3.2,AC,acetate; adenosine; alanine; aspartate; butyrate; formate; malate; propionate; succinate,2
+OMPDC,4.1.1.23,AC,glycerol 3 phosphate; orotidine 5 phosphate; uracil,2
+URIK3,3.2.1.18,AC,galactose; lactose,2
+ALCD21_D,1.1.1.1,AC,ethanol,2
+ALCD21_L,1.1.1.1,AC,ethanol,2
+LDH_Lm,1.1.1.27,AC,fructose 1 6 bisphosphate,2
+LGTHL,4.4.1.5,AC,glucose; methylglyoxal; spermidine,2
+ME1m,1.1.1.40,AC,aspartate; citrate; fumarate; glucose 6 phosphate; glutamate; methanol; succinate,2
+ME2m,1.1.1.40,AC,aspartate; citrate; fumarate; glucose 6 phosphate; glutamate; methanol; succinate,2
+SPODM,1.15.1.1,AC,estradiol; glycerol; melatonin; testosterone,2
+SPODMm,1.15.1.1,AC,estradiol; glycerol; melatonin; testosterone,2
+SPODMn,1.15.1.1,AC,estradiol; glycerol; melatonin; testosterone,2
+SPODMx,1.15.1.1,AC,estradiol; glycerol; melatonin; testosterone,2
+ASAH1,3.5.1.23,AC,ceramide 1 phosphate; phosphatidylglycerol; phosphatidylserine; reduced glutathione; sphingosine 1 phosphate; taurocholic acid,2
+GALC,3.2.1.46,AC,phosphatidylcholine; phosphatidylserine,2
+GBA,3.2.1.45,AC,phosphatidylglycerol; phosphatidylserine,2
+GBAl,3.2.1.45,AC,phosphatidylglycerol; phosphatidylserine,2
+GLAl,3.2.1.22,AC,arabinose; digalactosylceramide; glucose,2
+GLB1,3.2.1.23,AC,cysteine; ethanol; fructose; glucose; maltose,2
+r0787,3.1.3.4,AC,deoxycholate; phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; putrescine; spermidine; spermine; sphingosine 1 phosphate,2
+SMS,3.2.1.18,AC,galactose; lactose,2
+GLDBRAN,3.2.1.33,AC,maltotetraose,2
+GLGNS1,2.4.1.11,AC,aspartate; fructose; galactose; glucosamine; glucosamine 6 phosphate; glucose; glucose 6 phosphate; glutamate; mannose; proline; propionate; ribose 5 phosphate; xylitol,2
+GLPASE1,2.4.1.1,AC,cysteine; ethanol; fumarate; glucose 1 phosphate; pyruvate; sulfate,2
+GLPASE2,2.4.1.1,AC,cysteine; ethanol; fumarate; glucose 1 phosphate; pyruvate; sulfate,2
+MALT,3.2.1.20,AC,cysteine; glucose; maltose; testosterone,2
+MALTly,3.2.1.20,AC,cysteine; glucose; maltose; testosterone,2
+MLTG1ly,3.2.1.20,AC,cysteine; glucose; maltose; testosterone,2
+RE0915C,3.2.1.1,AC,cysteine; ethanol; glycerol,2
+TREH,3.2.1.28,AC,glucose,2
+5ADTSTSTERONESULT,2.8.2.2,AC,cysteine,2
+CHSTEROLSULT,2.8.2.2,AC,cysteine,2
+TSTSTERONESULT,2.8.2.2,AC,cysteine,2
+TDP,3.6.1.15,AC,2 oxoglutarate; choline; fructose 1 6 bisphosphate; glucose; taurine,2
+TDPm,3.6.1.15,AC,2 oxoglutarate; choline; fructose 1 6 bisphosphate; glucose; taurine,2
+THMTP,3.6.1.28,AC,deoxycholate,2
+TMDPK,4.2.3.1,AC,s adenosyl l methionine,2
+TMDPPK,2.7.6.2,AC,myo inositol,2
+UDPGLCter,2.6.1.5,AC,adrenaline; dopamine; metanephrine,2
+15KPROSTGF2t,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+2OXOADPt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+34HPLte,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+3MHISt1,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+3MHISt2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+3MHISt3,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+4TMEABUTNt1,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+4TMEABUTNt2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+56DTHMt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+56DURAt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+5AOPt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+ABT_Dt2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+ACNAMt2,3.1.4.12,AC,cholesterol; choline; deoxycholate; ethanol; glycocholate; phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; phosphatidylserine; reduced glutathione; sphingomyelin; taurochenodeoxycholate,2
+ALAt4,2.3.1.37,AC,ethanol,2
+BHBt,1.1.1.30,AC,3 hydroxybutyrate; glycerol; lactate; phosphatidylcholine; reduced glutathione; succinate,2
+BILIVERDt,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+ELAIDCRNte,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+LEUt4,4.1.1.15,AC,2 oxoglutarate,2
+LNLCCRNNAt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PEPtr,1.5.1.2,AC,putrescine; spermidine; spermine,2
+PHLACHt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+PIt6b,3.2.1.18,AC,galactose; lactose,2
+SERt4,2.5.1.6,AC,glycerol; methanol; methionine; reduced thioredoxin; sorbitol,2
+SO4HCOtex,3.2.1.18,AC,galactose; lactose,2
+TTDCRNNAt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,2
+3SALAASPm,3.1.3.2,AC,acetate; adenine; adenosine; ascorbate; citrate; guanine; guanosine; methanol; pyruvate; spermidine; spermine; succinate; taurocholic acid,2
+4MOPt2im,1.2.1.5,AC,ethanol,2
+ACt2m,2.1.1.4,AC,bicarbonate; oxaloacetate; s adenosyl l methionine,2
+BHBtm,2.4.1.142,AC,phosphatidylcholine; phosphatidylserine,2
+MALOAtm,3.2.1.18,AC,galactose; lactose,2
+PYRt2m,1.4.3.5,AC,2 aminobutanoate; alanine; cysteine; valine,2
+r2514m,2.7.1.91,AC,ceramide 1 phosphate; cholesterol; phosphatidylserine; sphingosine 1 phosphate,2
+THMt2m,2.3.1.21,AC,carnitine; palmitoylcarnitine,2
+CRNCAR3tp,1.3.3.3,AC,methionine; oxygen; phosphatidate; phosphatidylcholine; phosphatidylethanolamine; pyruvate; s adenosyl l methionine,2
+GPAM_hs,2.3.1.15,AC,acetone; phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; phosphatidylserine; spermidine; spermine,2
+LPS3,3.1.1.23,AC,ethanol; glutamate,2
+PPAP,3.1.3.4,AC,deoxycholate; phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; putrescine; spermidine; spermine; sphingosine 1 phosphate,2
+3HKYNAKGAT,2.6.1.7,AC,cysteine; kynurenine; pyridoxamine 5 phosphate; tryptophan,2
+KYNAKGAT,2.6.1.7,AC,cysteine; kynurenine; pyridoxamine 5 phosphate; tryptophan,2
+r0647,2.7.1.11,AC,citrate; fructose 1 6 bisphosphate; fructose 6 phosphate; glucose 6 phosphate; glycerol; phosphatidylserine; trehalose,2
+RE1233C,2.6.1.7,AC,cysteine; kynurenine; pyridoxamine 5 phosphate; tryptophan,2
+RE2349C,2.6.1.7,AC,cysteine; kynurenine; pyridoxamine 5 phosphate; tryptophan,2
+ACTYRm,2.3.1.1,AC,arginine,2
+DOPAMT,2.1.1.6,AC,cysteine,2
+RE0908C,3.1.6.2,AC,cysteine; estrone; phenylalanine,2
+RE0912C,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,2
+RE0916C,3.1.6.2,AC,cysteine; estrone; phenylalanine,2
+RE0918C,3.1.6.2,AC,cysteine; estrone; phenylalanine,2
+RE1923C,2.1.1.6,AC,cysteine,2
+RE2122C,2.1.1.6,AC,cysteine,2
+RE2130C,2.7.1.68,AC,lysophosphatidic acid; spermidine; spermine,2
+RE3095C,1.11.1.7,AC,cysteine; glucose,2
+TYRTA,2.6.1.5,AC,adrenaline; dopamine; metanephrine,2
+TYRTAm,2.6.1.5,AC,adrenaline; dopamine; metanephrine,2
+UDPG3DOPA,2.4.1.17,AC,bilirubin; choline; cysteine; phosphatidylcholine; sphingomyelin,2
+UDPG4DOPA,2.4.1.17,AC,bilirubin; choline; cysteine; phosphatidylcholine; sphingomyelin,2
+ORNDC,4.1.1.17,AC,adenosine; progesterone; spermidine; spermine,2
+r0085,3.5.1.3,AC,methanol,2
+SPMS,2.5.1.16,AC,glycerol,2
+SPRMS,2.5.1.22,AC,glycerol,2
+MMCDm,4.1.1.9,AC,carnitine,2
+RE1266C,3.2.1.1,AC,cysteine; ethanol; glycerol,2
+LRAT1,1.14.14.1,AC,methanol,2
+LRAT2,5.4.99.7,AC,deoxycholate,2
+PDX5PO,1.4.3.5,AC,2 aminobutanoate; alanine; cysteine; valine,2
+DASCBH,3.1.1.17,AC,hydrogen peroxide,2
+DASCBR,1.6.5.4,AC,diphosphate,2
+GLNLASEer,3.1.1.17,AC,hydrogen peroxide,2
+ALAR,5.1.1.1,AC,pyridoxal 5 phosphate,1
+RE3520E,1.11.1.9,AC,cysteine; reduced glutathione,1
+ACONT,4.2.1.3,AC,cysteine,1
+ACONTm,4.2.1.3,AC,cysteine,1
+CITL,4.1.3.6,AC,pantothenate,1
+ALOX52,1.13.11.34,AC,adenosine; phosphatidylcholine,1
+RE1077C,5.3.99.5,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,1
+RE3490C,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,1
+RE3524R,3.3.2.6,AC,leukotriene a4,1
+RE3566C,1.13.11.31,AC,2 arachidonoylglycerol,1
+DM_13_cis_retn_n_,2.3.1.21,AC,carnitine; palmitoylcarnitine,1
+METHSUCCOAc,1.1.1.27,AC,fructose 1 6 bisphosphate,1
+RE3113C,1.2.1.36,AC,cholesterol,1
+RE3167C,1.3.1.70,AC,phosphatidylcholine,1
+RE3172C,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,1
+MAN6PI,5.3.1.8,AC,diphosphate; mannose,1
+PMANM,5.4.2.8,AC,histidine,1
+UDPG4E,5.1.3.2,AC,fructose 6 phosphate; glucose 1 phosphate; glucose 6 phosphate,1
+FBA,4.1.2.13,AC,2 oxoglutarate; citrate; cysteine; diphosphate; ethanol; glucose; phosphoenolpyruvate; reduced glutathione,1
+ENO,4.2.1.11,AC,2 oxoglutarate; citrate; tyrosine,1
+PGMT,5.4.2.2,AC,cysteine; fructose 6 phosphate; histidine,1
+PPBNGS,4.2.1.24,AC,glucose; glutamate,1
+RE3637C,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,1
+MI1PS,5.5.1.4,AC,ethanol,1
+RE3413C,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,1
+RE3417C,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,1
+RE3420C,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,1
+PPD2CSPp,2.7.1.33,AC,cholesterol; palmitoylcarnitine,1
+CATp,1.11.1.6,AC,histidine; phosphatidylcholine; retinal,1
+r0407,4.1.2.13,AC,2 oxoglutarate; citrate; cysteine; diphosphate; ethanol; glucose; phosphoenolpyruvate; reduced glutathione,1
+r0426,4.2.1.3,AC,cysteine,1
+r1109,4.1.3.6,AC,pantothenate,1
+r1391,2.4.1.25,AC,maltose; maltotetraose; maltotriose,1
+ADNCYC,4.6.1.1,AC,adrenaline; bicarbonate; dopamine; ethanol; glucose; pyruvate; sphingosine 1 phosphate,1
+DRPA,4.1.2.4,AC,2 oxoglutarate; acetaldehyde; acetate; cis aconitate; citrate; fumarate; malate; malonate; propionate; succinate,1
+r0818,1.3.1.72,AC,cholesterol,1
+CATm,1.11.1.6,AC,histidine; phosphatidylcholine; retinal,1
+GLBRAN,2.4.1.18,AC,acetate; citrate; diphosphate; fructose 6 phosphate; glucose 1 phosphate; glucose 6 phosphate; glycerol; phosphoenolpyruvate; ribose 5 phosphate,1
+RE0830C,4.2.1.96,AC,glycerol,1
+RE1709C,4.2.1.96,AC,glycerol,1
+RE2660C,3.2.1.31,AC,lactose; methanol,1
+ESTRADIOLtr,4.2.1.11,AC,2 oxoglutarate; citrate; tyrosine,1
+GLCURter,2.7.8.15,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; phosphatidylserine,1
+GULLACter,1.11.1.9,AC,cysteine; reduced glutathione,1
+LEUKTRB4tr,1.2.1.3,AC,acetaldehyde; ascorbate; diphosphate; estrone,1
+O2ter,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,1
+r1303,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,1
+r1318,2.3.1.15,AC,acetone; phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; phosphatidylserine; spermidine; spermine,1
+TXA2tr,1.13.11.11,AC,superoxide,1
+21HPRGNLONEt2,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+3HMPtd,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+3HPPNOHGLUCte,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+3HPPt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+3MOXTYRt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+3MTPte,3.1.1.3,AC,acetone; ethanol; ethanolamine; glycerol; high density lipoprotein; hydrogen peroxide; maltose; methanol; sorbitol; taurocholic acid,1
+3OHSEBACte,2.3.1.1,AC,arginine,1
+56DTHMtd,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+56DURAtd,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+5ADTSTSTERONEte,2.8.2.2,AC,cysteine,1
+5HPETtd,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+7DHCHSTEROLtd,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+ABT_Dt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+ACGLYte,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+ACLYSt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+ACTHRte,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+ADPACtd,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+ADPOHt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+AICARte,1.1.1.44,AC,aspartate; fructose 6 phosphate; gluconate; histidine; tryptophan,1
+ALLTNt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+AMETt,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+C02356t,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,1
+CRMPte,2.7.7.15,AC,phosphatidylcholine; phosphatidylglycerol; phosphatidylserine,1
+DAGt,2.7.1.107,AC,cholesterol; deoxycholate; glucose; phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; sphingomyelin; sphingosine,1
+EICOSTETt,2.6.1.1,AC,ethanol; malate,1
+ETOHt,2.8.2.4,AC,cysteine; melatonin; progesterone,1
+GALt1r,2.4.1.92,AC,phosphatidylglycerol,1
+GBSIDEte,3.2.1.3,AC,glycerol; sorbitol; trehalose,1
+GCHOLAte,2.4.1.88,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine; sphingomyelin,1
+GLCMter,3.2.1.31,AC,lactose; methanol,1
+GLYC2P3Pc,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+H2O2t,2.4.2.8,AC,acetate,1
+MAGt,1.2.1.5,AC,ethanol,1
+MERCPLACCYSt,1.1.1.37,AC,citrate; cysteine; fumarate; malate,1
+NH4tb,3.2.1.18,AC,galactose; lactose,1
+O2St,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,1
+O2t,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,1
+ORNtiDF,1.8.1.4,AC,cysteine,1
+PHEACGLNt,5.3.99.4,AC,reduced glutathione,1
+PSt3,2.7.8.8,AC,phosphatidylethanolamine; phosphatidylglycerol,1
+r1421,4.2.1.1,AC,adrenaline; dopa; dopamine; histidine; phenylalanine,1
+r1423,4.2.1.1,AC,adrenaline; dopa; dopamine; histidine; phenylalanine,1
+r1493,1.8.1.9,AC,cysteine,1
+SPH1Pte,1.1.1.37,AC,citrate; cysteine; fumarate; malate,1
+SUCSALte,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,1
+TAGt,3.1.6.2,AC,cysteine; estrone; phenylalanine,1
+TMNDNCt,2.2.1.1,AC,cysteine; ethanol; hydrogen peroxide; thiamin,1
+TSTSTERONESte,1.8.1.9,AC,cysteine,1
+TSTSTERONEt,2.8.2.2,AC,cysteine,1
+TXA2te,1.14.16.4,AC,cysteine,1
+GALGLUSIDEtg,3.2.1.23,AC,cysteine; ethanol; fructose; glucose; maltose,1
+GALGLUSIDEtl,3.2.1.23,AC,cysteine; ethanol; fructose; glucose; maltose,1
+GALSIDEtl,2.4.1.92,AC,phosphatidylglycerol,1
+GLCtly,2.7.8.15,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol; phosphatidylserine,1
+H2Otly,4.2.1.1,AC,adrenaline; dopa; dopamine; histidine; phenylalanine,1
+r1298,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,1
+r1299,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,1
+r1301,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,1
+r1302,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,1
+r1304,3.1.1.13,AC,acetone; ethanol; glycocholate; methanol; phosphatidylcholine; phosphatidylethanolamine,1
+UDPtl,2.7.7.23,AC,glucosamine 6 phosphate,1
+C161CRN2t,2.3.1.21,AC,carnitine; palmitoylcarnitine,1
+C161CRNt,2.3.1.21,AC,carnitine; palmitoylcarnitine,1
+C181CRNt,2.3.1.21,AC,carnitine; palmitoylcarnitine,1
+DCSPTN1CRNt,3.5.4.12,AC,deoxycytidine 5 triphosphate; glycerol,1
+DMNONCRNt,2.3.1.21,AC,carnitine; palmitoylcarnitine,1
+ELAIDCRNt,2.3.1.21,AC,carnitine; palmitoylcarnitine,1
+HPDCACRNt,1.1.1.88,AC,pantetheine,1
+LNELDCCRNt,4.4.1.5,AC,glucose; methylglyoxal; spermidine,1
+TETPENT6CRNt,3.6.1.15,AC,2 oxoglutarate; choline; fructose 1 6 bisphosphate; glucose; taurine,1
+TMNDNCCRNt,1.11.1.7,AC,cysteine; glucose,1
+2MOPtm,3.2.1.18,AC,galactose; lactose,1
+4HBZtm,3.1.2.2,AC,1 acyl sn glycero 3 phosphocholine; 3 hydroxybutyrate; acetone; carnitine; citrate; cysteine; ethanol; fumarate; malate; phosphatidylcholine; phosphatidylethanolamine; riboflavin; succinate,1
+ACGLYtc,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+ACRNtm,3.1.3.2,AC,acetate; adenine; adenosine; ascorbate; citrate; guanine; guanosine; methanol; pyruvate; spermidine; spermine; succinate; taurocholic acid,1
+ACTHRtc,3.1.1.4,AC,deoxycholate; glycerol; glycochenodeoxycholate; glycocholate; methanol; phosphatidylcholine; phosphatidylglycerol; phosphatidylinositol 4 5 bisphosphate; phosphatidylserine; serine; sphingomyelin; taurochenodeoxycholate,1
+BALAtmr,2.3.1.65,AC,cysteine; reduced glutathione,1
+DHFtm,2.8.2.2,AC,cysteine,1
+GLXtm,1.4.1.3,AC,aspartate; leucine,1
+HMGCOAtm,4.1.1.28,AC,dopa; pyridoxal 5 phosphate,1
+ILEt5m,1.1.1.42,AC,cis aconitate; citrate; glutamate,1
+LEUt5m,1.1.1.28,AC,acetate; fructose 1 6 bisphosphate,1
+MLTHFtm,3.2.1.18,AC,galactose; lactose,1
+MMALtm,3.2.1.18,AC,galactose; lactose,1
+NACASPtm,1.5.1.5,AC,cysteine; formaldehyde,1
+O2Stm,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,1
+O2tm,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,1
+PA_HStm,3.2.1.18,AC,galactose; lactose,1
+PE_HStm,6.4.1.1,AC,aspartate; biotin; lactate,1
+r1291,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,1
+r1435,1.1.1.284,AC,formaldehyde,1
+r1467,2.3.1.86,AC,cysteine,1
+r1468,2.3.1.86,AC,cysteine,1
+ATPtn,3.6.1.5,AC,2 oxoglutarate; glutamate,1
+DATPtn,1.4.3.3,AC,malate,1
+DIDPtn,3.5.2.2,AC,uracil,1
+DUMPtn,4.1.2.4,AC,2 oxoglutarate; acetaldehyde; acetate; cis aconitate; citrate; fumarate; malate; malonate; propionate; succinate,1
+H2O2tn,1.1.1.45,AC,cysteine,1
+IDPtn,1.1.1.41,AC,citrate,1
+LYStn,3.3.2.6,AC,leukotriene a4,1
+MINOHPtn,2.7.1.127,AC,1d myo inositol 1 3 4 5 tetrakisphosphate,1
+O2Stn,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,1
+PPMI12346Ptn,3.6.1.1,AC,diphosphate; malate,1
+UTPtn,4.1.1.37,AC,reduced glutathione,1
+AMPtp,3.4.11.1,AC,ethanol; methanol,1
+ARACHDCOAtx,2.3.1.21,AC,carnitine; palmitoylcarnitine,1
+ATPtx,3.6.1.5,AC,2 oxoglutarate; glutamate,1
+DCSPTN1COAtx,2.7.1.74,AC,deoxyguanosine,1
+FADH2tx,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,1
+FADtx,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,1
+GLXtp,1.4.1.4,AC,ethanol; methanol,1
+O2Stx,3.1.3.5,AC,aspartate; ethanol; fructose; glucose; glycine; histidine,1
+O2tp,3.6.1.15,AC,2 oxoglutarate; choline; fructose 1 6 bisphosphate; glucose; taurine,1
+PPItx,3.6.1.1,AC,diphosphate; malate,1
+PRISTtx,1.13.11.27,AC,acetone; ascorbate; ethanol; methanol,1
+r1292,6.2.1.3,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylserine,1
+SCP21x,1.5.1.8,AC,lysine,1
+TCHOLAtx,3.2.1.26,AC,glucose; reduced glutathione,1
+RE1921C,4.1.1.28,AC,dopa; pyridoxal 5 phosphate,1
+G5SADs,2.4.1.38,AC,phosphatidylcholine; phosphatidylethanolamine; phosphatidylglycerol,1
+RAI4,1.2.1.36,AC,cholesterol,1
+RE2658R,3.2.1.31,AC,lactose; methanol,1
+RE2659R,3.2.1.31,AC,lactose; methanol,1
+RE2898C,1.1.1.188,AC,chloride,1
+TS3,1.8.1.9,AC,cysteine,1

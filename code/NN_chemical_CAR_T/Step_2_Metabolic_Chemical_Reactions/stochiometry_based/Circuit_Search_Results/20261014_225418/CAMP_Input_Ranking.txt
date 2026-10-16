@@ -1,0 +1,1697 @@
+cAMP TO CIRCUIT INPUT RANKING
+Model: /home/ccs/torres-gomez/Downloads/bioelectrodynamics/code/database/Car_T_Cell_models/Puniya2021_TNM1055.xml
+Returned circuit candidates: 59
+Ranking status: complete
+Maximum conversion steps: 10
+cAMP source compartment: c
+Transport permitted: 0
+
+Distance 0: m_in is an identified cAMP model species.
+Distance N: a directed substrate-to-product path with N enzymatic reactions.
+Inf: not reached under these filters/depth; this does not prove biological disconnection.
+Ranks are among supplied motifs, not every possible circuit in the model.
+Paths use bound-permitted orientations and the configured enzyme-evidence gate.
+Common cofactors/hubs are excluded as path nodes; AMP and adenosine remain available.
+Path reactions cannot reuse circuit reactions/enzymes or touch another circuit signal.
+Compartments retain separate model species; no implicit compartment jumps.
+A flagged shared enzyme within a path still needs review before adding that path to a circuit.
+Paths are structural candidates: kinetics, steady-state flux and atom transfer are not established.
+Receptor regulation is not inferred from stoichiometry. No adapter is added to the circuit.
+
+BIOLOGICAL INPUT RATIONALE
+Clayton et al. (2011), DOI 10.4049/jimmunol.1003884:
+Cancer-exosome CD39/CD73 generate extracellular adenosine from ATP/AMP.
+Adenosine acts through the A2A receptor; adenylyl cyclase generates intracellular cAMP.
+This supports a cAMP anchor, but does not establish vesicle-count specificity or preservation of peak timing.
+
+IDENTIFIED cAMP SOURCES
+  camp[c]
+
+EXCLUDED PATH NODES
+  adp[c], adp[g], adp[l], adp[m], adp[n], adp[r], adp[x], atp[c], atp[e], atp[g], atp[l], atp[m], atp[n], atp[r], atp[x], cdp[c], cdp[m], cdp[n], cl[c], cl[e], co2[c], co2[e], co2[m], co2[r], co2[x], coa[c], coa[l], coa[m], coa[r], coa[x], ctp[c], ctp[m], ctp[n], fad[c], fad[e], fad[m], fad[x], fadh2[c], fadh2[m], fadh2[x], gdp[c], gdp[m], gdp[n], gtp[c], gtp[m], gtp[n], h2o[c], h2o[e], h2o[g], h2o[l], h2o[m], h2o[n], h2o[r], h2o[x], h[c], h[e], h[g], h[i], h[l], h[m], h[n], h[r], h[x], hco3[c], hco3[e], hco3[m], idp[c], idp[n], itp[c], itp[e], itp[n], k[c], k[e], na1[c], na1[e], na1[r], na1[x], nad[c], nad[e], nad[m], nad[n], nad[r], nad[x], nadh[c], nadh[e], nadh[m], nadh[r], nadh[x], nadp[c], nadp[m], nadp[r], nadp[x], nadph[c], nadph[m], nadph[r], nadph[x], o2[c], o2[e], o2[m], o2[n], o2[r], o2[x], pi[c], pi[e], pi[g], pi[l], pi[m], pi[n], pi[r], pi[x], ppi[c], ppi[e], ppi[m], ppi[n], ppi[r], ppi[x], udp[c], udp[l], udp[n], udp[r], utp[c], utp[e], utp[n]
+
+RANKED CANDIDATES
+
+------------------------------------------------------------
+Rank 1 | original motif 39 | distance 1 | reachable
+Input: amp[c] (Adenosine Monophosphate)
+Signal roles (current labels):
+  m_in       = amp[c]
+  m_Ff       = adp[c]
+  m_Sf       = imp[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: reachable | conversion steps: 1
+  CONNECTOR SIGNAL METABOLITES
+    m_cAMP     | camp[c]                | 3,5-Cyclic Adenosine Monophosphate         | C10H11N5O6P | c
+    m_in       | amp[c]                 | Adenosine Monophosphate                    | C10H12N5O7P | c
+
+  Path: camp[c] -> amp[c]
+  Shared enzyme among connector reactions: 0
+  Unknown compartment in connector: 0
+  These connector candidates are reported separately from the mapped circuit.
+
+  r_CAMP_1 (cAMP-to-input connector step 1)
+      ID  : PDE1
+      Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+      GPR : 
+      EC  : 3.1.4.17
+      Enzyme conflict keys: EC:3.1.4.17; gene:10846; gene:27115; gene:50940; gene:5136; gene:5137; gene:5138; gene:5139; gene:5140; gene:5141; gene:5142; gene:5143; gene:5144; gene:5150; gene:5151; gene:5153; gene:8622
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : C10H11N5O6P(m_cAMP) + H2O  ->  C10H12N5O7P(m_in) + H
+      Names : 3,5-Cyclic Adenosine Monophosphate(m_cAMP) + Water  ->  Adenosine Monophosphate(m_in) + Proton
+      IDs   : camp[c](m_cAMP) + h2o[c]  ->  amp[c](m_in) + h[c]
+
+
+------------------------------------------------------------
+Rank 2 | original motif 58 | distance 3 | reachable
+Input: gmp[c] (Guanosine-5'-Monophosphate)
+Signal roles (current labels):
+  m_in       = gmp[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: reachable | conversion steps: 3
+  CONNECTOR SIGNAL METABOLITES
+    m_cAMP     | camp[c]                | 3,5-Cyclic Adenosine Monophosphate         | C10H11N5O6P | c
+    m_CAMP_1   | amp[c]                 | Adenosine Monophosphate                    | C10H12N5O7P | c
+    m_CAMP_2   | nh4[c]                 | Ammonium                                   | H4N | c
+    m_in       | gmp[c]                 | Guanosine-5'-Monophosphate                 | C10H12N5O8P | c
+
+  Path: camp[c] -> amp[c] -> nh4[c] -> gmp[c]
+  Shared enzyme among connector reactions: 0
+  Unknown compartment in connector: 0
+  These connector candidates are reported separately from the mapped circuit.
+
+  r_CAMP_1 (cAMP-to-input connector step 1)
+      ID  : PDE1
+      Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+      GPR : 
+      EC  : 3.1.4.17
+      Enzyme conflict keys: EC:3.1.4.17; gene:10846; gene:27115; gene:50940; gene:5136; gene:5137; gene:5138; gene:5139; gene:5140; gene:5141; gene:5142; gene:5143; gene:5144; gene:5150; gene:5151; gene:5153; gene:8622
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : C10H11N5O6P(m_cAMP) + H2O  ->  C10H12N5O7P(m_CAMP_1) + H
+      Names : 3,5-Cyclic Adenosine Monophosphate(m_cAMP) + Water  ->  Adenosine Monophosphate(m_CAMP_1) + Proton
+      IDs   : camp[c](m_cAMP) + h2o[c]  ->  amp[c](m_CAMP_1) + h[c]
+
+  r_CAMP_2 (cAMP-to-input connector step 2)
+      ID  : AMPDA
+      Name: Adenosine Monophosphate Deaminase
+      GPR : 
+      EC  : 3.5.4.6
+      Enzyme conflict keys: EC:3.5.4.6; gene:270; gene:271; gene:272
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : C10H12N5O7P(m_CAMP_1) + H2O + H  ->  C10H11N4O8P + H4N(m_CAMP_2)
+      Names : Adenosine Monophosphate(m_CAMP_1) + Water + Proton  ->  Inosine-5'-Monophosphate + Ammonium(m_CAMP_2)
+      IDs   : amp[c](m_CAMP_1) + h2o[c] + h[c]  ->  imp[c] + nh4[c](m_CAMP_2)
+
+  r_CAMP_3 (cAMP-to-input connector step 3)
+      ID  : r0301
+      Name: Xanthosine-5-Phosphate:Ammonia Ligase (AMP-Forming)
+      GPR : 
+      EC  : 6.3.4.1
+      Enzyme conflict keys: EC:6.3.4.1; gene:8833
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : C10H12N5O13P3 + H4N(m_CAMP_2) + C10H11N4O9P  ->  C10H12N5O7P(m_CAMP_1) + C10H12N5O8P(m_in) + 2 H + HO7P2
+      Names : Adenosine Triphosphate + Ammonium(m_CAMP_2) + Xanthylic Acid  ->  Adenosine Monophosphate(m_CAMP_1) + Guanosine-5'-Monophosphate(m_in) + 2 Proton + Diphosphate
+      IDs   : atp[c] + nh4[c](m_CAMP_2) + xmp[c]  ->  amp[c](m_CAMP_1) + gmp[c](m_in) + 2 h[c] + ppi[c]
+
+
+------------------------------------------------------------
+Rank 3 | original motif 2 | distance 8 | reachable
+Input: ser_L[c] (L-Serine)
+Signal roles (current labels):
+  m_in       = ser_L[c]
+  m_Ff       = etha[c]
+  m_Sf       = 3dsphgn[c]
+  m_Fd       = nh4[c]
+  m_D1       = nadp[c]
+  m_Ff_2     = pyr[c]
+  m_Sf_2     = glyald[c]
+  m_D2       = nad[c]
+  m_Sd_2     = g3p[c]
+  m_c        = fald[c]
+  m_I        = gthrd[c]
+  m_b        = 5mthf[c]
+  m_out      = mlthf[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: reachable | conversion steps: 8
+  CONNECTOR SIGNAL METABOLITES
+    m_cAMP     | camp[c]                | 3,5-Cyclic Adenosine Monophosphate         | C10H11N5O6P | c
+    m_CAMP_1   | amp[c]                 | Adenosine Monophosphate                    | C10H12N5O7P | c
+    m_CAMP_2   | adn[c]                 | Adenosine                                  | C10H13N5O4 | c
+    m_CAMP_3   | r1p[c]                 | Alpha-D-Ribose 1-Phosphate                 | C5H9O8P | c
+    m_CAMP_4   | r5p[c]                 | Alpha-D-Ribose 5-Phosphate                 | C5H9O8P | c
+    m_CAMP_5   | prpp[c]                | 5-Phospho-Alpha-D-Ribose 1-Diphosphate     | C5H8O14P3 | c
+    m_CAMP_6   | glu_L[c]               | L-Glutamate                                | C5H8NO4 | c
+    m_CAMP_7   | pser_L[c]              | O-Phospho-L-Serine                         | C3H6NO6P | c
+    m_in       | ser_L[c]               | L-Serine                                   | C3H7NO3 | c
+
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> prpp[c] -> glu_L[c] -> pser_L[c] -> ser_L[c]
+  Shared enzyme among connector reactions: 0
+  Unknown compartment in connector: 0
+  These connector candidates are reported separately from the mapped circuit.
+
+  r_CAMP_1 (cAMP-to-input connector step 1)
+      ID  : PDE1
+      Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+      GPR : 
+      EC  : 3.1.4.17
+      Enzyme conflict keys: EC:3.1.4.17; gene:10846; gene:27115; gene:50940; gene:5136; gene:5137; gene:5138; gene:5139; gene:5140; gene:5141; gene:5142; gene:5143; gene:5144; gene:5150; gene:5151; gene:5153; gene:8622
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : C10H11N5O6P(m_cAMP) + H2O  ->  C10H12N5O7P(m_CAMP_1) + H
+      Names : 3,5-Cyclic Adenosine Monophosphate(m_cAMP) + Water  ->  Adenosine Monophosphate(m_CAMP_1) + Proton
+      IDs   : camp[c](m_cAMP) + h2o[c]  ->  amp[c](m_CAMP_1) + h[c]
+
+  r_CAMP_2 (cAMP-to-input connector step 2)
+      ID  : NTD7
+      Name: 5'-Nucleotidase (AMP)
+      GPR : 
+      EC  : 3.1.3.5
+      Enzyme conflict keys: EC:3.1.3.5; gene:22978; gene:30833; gene:51251; gene:84618; gene:93034
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : C10H12N5O7P(m_CAMP_1) + H2O  ->  C10H13N5O4(m_CAMP_2) + HO4P
+      Names : Adenosine Monophosphate(m_CAMP_1) + Water  ->  Adenosine(m_CAMP_2) + Orthophosphate
+      IDs   : amp[c](m_CAMP_1) + h2o[c]  ->  adn[c](m_CAMP_2) + pi[c]
+
+  r_CAMP_3 (cAMP-to-input connector step 3)
+      ID  : PUNP1
+      Name: Purine-Nucleoside Phosphorylase (Adenosine)
+      GPR : 
+      EC  : 3.4.2.1
+      Enzyme conflict keys: EC:3.4.2.1; gene:4860
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [-1000, 1000]
+      Eqn   : C10H13N5O4(m_CAMP_2) + HO4P  ->  C5H5N5 + C5H9O8P(m_CAMP_3)
+      Names : Adenosine(m_CAMP_2) + Orthophosphate  ->  Adenine + Alpha-D-Ribose 1-Phosphate(m_CAMP_3)
+      IDs   : adn[c](m_CAMP_2) + pi[c]  ->  ade[c] + r1p[c](m_CAMP_3)
+
+  r_CAMP_4 (cAMP-to-input connector step 4)
+      ID  : PPM
+      Name: Phosphopentomutase
+      GPR : 
+      EC  : 5.4.2.7
+      Enzyme conflict keys: EC:5.4.2.7; gene:5236; gene:55276
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [-1000, 1000]
+      Eqn   : C5H9O8P(m_CAMP_3)  ->  C5H9O8P(m_CAMP_4)
+      Names : Alpha-D-Ribose 1-Phosphate(m_CAMP_3)  ->  Alpha-D-Ribose 5-Phosphate(m_CAMP_4)
+      IDs   : r1p[c](m_CAMP_3)  ->  r5p[c](m_CAMP_4)
+
+  r_CAMP_5 (cAMP-to-input connector step 5)
+      ID  : PRPPS
+      Name: Phosphoribosylpyrophosphate Synthetase
+      GPR : 
+      EC  : 
+      Enzyme conflict keys: gene:221823; gene:5631; gene:5634
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : C10H12N5O13P3 + C5H9O8P(m_CAMP_4)  ->  C10H12N5O7P(m_CAMP_1) + H + C5H8O14P3(m_CAMP_5)
+      Names : Adenosine Triphosphate + Alpha-D-Ribose 5-Phosphate(m_CAMP_4)  ->  Adenosine Monophosphate(m_CAMP_1) + Proton + 5-Phospho-Alpha-D-Ribose 1-Diphosphate(m_CAMP_5)
+      IDs   : atp[c] + r5p[c](m_CAMP_4)  ->  amp[c](m_CAMP_1) + h[c] + prpp[c](m_CAMP_5)
+
+  r_CAMP_6 (cAMP-to-input connector step 6)
+      ID  : GLUPRT
+      Name: Glutamine Phosphoribosyldiphosphate Amidotransferase
+      GPR : 
+      EC  : 2.4.2.14
+      Enzyme conflict keys: EC:2.4.2.14; gene:5471
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : C5H10N2O3 + H2O + C5H8O14P3(m_CAMP_5)  ->  C5H8NO4(m_CAMP_6) + HO7P2 + C5H11NO7P
+      Names : L-Glutamine + Water + 5-Phospho-Alpha-D-Ribose 1-Diphosphate(m_CAMP_5)  ->  L-Glutamate(m_CAMP_6) + Diphosphate + 5-Phospho-Beta-D-Ribosylamine
+      IDs   : gln_L[c] + h2o[c] + prpp[c](m_CAMP_5)  ->  glu_L[c](m_CAMP_6) + ppi[c] + pram[c]
+
+  r_CAMP_7 (cAMP-to-input connector step 7)
+      ID  : PSERT
+      Name: Phosphoserine Transaminase
+      GPR : 
+      EC  : 2.6.1.52
+      Enzyme conflict keys: EC:2.6.1.52; gene:29968
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : C3H2O7P + C5H8NO4(m_CAMP_6)  ->  C5H4O5 + C3H6NO6P(m_CAMP_7)
+      Names : 3-Phosphonatooxypyruvate + L-Glutamate(m_CAMP_6)  ->  2-Oxoglutarate + O-Phospho-L-Serine(m_CAMP_7)
+      IDs   : 3php[c] + glu_L[c](m_CAMP_6)  ->  akg[c] + pser_L[c](m_CAMP_7)
+
+  r_CAMP_8 (cAMP-to-input connector step 8)
+      ID  : PSP_L
+      Name: Phosphoserine Phosphatase (L-Serine)
+      GPR : 
+      EC  : 3.1.3.3
+      Enzyme conflict keys: EC:3.1.3.3; gene:5723; gene:8781
+      Compartment(s): c
+      Direction: +1 relative to model.S
+      Original bounds: [0, 1000]
+      Eqn   : H2O + C3H6NO6P(m_CAMP_7)  ->  HO4P + C3H7NO3(m_in)
+      Names : Water + O-Phospho-L-Serine(m_CAMP_7)  ->  Orthophosphate + L-Serine(m_in)
+      IDs   : h2o[c] + pser_L[c](m_CAMP_7)  ->  pi[c] + ser_L[c](m_in)
+
+
+------------------------------------------------------------
+Rank 4 | original motif 1 | distance Inf | not_reached_within_depth
+Input: rib_D[c] (D-Ribose)
+Signal roles (current labels):
+  m_in       = rib_D[c]
+  m_Ff       = nad[c]
+  m_Sf       = adp[c]
+  m_Fd       = 13dpg[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = 6pgc[c]
+  m_Sf_2     = elaid[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = od2coa[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 3 | distance Inf | not_reached_within_depth
+Input: rnam[c] (N-Ribosylnicotinamide)
+Signal roles (current labels):
+  m_in       = rnam[c]
+  m_Ff       = ncam[c]
+  m_Sf       = adp[c]
+  m_Fd       = ppi[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = nadph[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 4 | distance Inf | not_reached_within_depth
+Input: cmp[c] (Cytidine 5'-Monophosphate)
+Signal roles (current labels):
+  m_in       = cmp[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 5 | distance Inf | not_reached_within_depth
+Input: damp[c] (Deoxyadenosine Monophosphate)
+Signal roles (current labels):
+  m_in       = damp[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 6 | distance Inf | not_reached_within_depth
+Input: retinol[c] (Retinol)
+Signal roles (current labels):
+  m_in       = retinol[c]
+  m_Ff       = nadph[c]
+  m_Sf       = coa[c]
+  m_Fd       = lald_D[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 7 | distance Inf | not_reached_within_depth
+Input: dag_hs[c] (Diglyceride)
+Signal roles (current labels):
+  m_in       = dag_hs[c]
+  m_Ff       = adp[c]
+  m_Sf       = coa[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = fadh2[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = h2o[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 8 | distance Inf | not_reached_within_depth
+Input: spmd[c] (Spermidine)
+Signal roles (current labels):
+  m_in       = spmd[c]
+  m_Ff       = coa[c]
+  m_Sf       = nadh[c]
+  m_Fd       = amp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 9 | distance Inf | not_reached_within_depth
+Input: crm_hs[c] (N-Acylsphingosine)
+Signal roles (current labels):
+  m_in       = crm_hs[c]
+  m_Ff       = dag_hs[c]
+  m_Sf       = udp[c]
+  m_Fd       = cmp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = 6pgc[c]
+  m_Sf_2     = elaid[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = od2coa[c]
+  m_c        = gthrd[c]
+  m_I        = lald_D[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 10 | distance Inf | not_reached_within_depth
+Input: thmpp[c] (Thiamine Diphosphate)
+Signal roles (current labels):
+  m_in       = thmpp[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 11 | distance Inf | not_reached_within_depth
+Input: dgmp[c] (Dgmp)
+Signal roles (current labels):
+  m_in       = dgmp[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 12 | distance Inf | not_reached_within_depth
+Input: pail34p_hs[c] (1-Phosphatidyl-1D-Myo-Inositol 3,4-Bisphosphate)
+Signal roles (current labels):
+  m_in       = pail34p_hs[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 13 | distance Inf | not_reached_within_depth
+Input: pail45p_hs[c] (Phosphatidylinositol 4,5-Bisphosphate)
+Signal roles (current labels):
+  m_in       = pail45p_hs[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 14 | distance Inf | not_reached_within_depth
+Input: dgtp[c] (Deoxyguanosine-5'-Triphosphate)
+Signal roles (current labels):
+  m_in       = dgtp[c]
+  m_Ff       = dump[c]
+  m_Sf       = cdp[c]
+  m_Fd       = dtmp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = 6pgc[c]
+  m_Sf_2     = elaid[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = od2coa[c]
+  m_c        = gthrd[c]
+  m_I        = lald_D[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 15 | distance Inf | not_reached_within_depth
+Input: ump[c] (Uridine-5'-Monophosphate)
+Signal roles (current labels):
+  m_in       = ump[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 16 | distance Inf | not_reached_within_depth
+Input: pail5p_hs[c] (1-Phosphatidyl-1D-Myo-Inositol 5-Phosphate)
+Signal roles (current labels):
+  m_in       = pail5p_hs[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 17 | distance Inf | not_reached_within_depth
+Input: guln[c] (L-Gulonate)
+Signal roles (current labels):
+  m_in       = guln[c]
+  m_Ff       = nadph[c]
+  m_Sf       = nadh[c]
+  m_Fd       = CE4847[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 18 | distance Inf | not_reached_within_depth
+Input: gln_L[c] (L-Glutamine)
+Signal roles (current labels):
+  m_in       = gln_L[c]
+  m_Ff       = coa[c]
+  m_Sf       = glu_L[c]
+  m_Fd       = amp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = nad[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = 4hpro_LT[c]
+  m_out      = nadph[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 19 | distance Inf | excluded_input
+Input: ctp[c] (Cytidine-5'-Triphosphate)
+Signal roles (current labels):
+  m_in       = ctp[c]
+  m_Ff       = cdpdag_hs[c]
+  m_Sf       = udp[c]
+  m_Fd       = cmp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = 6pgc[c]
+  m_Sf_2     = elaid[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = od2coa[c]
+  m_c        = gthrd[c]
+  m_I        = lald_D[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 20 | distance Inf | excluded_input
+Input: nadh[c] (Nicotinamide Adenine Dinucleotide - Reduced)
+Signal roles (current labels):
+  m_in       = nadh[c]
+  m_Ff       = 56dthm[c]
+  m_Sf       = fadh2[c]
+  m_Fd       = nadph[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 21 | distance Inf | not_reached_within_depth
+Input: dgsn[c] (Deoxyguanosine)
+Signal roles (current labels):
+  m_in       = dgsn[c]
+  m_Ff       = gua[c]
+  m_Sf       = adp[c]
+  m_Fd       = ppi[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = nadph[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 22 | distance Inf | not_reached_within_depth
+Input: pail35p_hs[c] (1-Phosphatidyl-1D-Myo-Inositol 3,5-Bisphosphate)
+Signal roles (current labels):
+  m_in       = pail35p_hs[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 23 | distance Inf | excluded_input
+Input: coa[c] (Coenzyme A)
+Signal roles (current labels):
+  m_in       = coa[c]
+  m_Ff       = nadph[c]
+  m_Sf       = eicostetcoa[c]
+  m_Fd       = lald_D[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 24 | distance Inf | not_reached_within_depth
+Input: dcmp[c] (Deoxycytidylic Acid)
+Signal roles (current labels):
+  m_in       = dcmp[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 25 | distance Inf | not_reached_within_depth
+Input: gthrd[c] (Reduced Glutathione)
+Signal roles (current labels):
+  m_in       = gthrd[c]
+  m_Ff       = cys_L[c]
+  m_Sf       = h2o[c]
+  m_Fd       = pi[c]
+  m_D1       = nad[c]
+  m_Ff_2     = mthgxl[c]
+  m_Sf_2     = glc_D[c]
+  m_D2       = nadp[c]
+  m_Sd_2     = g6p[c]
+  m_c        = crm_hs[c]
+  m_I        = coa[c]
+  m_b        = s7p[c]
+  m_out      = udp[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 26 | distance Inf | excluded_input
+Input: gtp[c] (Guanosine-5'-Triphosphate)
+Signal roles (current labels):
+  m_in       = gtp[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = fadh2[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = h2o[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 27 | distance Inf | not_reached_within_depth
+Input: dopa[c] (Dopamine)
+Signal roles (current labels):
+  m_in       = dopa[c]
+  m_Ff       = ahcys[c]
+  m_Sf       = pap[c]
+  m_Fd       = adn[c]
+  m_D1       = pi[c]
+  m_Ff_2     = thym[c]
+  m_Sf_2     = g1p[c]
+  m_D2       = nad[c]
+  m_Sd_2     = udpg[c]
+  m_c        = fald[c]
+  m_I        = gthrd[c]
+  m_b        = 5mthf[c]
+  m_out      = mlthf[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 28 | distance Inf | not_reached_within_depth
+Input: akg[c] (2-Oxoglutarate)
+Signal roles (current labels):
+  m_in       = akg[c]
+  m_Ff       = 2obut[c]
+  m_Sf       = 4aphdob[c]
+  m_Fd       = ppcoa[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = 4hpro_LT[c]
+  m_out      = nadph[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 29 | distance Inf | not_reached_within_depth
+Input: dtdp[c] (Deoxythymidine-5'-Diphosphate)
+Signal roles (current labels):
+  m_in       = dtdp[c]
+  m_Ff       = pyr[c]
+  m_Sf       = adp[c]
+  m_Fd       = nad[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = 6pgc[c]
+  m_Sf_2     = elaid[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = od2coa[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 30 | distance Inf | not_reached_within_depth
+Input: imp[c] (Inosine-5'-Monophosphate)
+Signal roles (current labels):
+  m_in       = imp[c]
+  m_Ff       = dcamp[c]
+  m_Sf       = nadph[c]
+  m_Fd       = amp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 31 | distance Inf | not_reached_within_depth
+Input: dtmp[c] (Deoxythymidine-5'-Phosphate)
+Signal roles (current labels):
+  m_in       = dtmp[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 32 | distance Inf | not_reached_within_depth
+Input: dudp[c] (Deoxyuridine-5'-Diphosphate)
+Signal roles (current labels):
+  m_in       = dudp[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 33 | distance Inf | not_reached_within_depth
+Input: 56dura[c] (5,6-Dihydrouracil)
+Signal roles (current labels):
+  m_in       = 56dura[c]
+  m_Ff       = nadph[c]
+  m_Sf       = nadh[c]
+  m_Fd       = CE4847[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 34 | distance Inf | not_reached_within_depth
+Input: od2coa[c] ((2E)-Octadecenoyl Coenzyme A)
+Signal roles (current labels):
+  m_in       = od2coa[c]
+  m_Ff       = nadp[c]
+  m_Sf       = coa[c]
+  m_Fd       = glyald[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 35 | distance Inf | not_reached_within_depth
+Input: dad_2[c] (2-Deoxyadenosine)
+Signal roles (current labels):
+  m_in       = dad_2[c]
+  m_Ff       = ade[c]
+  m_Sf       = adp[c]
+  m_Fd       = ppi[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = nadph[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 36 | distance Inf | not_reached_within_depth
+Input: glyc3p[c] (Glycerol 3-Phosphate)
+Signal roles (current labels):
+  m_in       = glyc3p[c]
+  m_Ff       = coa[c]
+  m_Sf       = nadh[c]
+  m_Fd       = amp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 37 | distance Inf | not_reached_within_depth
+Input: nh4[c] (Ammonium)
+Signal roles (current labels):
+  m_in       = nh4[c]
+  m_Ff       = nad[c]
+  m_Sf       = adp[c]
+  m_Fd       = 13dpg[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = 6pgc[c]
+  m_Sf_2     = elaid[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = od2coa[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 38 | distance Inf | not_reached_within_depth
+Input: dump[c] (Deoxyuridine-5'-Monophosphate)
+Signal roles (current labels):
+  m_in       = dump[c]
+  m_Ff       = adp[c]
+  m_Sf       = dhf[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = fadh2[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = h2o[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 40 | distance Inf | not_reached_within_depth
+Input: lald_L[c] ((S)-Lactaldehyde)
+Signal roles (current labels):
+  m_in       = lald_L[c]
+  m_Ff       = nadp[c]
+  m_Sf       = nadh[c]
+  m_Fd       = gmp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 41 | distance Inf | not_reached_within_depth
+Input: etha[c] (Ethanolamine)
+Signal roles (current labels):
+  m_in       = etha[c]
+  m_Ff       = adp[c]
+  m_Sf       = acald[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 42 | distance Inf | not_reached_within_depth
+Input: adn[c] (Adenosine)
+Signal roles (current labels):
+  m_in       = adn[c]
+  m_Ff       = ade[c]
+  m_Sf       = adp[c]
+  m_Fd       = ppi[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = nadph[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 43 | distance Inf | not_reached_within_depth
+Input: C03681[c] (5Alpha-Pregnane-3,20-Dione)
+Signal roles (current labels):
+  m_in       = C03681[c]
+  m_Ff       = nad[c]
+  m_Sf       = nadph[c]
+  m_Fd       = 13dpg[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 44 | distance Inf | not_reached_within_depth
+Input: lald_D[c] ((R)-Lactaldehyde)
+Signal roles (current labels):
+  m_in       = lald_D[c]
+  m_Ff       = nadp[c]
+  m_Sf       = nadh[c]
+  m_Fd       = gmp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 45 | distance Inf | not_reached_within_depth
+Input: cit[c] (Citrate)
+Signal roles (current labels):
+  m_in       = cit[c]
+  m_Ff       = ac[c]
+  m_Sf       = accoa[c]
+  m_Fd       = ppi[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 46 | distance Inf | not_reached_within_depth
+Input: mi145p[c] (1D-Myo-Inositol 1,4,5-Trisphosphate)
+Signal roles (current labels):
+  m_in       = mi145p[c]
+  m_Ff       = adp[c]
+  m_Sf       = pi[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 47 | distance Inf | excluded_input
+Input: pi[c] (Orthophosphate)
+Signal roles (current labels):
+  m_in       = pi[c]
+  m_Ff       = ade[c]
+  m_Sf       = nadh[c]
+  m_Fd       = amp[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gal[c]
+  m_Sf_2     = gthrd[c]
+  m_D2       = nadp[c]
+  m_Sd_2     = cys_L[c]
+  m_c        = crm_hs[c]
+  m_I        = coa[c]
+  m_b        = f6p[c]
+  m_out      = udp[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 48 | distance Inf | not_reached_within_depth
+Input: asp_L[c] (L-Aspartate)
+Signal roles (current labels):
+  m_in       = asp_L[c]
+  m_Ff       = glu_L[c]
+  m_Sf       = nh4[c]
+  m_Fd       = pi[c]
+  m_D1       = nad[c]
+  m_Ff_2     = leuktrB4wcooh[c]
+  m_Sf_2     = glc_D[c]
+  m_D2       = nadp[c]
+  m_Sd_2     = g6p[c]
+  m_c        = crm_hs[c]
+  m_I        = coa[c]
+  m_b        = pail45p_hs[c]
+  m_out      = dag_hs[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 49 | distance Inf | not_reached_within_depth
+Input: ethamp[c] (Ethanolamine Phosphate)
+Signal roles (current labels):
+  m_in       = ethamp[c]
+  m_Ff       = ahcys[c]
+  m_Sf       = sph1p[c]
+  m_Fd       = adn[c]
+  m_D1       = pi[c]
+  m_Ff_2     = thym[c]
+  m_Sf_2     = g1p[c]
+  m_D2       = nad[c]
+  m_Sd_2     = udpg[c]
+  m_c        = fald[c]
+  m_I        = gthrd[c]
+  m_b        = 5mthf[c]
+  m_out      = mlthf[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 50 | distance Inf | excluded_input
+Input: utp[c] (Uridine-5'-TrIphosphate)
+Signal roles (current labels):
+  m_in       = utp[c]
+  m_Ff       = adp[c]
+  m_Sf       = udpg[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = tmndnccoa[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = tmndnc[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 51 | distance Inf | excluded_input
+Input: atp[c] (Adenosine Triphosphate)
+Signal roles (current labels):
+  m_in       = atp[c]
+  m_Ff       = HC02042[c]
+  m_Sf       = nadp[c]
+  m_Fd       = coa[c]
+  m_D1       = crm_hs[c]
+  m_Ff_2     = udp[c]
+  m_Sf_2     = dag_hs[c]
+  m_D2       = h2o[c]
+  m_Sd_2     = cmp[c]
+  m_c        = gthrd[c]
+  m_I        = lald_D[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 52 | distance Inf | not_reached_within_depth
+Input: etoh[c] (Ethanol)
+Signal roles (current labels):
+  m_in       = etoh[c]
+  m_Ff       = nadph[c]
+  m_Sf       = nadh[c]
+  m_Fd       = CE4847[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 53 | distance Inf | not_reached_within_depth
+Input: datp[c] (Deoxyadenosine Triphosphate)
+Signal roles (current labels):
+  m_in       = datp[c]
+  m_Ff       = g6p[c]
+  m_Sf       = cdp[c]
+  m_Fd       = nadph[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 54 | distance Inf | excluded_input
+Input: nad[c] (Nicotinamide Adenine Dinucleotide)
+Signal roles (current labels):
+  m_in       = nad[c]
+  m_Ff       = 4mzym_int2[c]
+  m_Sf       = fald[c]
+  m_Fd       = nadph[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 55 | distance Inf | not_reached_within_depth
+Input: arachd[c] (Arachidonate)
+Signal roles (current labels):
+  m_in       = arachd[c]
+  m_Ff       = amp[c]
+  m_Sf       = fad[c]
+  m_Fd       = imp[c]
+  m_D1       = nadp[c]
+  m_Ff_2     = pyr[c]
+  m_Sf_2     = glyald[c]
+  m_D2       = nad[c]
+  m_Sd_2     = g3p[c]
+  m_c        = fald[c]
+  m_I        = gthrd[c]
+  m_b        = 5mthf[c]
+  m_out      = mlthf[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 56 | distance Inf | not_reached_within_depth
+Input: gly[c] (Glycine)
+Signal roles (current labels):
+  m_in       = gly[c]
+  m_Ff       = adp[c]
+  m_Sf       = coa[c]
+  m_Fd       = pyr[c]
+  m_D1       = nadh[c]
+  m_Ff_2     = 56dthm[c]
+  m_Sf_2     = fadh2[c]
+  m_D2       = nadph[c]
+  m_Sd_2     = h2o[c]
+  m_c        = gthrd[c]
+  m_I        = mthgxl[c]
+  m_b        = glucys[c]
+  m_out      = cys_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: not_reached_within_depth | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 57 | distance Inf | excluded_input
+Input: h2o[c] (Water)
+Signal roles (current labels):
+  m_in       = h2o[c]
+  m_Ff       = r5p[c]
+  m_Sf       = nh4[c]
+  m_Fd       = g3p[c]
+  m_D1       = nad[c]
+  m_Ff_2     = mthgxl[c]
+  m_Sf_2     = glc_D[c]
+  m_D2       = nadp[c]
+  m_Sd_2     = g6p[c]
+  m_c        = crm_hs[c]
+  m_I        = coa[c]
+  m_b        = dolp_L[c]
+  m_out      = udp[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.
+
+------------------------------------------------------------
+Rank 4 | original motif 59 | distance Inf | excluded_input
+Input: o2[c] (Oxygen)
+Signal roles (current labels):
+  m_in       = o2[c]
+  m_Ff       = 4hpro_LT[c]
+  m_Sf       = CE6508[c]
+  m_Fd       = nadph[c]
+  m_D1       = h2o[c]
+  m_Ff_2     = gly[c]
+  m_Sf_2     = pyr[c]
+  m_D2       = gthrd[c]
+  m_Sd_2     = ala_L[c]
+  m_c        = cys_L[c]
+  m_I        = dopaqn[c]
+  m_b        = f6p[c]
+  m_out      = glu_L[c]
+
+------------------------------------------------------------
+cAMP INPUT CONNECTION (OUTPUT m_in)
+------------------------------------------------------------
+
+  Status: excluded_input | conversion steps: Inf
+  No connecting chain was found under the configured filters/depth.

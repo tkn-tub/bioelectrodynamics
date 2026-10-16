@@ -1,851 +1,941 @@
-function R = brendaKineticsTable(txtFile, xlsxFile, email, password, organism)
-%BRENDAKINETICSTABLE  Motif report (.txt)  ->  BRENDA  ->  kinetics workbook (.xlsx)
+function [Values, Km, Kcat, Reactions] = brendaKineticsTable(txtFile, xlsxFile, varargin)
+% BRENDA kinetics workbook for the current Block 7 selected-motif format.
+% Self-contained: no separate Brenda_Kinetics.m is required.
 %
-%   brendaKineticsTable('Block_7_Selected_Motifs.txt', 'kinetics_BRENDA.xlsx', email, password)
-%   brendaKineticsTable(..., 'Homo sapiens')     % organism to prefer (this is the default)
-%   R = brendaKineticsTable(...)                 % also returns the rows as a struct array
+% brendaKineticsTable('Block_7_Selected_Motifs.txt','kinetics_BRENDA.xlsx',email,password);
+% brendaKineticsTable('Block_7_Selected_Motifs(7).txt','kinetics_BRENDA_updated.xlsx');
+% Optional name/value arguments follow the filenames or the email/password pair:
+%   'Organism'         'Homo sapiens' (use '' explicitly for all organisms)
+%   'CredentialsFile'  'credentials.txt' (two lines: email, then password)
+%   'QueryBRENDA'      true (false skips live queries; references can still apply)
+%   'PrimarySubstrate' struct, e.g. struct('r_I','L-glutamate')
+%   'SubstrateAliases' N-by-2 string/cell array: model name, BRENDA name
+%   'PreferredEC'      struct, e.g. struct('r_adapter_1','3.1.4.17')
+%   'UseReferenceValues' true: apply the documented 2026-10-12 selections for
+%                        these 23 reaction IDs/equations. False restores
+%                        strict live-record matching without surrogates.
+% With QueryBRENDA=false and UseReferenceValues=true, the embedded snapshot
+% builds the populated workbook without Python, credentials or API access.
+% Reference choices may differ in organism, substrate, assay or direction;
+% two kcat estimates use paired SA/MW records. All choices are documented.
+% Known cAMP/cGMP names are matched as synonyms. A single reactant remaining
+% after excluding water/protons is used when no primary substrate is tagged.
+% For r_adapter_1 consuming cAMP, EC 3.1.4.17 is preferred when annotated.
+% PreferredEC overrides this default; all annotated EC records are retained.
 %
-%   Needs brendaQuery.m on the MATLAB path.
-%
-%   The workbook has three sheets:
-%     values           one row per reaction, laid out like the kinetics.xlsx template
-%     KM details       every substrate of every reaction, with n / min / median / max
-%     SA MW details    the same spread for specific activity and molecular weight
-%
-%   Which BRENDA value is used (change the settings below to do it differently):
-%     K_M  median of the wild-type values for the reaction's own substrate
-%     SA   maximum of the wild-type values (the purest preparation reported)
-%     MW   median of the subunit masses (SDS-PAGE / sequence), so that
-%          k_cat = SA * MW / 60 is per subunit
-%   Rate constant, gain and time constant (formulas in the workbook; [E] is
-%   written as 0, so G and tau stay empty until real concentrations are typed in), following Eqs. (23)-(27) of the paper:
-%     k   = k_cat [E] / K_M                  linear regime, substrate << K_M
-%     tau = 1 / sum(k of the removal reactions) = K_M,r / (k_cat,r [E]r)
-%     G   = k / sum(k of the removal reactions) = k_f / k_r
-%   The removal reactions of a row are the reactions that consume its product
-%   (column "Removed by").
-%
-%   Each one prefers the chosen organism and falls back to all organisms; K_M
-%   falls back further to the enzyme's other substrates (rough placeholder,
-%   written as OTHER SUBSTRATES). The Notes column says which case applied.
+% Explicit email/password arguments take precedence. If both are omitted or
+% empty, credentials are read from CredentialsFile. No default credentials,
+% environment lookup, recovery, printing, or credential files are generated.
+% Each unique complete EC is queried once for Km and kcat. All measured
+% records, commentary, literature and organism labels are retained.
+% Numeric candidates are medians of positive scalar values, NOT validated
+% reaction parameters; maximum/range values are not pooled or averaged.
+% Other substrate names use exact matching after motif tags/coefficients
+% are removed. Supply SubstrateAliases for additional known synonyms.
+% With UseReferenceValues=false, unresolved multiple EC matches and reverse
+% directions leave values blank.
+% Live queries do not infer activation kinetics. Reference mode supplements
+% the summary with an explicit sourced snapshot, separate from live records.
+% The output workbook is rebuilt and replaced on each
+% run: old values and manual edits at xlsxFile are not retained.
+% Requires MATLAB with Python/zeep for live queries; offline mode needs neither.
+% SOAP reference: https://www.brenda-enzymes.org/soap.php
 
-    if nargin < 5 || isempty(organism), organism = 'Homo sapiens'; end
-    if exist('brendaQuery', 'file') ~= 2
-        error('brendaKineticsTable:noBrendaQuery', 'brendaQuery.m must be on the MATLAB path.');
-    end
-
-    % ------------------------------ settings ------------------------------
-    cfg.organism  = strtrim(char(organism));
-    cfg.kmStat    = 'median';              % 'median' | 'geomean' | 'min' | 'max'
-    cfg.kcatStat  = 'max';
-    cfg.saStat    = 'max';
-    cfg.mwStat    = 'median';
-    cfg.kmOtherSubstrates = true;          % false: leave K_M empty when BRENDA has no value for the substrate
-    cfg.cacheFile = 'brenda_cache.mat';    % raw BRENDA replies; delete the file to query again
-    cfg.useCache  = true;
-
-    % EC numbers in the model annotation (Puniya2021_TNM1055.xml) that are wrong
-    % for the reaction.
-    %   reaction ID, correct EC ('' = none exists), why the model's EC is wrong, use the correct EC?
-    % true : BRENDA is queried with the correct EC and the row is annotated as corrected
-    % false: the model's EC is queried and the row is only annotated as wrong
-    cfg.ecFix = { ...
-        'RNDR3',   '1.17.4.1', 'ribonucleoside-diphosphate reductase is 1.17.4.1',  true; ...
-        'PUNP1',   '2.4.2.1',  'purine-nucleoside phosphorylase is 2.4.2.1',        true; ...
-        'FTHFL',   '6.3.4.3',  'formate-tetrahydrofolate ligase is 6.3.4.3 (6.3.2.17 is folylpolyglutamate synthase)', false; ...
-        'ASPGLUm', '',         'this is a transporter with no EC number (4.1.1.15 is glutamate decarboxylase)', false};
-
-    % Group names in the report -> titles in column A
-    cfg.groupTitle = { ...
-        'adapter',          'cAMP Input Adapter'; ...
-        'differentiator 1', 'Chemical Differentiator 1'; ...
-        'differentiator 2', 'Chemical Differentiator 2'; ...
-        'counter',          'Counter'; ...
-        'NN',               'Neural Network'};
-
-    % Never used as the K_M substrate / used only when nothing else is there.
-    % Names exactly as they appear in the report.
-    cfg.neverSubstrate = {'Proton', 'Water'};
-    cfg.currency = {'Adenosine Triphosphate', 'Adenosine Diphosphate', 'Orthophosphate', 'Diphosphate', ...
-        'Nicotinamide Adenine Dinucleotide', 'Nicotinamide Adenine Dinucleotide - Reduced', ...
-        'Nicotinamide Adenine Dinucleotide Phosphate', 'Nicotinamide Adenine Dinucleotide Phosphate - Reduced'};
-
-    % Name in the report -> names BRENDA uses for the same compound.
-    % Compared ignoring case and punctuation. Add a line when the Notes column
-    % says "other substrates" for a compound that BRENDA does list.
-    cfg.synonyms = { ...
-        '3,5-Cyclic Adenosine Monophosphate', {'cAMP', '3'',5''-cAMP', '3'',5''-cyclic AMP', 'cyclic AMP', 'adenosine 3'',5''-cyclic monophosphate'}; ...
-        'Adenosine Monophosphate',            {'AMP', '5''-AMP', 'adenosine 5''-monophosphate'}; ...
-        'Adenosine',                          {'adenosine'}; ...
-        'Orthophosphate',                     {'phosphate', 'orthophosphate', 'Pi'}; ...
-        'Alpha-D-Ribose 1-Phosphate',         {'alpha-D-ribose 1-phosphate', 'D-ribose 1-phosphate', 'ribose 1-phosphate'}; ...
-        'Alpha-D-Ribose 5-Phosphate',         {'D-ribose 5-phosphate', 'ribose 5-phosphate', 'alpha-D-ribose 5-phosphate'}; ...
-        'D-Xylulose 5-Phosphate',             {'D-xylulose 5-phosphate', 'xylulose 5-phosphate'}; ...
-        'Glyceraldehyde 3-Phosphate',         {'D-glyceraldehyde 3-phosphate', 'glyceraldehyde 3-phosphate', 'DL-glyceraldehyde 3-phosphate'}; ...
-        'Sedoheptulose 7-Phosphate',          {'sedoheptulose 7-phosphate', 'D-sedoheptulose 7-phosphate'}; ...
-        'Dihydroxyacetone Phosphate',         {'dihydroxyacetone phosphate', 'glycerone phosphate', 'DHAP'}; ...
-        'D-Erythrose 4-Phosphate',            {'D-erythrose 4-phosphate', 'erythrose 4-phosphate'}; ...
-        'Sedoheptulose 1,7-Bisphosphate',     {'sedoheptulose 1,7-bisphosphate', 'D-sedoheptulose 1,7-bisphosphate'}; ...
-        'Uridine Diphosphate',                {'UDP'}; ...
-        'D-Fructose 6-Phosphate',             {'D-fructose 6-phosphate', 'fructose 6-phosphate', 'beta-D-fructose 6-phosphate'}; ...
-        'Uridine-5''-TrIphosphate',           {'UTP'}; ...
-        'Adenosine Triphosphate',             {'ATP', 'MgATP2-', 'MgATP', 'Mg-ATP'}; ...
-        'Cytidine 5''-Monophosphate',         {'CMP'}; ...
-        'Cytidine-5''-DIphosphate',           {'CDP'}; ...
-        'Reduced Thioredoxin',                {'thioredoxin', 'reduced thioredoxin'}; ...
-        'Deoxycytidylic Acid',                {'dCMP'}; ...
-        'Deoxycytidine-5''-Diphosphate',      {'dCDP'}; ...
-        'L-Aspartate',                        {'L-aspartate', 'aspartate', 'L-Asp', 'L-aspartic acid'}; ...
-        'L-Glutamate',                        {'L-glutamate', 'glutamate', 'L-Glu'}; ...
-        'L-Glutamine',                        {'L-glutamine', 'glutamine', 'L-Gln'}; ...
-        '5-Phospho-Alpha-D-Ribose 1-Diphosphate', {'5-phospho-alpha-D-ribose 1-diphosphate', 'PRPP', '5-phosphoribosyl 1-diphosphate', '5-phospho-D-ribose 1-diphosphate', 'phosphoribosyl diphosphate', '5-phosphoribosyl-1-pyrophosphate'}; ...
-        'Formate',                            {'formate'}; ...
-        '5,6,7,8-Tetrahydrofolate',           {'tetrahydrofolate', '5,6,7,8-tetrahydrofolate', '(6S)-tetrahydrofolate', 'THF'}; ...
-        '10-Formyltetrahydrofolate',          {'10-formyltetrahydrofolate', 'N10-formyltetrahydrofolate', '(6R)-10-formyltetrahydrofolate'}; ...
-        '5-Amino-1-(5-Phospho-D-Ribosyl)Imidazole-4-Carboxamide', {'AICAR', '5-amino-1-(5-phospho-D-ribosyl)imidazole-4-carboxamide', '5-aminoimidazole-4-carboxamide ribonucleotide', '5-amino-4-imidazolecarboxamide ribotide'}; ...
-        '(S)-Lactaldehyde',                   {'(S)-lactaldehyde', 'L-lactaldehyde', 'lactaldehyde'}; ...
-        'Nicotinamide Adenine Dinucleotide Phosphate - Reduced', {'NADPH'}; ...
-        'Nicotinamide Adenine Dinucleotide',  {'NAD+', 'NAD'}; ...
-        '(R)-Propane-1,2-Diol',               {'(R)-propane-1,2-diol', '(R)-1,2-propanediol', '1,2-propanediol', 'propane-1,2-diol'}; ...
-        '(S)-Propane-1,2-Diol',               {'(S)-propane-1,2-diol', '(S)-1,2-propanediol', '1,2-propanediol', 'propane-1,2-diol'}; ...
-        'Hydroxyacetone',                     {'hydroxyacetone', 'acetol'}; ...
-        '3-Phospho-D-Glyceroyl Phosphate',    {'3-phospho-D-glyceroyl phosphate', '1,3-bisphosphoglycerate', '1,3-diphosphoglycerate', '1,3-bisphospho-D-glycerate'}};
-    % ----------------------------------------------------------------------
-
-    % 1) reactions from the report
-    rx = parseReport(txtFile);
-    if isempty(rx)
-        error('brendaKineticsTable:noReactions', 'No reactions found in %s.', txtFile);
-    end
-    rx = applyEcFixes(rx, cfg);
-    fprintf('%d reactions read from %s\n', numel(rx), txtFile);
-
-    % 2) BRENDA, once per EC number (all organisms; the filtering is done here)
-    data = fetchAll(unique({rx(~cellfun('isempty', {rx.ec})).ec}), email, password, cfg);
-
-    % 3) choose one value of each kind per reaction
-    [rx.km] = deal([]);  [rx.kcat] = deal([]);  [rx.sa] = deal([]);  [rx.mw] = deal([]);  [rx.primary] = deal(0);
-    for i = 1:numel(rx)
-        rx(i) = chooseValues(rx(i), data, cfg);
-    end
-
-    rx = findRemovers(rx, cfg);
-
-    % 4) workbook
-    writeWorkbook(xlsxFile, rx, cfg);
-    fprintf('Wrote %s\n\n', xlsxFile);
-    printSummary(rx);
-    if nargout > 0, R = rx; end
+if nargin < 1 || isempty(txtFile), txtFile = 'Block_7_Selected_Motifs.txt'; end
+if nargin < 2 || isempty(xlsxFile), xlsxFile = 'kinetics_BRENDA_updated.xlsx'; end
+% Accept the requested positional credentials AND the existing option syntax.
+email = ''; password = ''; positionalCredentials = false;
+optionNames = {'Organism','CredentialsFile','QueryBRENDA', ...
+    'PrimarySubstrate','SubstrateAliases','PreferredEC','UseReferenceValues'};
+options = varargin;
+isTextScalar = @(v)(ischar(v)&&(isrow(v)||isempty(v))) || ...
+    (isstring(v)&&isscalar(v)&&~ismissing(v));
+if ~isempty(options) && isTextScalar(options{1}) && ...
+        ~any(strcmpi(char(options{1}),optionNames))
+    assert(numel(options)>=2 && isTextScalar(options{2}), ...
+        'Supply email and password together, followed by optional name/value arguments.');
+    email = char(options{1}); password = char(options{2});
+    assert(isempty(email)==isempty(password), ...
+        'Supply both email and password, or leave both empty to read credentials.txt.');
+    positionalCredentials = ~isempty(email);
+    options = options(3:end);
 end
+clear varargin % Avoid keeping an extra copy of positional credentials.
+p = inputParser;
+p.PartialMatching = false;
+addParameter(p,'Organism','Homo sapiens',@(v)ischar(v)||isstring(v));
+addParameter(p,'CredentialsFile','credentials.txt',@(v)ischar(v)||isstring(v));
+addParameter(p,'QueryBRENDA',true,@(v)islogical(v)&&isscalar(v));
+addParameter(p,'PrimarySubstrate',struct(),@isstruct);
+addParameter(p,'PreferredEC',struct(),@isstruct);
+addParameter(p,'UseReferenceValues',true,@(v)islogical(v)&&isscalar(v));
+addParameter(p,'SubstrateAliases',strings(0,2),@(v)isstring(v)||iscell(v));
+addParameter(p,'OrganismFallback',true,@(v)islogical(v)&&isscalar(v));
+addParameter(p,'RelaxedSubstrateMatch',true,@(v)islogical(v)&&isscalar(v));
+addParameter(p,'KcatAnySubstrate',true,@(v)islogical(v)&&isscalar(v));
+addParameter(p,'SubstituteKm',true,@(v)islogical(v)&&isscalar(v));
+addParameter(p,'AllowReverse',true,@(v)islogical(v)&&isscalar(v));
+addParameter(p,'KcatSource','SAxMW', ...
+    @(v)any(strcmpi(char(v),{'SAxMW','BRENDA','BRENDA else SAxMW'})));
+parse(p,options{:}); opt = p.Results;
+clear options
+aliases = string(opt.SubstrateAliases);
+assert(size(aliases,2)==2,'SubstrateAliases must have two columns.');
+% Caller aliases take precedence over the shipped defaults.
+defaults = defaultAliases();
+keep = ~ismember(normalize(defaults(:,1)),normalize(aliases(:,1)));
+aliases = [aliases; defaults(keep,:)];
+assert(~strcmp(char(txtFile),char(xlsxFile)),'Input and output must differ.');
+Reactions = parseMotifs(fileread(txtFile));
+assert(~isempty(Reactions),'No reaction records found in the TXT file.');
+fprintf('Parsed %d reaction occurrences across %d motif(s).\n', ...
+    height(Reactions),numel(unique(Reactions.Motif)));
 
-% =========================================================================
-%  Report parsing
-% =========================================================================
-function rx = parseReport(txtFile)
-    txt   = fileread(txtFile);
-    lines = regexp(txt, '\r?\n', 'split');
-    rx = struct('motif', {}, 'label', {}, 'group', {}, 'id', {}, 'name', {}, ...
-                'ecFile', {}, 'names', {});
-    k = 0;  inRx = false;  motif = 1;
-    for i = 1:numel(lines)
-        L = lines{i};
-        mo = regexp(L, 'SELECTED (?:COMPLETE )?MOTIF\s+(\d+)', 'tokens', 'once');
-        if ~isempty(mo), motif = str2double(mo{1}); inRx = false; continue; end
-        if ~isempty(regexp(L, '^\s*(---|###)', 'once')), inRx = false; continue; end
-
-        a = regexp(L, '^\s*Adapter reaction\s+(\d+)\s*\([^)]*\)\s*:\s*(\S+)\s*\|\s*(.*?)\s*$', 'tokens', 'once');
-        m = regexp(L, '^\s*(r_\w+)\s*\(([^:()]+):.*\)\s*$', 'tokens', 'once');
-        if ~isempty(a)
-            k = k + 1;  inRx = true;
-            rx(k).motif = motif;  rx(k).label = ['Adapter ' a{1}];  rx(k).group = 'adapter';
-            rx(k).id = a{2};  rx(k).name = a{3};  rx(k).ecFile = '';  rx(k).names = '';
-        elseif ~isempty(m)
-            k = k + 1;  inRx = true;
-            rx(k).motif = motif;  rx(k).label = m{1};  rx(k).group = strtrim(m{2});
-            rx(k).id = '';  rx(k).name = '';  rx(k).ecFile = '';  rx(k).names = '';
-        elseif inRx
-            f = regexp(L, '^\s*(ID|Names|Name|EC)\s*:\s*(.*?)\s*$', 'tokens', 'once');
-            if isempty(f), continue; end
-            switch f{1}
-                case 'ID',    rx(k).id     = f{2};
-                case 'Name',  rx(k).name   = f{2};
-                case 'EC',    rx(k).ecFile = f{2};
-                case 'Names', rx(k).names  = f{2};
-            end
-        end
-    end
-
-    for i = 1:numel(rx)
-        [rx(i).subs, rx(i).tagged] = parseSubstrates(rx(i).names, 1);
-        [rx(i).prods, rx(i).prodTagged] = parseSubstrates(rx(i).names, 2);
-    end
+% Validate credentials before touching the output workbook.
+if opt.QueryBRENDA && ~positionalCredentials
+    [email,password] = readCredentials(opt.CredentialsFile);
 end
-
-function [subs, tagged] = parseSubstrates(namesLine, side)
-% One side (1 = left, 2 = right) of "A(m_in) + B  ->  C + D"; role tags such as (m_in) are removed.
-    subs = {};  tagged = false(1, 0);
-    if isempty(namesLine), return; end
-    sides = regexp(namesLine, '\s*(?:<=>|<->|->|=>)\s*', 'split');
-    if numel(sides) < side, return; end
-    terms = regexp(strtrim(sides{side}), '\s\+\s', 'split');
-    for i = 1:numel(terms)
-        s = strtrim(terms{i});
-        if isempty(s), continue; end
-        t = regexp(s, '^(.*?)\((m_\w+|adapter_\d+|[^()]*input)\)$', 'tokens', 'once');
-        if ~isempty(t), s = strtrim(t{1}); end
-        s = regexprep(s, '^\d+(\.\d+)?\s+', '');          % stoichiometric coefficient
-        subs{end+1}   = s;                                %#ok<AGROW>
-        tagged(end+1) = ~isempty(t);                      %#ok<AGROW>
-    end
+Km = emptyRecords('Km','mM'); Kcat = emptyRecords('kcat','1/s');
+SArec = emptyRecords('SA','umol/min/mg'); MWrec = emptyRecords('MW','Da');
+ecs = strings(0,1);
+for i=1:height(Reactions)
+    ecs = [ecs; string(regexp(char(Reactions.EC(i)), ...
+        '(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','match'))']; %#ok<AGROW>
 end
-
-function rx = applyEcFixes(rx, cfg)
-    for i = 1:numel(rx)
-        ecs = regexp(rx(i).ecFile, '\d+\.\d+\.\d+\.\d+', 'match');
-        rx(i).ec = '';  rx(i).ecNote = '';
-        if ~isempty(ecs)
-            rx(i).ec = ecs{1};
-            if numel(ecs) > 1
-                rx(i).ecNote = ['report lists ' strjoin(ecs, ', ') '; first one used'];
-            end
-        else
-            rx(i).ecNote = 'no EC number in report';
-        end
-        j = find(strcmp(cfg.ecFix(:, 1), rx(i).id), 1);
-        if ~isempty(j)
-            if cfg.ecFix{j, 4}
-                rx(i).ecNote = sprintf(['EC CORRECTED: the model annotation says %s, which is wrong for this reaction; ' ...
-                    '%s. Values in this row are for the corrected EC'], rx(i).ec, cfg.ecFix{j, 3});
-                rx(i).ec = cfg.ecFix{j, 2};
-            else
-                rx(i).ecNote = sprintf(['EC %s FROM THE MODEL ANNOTATION IS WRONG for this reaction: %s. ' ...
-                    'Values in this row are not for this enzyme'], rx(i).ec, cfg.ecFix{j, 3});
-            end
-        end
-    end
-end
-
-% =========================================================================
-%  BRENDA
-% =========================================================================
-function data = fetchAll(ecs, email, password, cfg)
-    cache = struct();
-    if cfg.useCache && exist(cfg.cacheFile, 'file') == 2
-        S = load(cfg.cacheFile);
-        if isfield(S, 'cache'), cache = S.cache; end
-    end
-    data = struct();
-    for i = 1:numel(ecs)
-        key = ecKey(ecs{i});
-        if isfield(cache, key)
-            fprintf('  EC %-12s from %s\n', ecs{i}, cfg.cacheFile);
-            data.(key) = tidy(cache.(key));
-            continue
-        end
-        fprintf('  EC %-12s querying BRENDA (%d of %d)\n', ecs{i}, i, numel(ecs));
-        try
-            out = brendaQuery(ecs{i}, email, password);        % no organism = all organisms
-            data.(key) = tidy(out);
-            D = data.(key);
-            if cfg.useCache && (numel(D.km.val) + numel(D.kc.val) + numel(D.sa.val) + numel(D.mw.val)) > 0
-                cache.(key) = out;                             % empty replies are not cached
-                save(cfg.cacheFile, 'cache');
-            end
-        catch err
-            warning('brendaKineticsTable:queryFailed', 'EC %s: %s', ecs{i}, err.message);
-            data.(key) = tidy(struct());
-            data.(key).error = err.message;
-        end
-        pause(1.1);                                            % BRENDA: at most one request per second
-    end
-end
-
-function key = ecKey(ec)
-    key = ['ec_' strrep(ec, '.', '_')];
-end
-
-function D = tidy(out)
-% brendaQuery output (tables) -> plain columns, with the per-row flags used below.
-    D.error = '';
-    KM = getPart(out, 'KM');  SA = getPart(out, 'SpecificActivity');  MW = getPart(out, 'MolecularWeight');
-    TN = getPart(out, 'TurnoverNumber');
-
-    n = nRows(TN);
-    D.kc.val    = rangeValue(numCol(TN, 'turnoverNumber', n), numCol(TN, 'turnoverNumberMaximum', n));
-    D.kc.subKey = normName(txtCol(TN, 'substrate', n));
-    D.kc.org    = txtCol(TN, 'organism', n);
-    D.kc.ok     = D.kc.val > 0 & isfinite(D.kc.val) & ~isMutant(txtCol(TN, 'commentary', n));
-
-    n = nRows(KM);
-    D.km.val    = rangeValue(numCol(KM, 'kmValue', n), numCol(KM, 'kmValueMaximum', n));
-    D.km.sub    = txtCol(KM, 'substrate', n);
-    D.km.subKey = normName(D.km.sub);
-    D.km.org    = txtCol(KM, 'organism', n);
-    D.km.ok     = D.km.val > 0 & isfinite(D.km.val) & ~isMutant(txtCol(KM, 'commentary', n));
-
-    n = nRows(SA);
-    D.sa.val = rangeValue(numCol(SA, 'specificActivity', n), numCol(SA, 'specificActivityMaximum', n));
-    D.sa.org = txtCol(SA, 'organism', n);
-    D.sa.ok  = D.sa.val > 0 & isfinite(D.sa.val) & ~isMutant(txtCol(SA, 'commentary', n));
-
-    n = nRows(MW);
-    com = txtCol(MW, 'commentary', n);
-    D.mw.val     = rangeValue(numCol(MW, 'molecularWeight', n), numCol(MW, 'molecularWeightMaximum', n));
-    D.mw.org     = txtCol(MW, 'organism', n);
-    D.mw.ok      = D.mw.val > 0 & isfinite(D.mw.val);
-    D.mw.subunit = ~cellfun('isempty', regexpi(com, ...
-                     'sds|sequence|subunit|monomer|calculat|deduced|\d\s*\*\s*\d', 'once'));
-end
-
-function T = getPart(out, name)
-    T = [];
-    if isstruct(out) && isfield(out, name), T = out.(name); end
-end
-
-function n = nRows(T)
-    n = 0;
-    if isa(T, 'table')
-        n = size(T, 1);
-    elseif isstruct(T)
-        f = fieldnames(T);
-        if ~isempty(f), n = numel(T.(f{1})); end
-    end
-end
-
-function tf = hasCol(T, name)
-    if isa(T, 'table')
-        tf = any(strcmp(T.Properties.VariableNames, name));
+ecs = unique(ecs,'stable');
+status = cell(numel(ecs)+1,6);
+status(1,:) = {'EC','Organism requested','Km query','kcat query','SA query','MW query'};
+for j=1:numel(ecs)
+    ec = char(ecs(j));
+    fprintf('EC %d/%d: %s\n',j,numel(ecs),ec);
+    if opt.QueryBRENDA
+        % Query each parameter independently: one failure must not discard
+        % the others. Many EC codes have no record at all for the requested
+        % organism (EC 6.3.2.12 has no human entry: humans lack the enzyme),
+        % so an empty result is retried without the organism restriction.
+        [a,sa] = fetchBothPools(ec,opt,email,password,'Km');
+        [b,sb] = fetchBothPools(ec,opt,email,password,'kcat');
+        [c,sc] = fetchBothPools(ec,opt,email,password,'SA');
+        [d,sd] = fetchBothPools(ec,opt,email,password,'MW');
+        Km=[Km;a]; Kcat=[Kcat;b]; SArec=[SArec;c]; MWrec=[MWrec;d]; %#ok<AGROW>
     else
-        tf = isstruct(T) && isfield(T, name);
+        sa = 'Not queried (offline mode; see Reference choices)';
+        sb = sa; sc = sa; sd = sa;
+    end
+    status(j+1,:) = {ec,char(opt.Organism),sa,sb,sc,sd};
+end
+clear email password
+
+headers = {'Reaction pair','Reaction','Enzyme','EC code','K_M [mM]', ...
+    'SA [μmol/min/mg]','MW [mg/μmol]','k_cat [s^-1]','[E] [mM]', ...
+    'k = k_cat [E] / K_M [s^-1]', ...
+    'Removed by (* = K_M there is for another substrate)','G','τ [s]','Notes'};
+values = cell(height(Reactions)+1,14); values(1,:) = headers;
+details = {'Reaction','Reaction ID','EC used','Substrate','On values sheet', ...
+    'K_M [mM]','n','min','median','max','K_M taken from'};
+saMW = {'Reaction','Reaction ID','EC in model','EC used','SA [μmol/min/mg]', ...
+    'n','min','median','max','SA taken from','MW [Da]','n','min','median', ...
+    'max','MW taken from','EC note'};
+referenceChoices={'Reaction','Reaction ID','EC used','K_M [mM]','k_cat [s^-1]', ...
+    'Km substrate','kcat substrate','Km organism','kcat organism', ...
+    'Km literature','kcat literature','Km method','kcat method','Km n','kcat n', ...
+    'Km assay','kcat assay','Km source','kcat source','Assumptions','Selected date'};
+snapshot=referenceSnapshot();
+rowReason=repmat("",height(Reactions),1);   % why a row ended up without values
+
+for i=1:height(Reactions)
+    row=i+1; R=Reactions(i,:);
+    [substrates,tags] = splitSide(R.NamesEquation,'left');
+    primary = ""; primarySource = "";
+    if isfield(opt.PrimarySubstrate,char(R.Reaction))
+        primary = string(opt.PrimarySubstrate.(char(R.Reaction)));
+        assert(any(normalize(substrates)==normalize(primary)), ...
+            'PrimarySubstrate for %s must be a printed reactant.',char(R.Reaction));
+        primarySource = "caller";
+    elseif sum(tags~="")==1
+        primary = substrates(find(tags~="",1));
+        primarySource = "single tagged reactant";
+    elseif numel(substrates)==1
+        primary = substrates(1); primarySource = "only reactant";
+    elseif R.PathSubstrate~=""
+        % Adapter chains print no tag on the consumed intermediate: the
+        % Metabolite path / Reaction path lines identify it unambiguously.
+        primary = R.PathSubstrate; primarySource = "adapter metabolite path";
+    elseif sum(tags~="")>1
+        % Cancellation and sequestration steps are genuinely bi-substrate.
+        % Take the first tagged reactant and say so, rather than withholding.
+        primary = substrates(find(tags~="",1));
+        primarySource = "first of "+string(sum(tags~=""))+" tagged reactants";
+    elseif all(tags=="")
+        % Do not let water/protons or cofactors obscure the carrier.
+        remaining=~ismember(substrateKey(substrates),currencyKeys());
+        if sum(remaining)==1
+            primary=substrates(remaining); primarySource="only non-currency reactant";
+        end
+    end
+    codes=string(regexp(char(R.EC),'(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','match'));
+    preferredEC=""; preferenceNote="";
+    if isfield(opt.PreferredEC,char(R.Reaction))
+        preferredEC=string(opt.PreferredEC.(char(R.Reaction)));
+        assert(isscalar(preferredEC) && any(codes==preferredEC), ...
+            'PreferredEC for %s must be one of its annotated EC codes.',char(R.Reaction));
+        preferenceNote="Explicit EC preference: "+preferredEC+". ";
+    elseif R.Reaction=="r_adapter_1" && ...
+            substrateKey(aliasName(primary,aliases))=="camp" && any(codes=="3.1.4.17")
+        preferredEC="3.1.4.17";
+        preferenceNote="Default cAMP adapter EC preference: 3.1.4.17 (override with PreferredEC). ";
+    end
+    candidates = {}; chosenKm=NaN; chosenKcat=NaN; chosenEC=""; ref=[];
+    kmProvenance=""; kcatProvenance="";
+    for ec=codes
+        for s=substrates'
+            % Try the printed model name AND its alias: an alias that misses
+            % must not hide a record the original name would have matched.
+            names=unique([s;aliasName(s,aliases)],'stable');
+            ka=Km([],:); kb=Kcat([],:); pa=""; pb="";
+            for q=names'
+                if isempty(ka) || ~any(isfinite(ka.value))
+                    [ka,pa]=selectRecords(Km,ec,q,string(opt.Organism), ...
+                        opt.RelaxedSubstrateMatch,opt.OrganismFallback);
+                end
+                if isempty(kb) || ~any(isfinite(kb.value))
+                    [kb,pb]=selectRecords(Kcat,ec,q,string(opt.Organism), ...
+                        opt.RelaxedSubstrateMatch,opt.OrganismFallback);
+                end
+            end
+            v=ka.value(isfinite(ka.value));
+            selected = normalize(s)==normalize(primary) && ...
+                (preferredEC=="" || ec==preferredEC);
+            onSheet='no';
+            if selected && ~isempty(v) && (R.Direction==1 || opt.AllowReverse), onSheet='candidate'; end
+            if isempty(v), stats={[],0,[],[],[]};
+            else, stats={median(v),numel(v),min(v),median(v),max(v)}; end
+            details(end+1,:) = [{char(R.Reaction),char(R.ID),char(ec),char(s),onSheet}, ...
+                stats,{char(strjoin(unique(ka.organism,'stable'),'; '))}]; %#ok<AGROW>
+            c=kb.value(isfinite(kb.value));
+            if selected && (~isempty(v)||~isempty(c))
+                vm=NaN; cm=NaN;
+                if ~isempty(v), vm=median(v); kmProvenance=pa; end
+                if ~isempty(c), cm=median(c); kcatProvenance=pb; end
+                candidates(end+1,:)={ec,vm,cm,numel(v),numel(c)}; %#ok<AGROW>
+            end
+        end
+    end
+    % Keep only the preferred EC when one is set, so a second annotated EC
+    % does not force the summary to be withheld.
+    if preferredEC~="" && ~isempty(candidates)
+        candidates = candidates(string(candidates(:,1))==preferredEC,:);
+    end
+    note="Candidate medians require assay, enzyme and direction review. ";
+    if ~opt.QueryBRENDA, note="Offline template: no BRENDA measurements queried. "; end
+    note=note+preferenceNote;
+    if R.Direction~=1 && opt.AllowReverse
+        % Filled on request. BRENDA measures the direction the enzyme is
+        % written in, so these constants describe the forward reaction and
+        % transfer to the reverse only through K_eq (Haldane relation).
+        note=note+"REVERSE in the model (Direction = "+string(R.Direction)+ ...
+            "): constants below are BRENDA's FORWARD values, reused without a " + ...
+            "K_eq correction. Verify before quoting. ";
+    end
+    if R.Direction~=1 && ~opt.AllowReverse
+        note=note+"NOT forward relative to model.S (Direction = "+string(R.Direction)+ ...
+            "): Km/kcat withheld. BRENDA measures the forward direction, and forward " + ...
+            "constants do not transfer to the reverse without K_eq (Haldane). " + ...
+            "Set AllowReverse = true to fill the row anyway. ";
+        rowReason(i)="reverse direction";
+    elseif ~isempty(candidates)
+        % Several annotated EC codes can match. Prefer the one with the most
+        % Km records rather than withholding the row, and record the choice.
+        if size(candidates,1)>1
+            [~,best]=max(cell2mat(candidates(:,4)));
+            note=note+sprintf('%d EC candidates; kept the one with most Km records (set PreferredEC to override). ', ...
+                size(candidates,1));
+        else
+            best=1;
+        end
+        chosenEC=candidates{best,1}; chosenKm=candidates{best,2}; chosenKcat=candidates{best,3};
+        note=note+"Primary substrate: "+primary+" ("+primarySource+"); EC used: "+chosenEC+". ";
+        note=note+sprintf('Km n=%d; kcat n=%d. ',candidates{best,4},candidates{best,5});
+        if kmProvenance~="", note=note+"Km match: "+kmProvenance+". "; end
+        if kcatProvenance~="", note=note+"kcat match: "+kcatProvenance+". "; end
+        note=note+"Medians may pool different isoforms/assays; not a paired enzyme-specific measurement. ";
+        % k_cat is often absent for the exact substrate even where K_M exists.
+        % Fall back to the same EC across all substrates, clearly flagged.
+        if ~isfinite(chosenKcat) && opt.KcatAnySubstrate
+            pool=Kcat(Kcat.EC==string(chosenEC),:);
+            if ~opt.OrganismFallback || string(opt.Organism)~=""
+                sameOrg=pool(normalize(pool.organism)==normalize(string(opt.Organism)),:);
+                if any(isfinite(sameOrg.value)), pool=sameOrg; end
+            end
+            cc=pool.value(isfinite(pool.value));
+            if ~isempty(cc)
+                chosenKcat=median(cc);
+                note=note+sprintf(['k_cat UNMATCHED to the primary substrate: median of %d records ' ...
+                    'for EC %s across all substrates. Treat as an order-of-magnitude surrogate. '], ...
+                    numel(cc),chosenEC);
+            end
+        end
+    elseif isempty(codes)
+        note=note+"NO EC CODE annotated for this reaction in the motif file: nothing can be queried. ";
+        rowReason(i)="no EC code in the motif file";
+    elseif opt.SubstituteKm && primary~="" && (R.Direction==1 || opt.AllowReverse)
+        % BRENDA often has no record for the ligand this reaction consumes
+        % (EC 2.7.4.6 has ADP/ATP/GTP/dTDP, never dGDP). Rather than leaving
+        % the row empty, take the best-sampled ligand of the same EC and say
+        % so: this is the case the "*" in the "Removed by" header refers to.
+        [subKm,subLigand,subN,subEC] = substituteKm(Km,codes,string(opt.Organism),opt.OrganismFallback);
+        if isfinite(subKm)
+            chosenKm=subKm; chosenEC=subEC;
+            note=note+sprintf(['K_M SUBSTITUTED: no record for %s; using %s (EC %s, %d records), ' ...
+                'a DIFFERENT ligand of the same enzyme. Mark this row with "*". '], ...
+                primary,subLigand,subEC,subN);
+        else
+            note=note+"No record for "+primary+" nor any other ligand of EC "+strjoin(cellstr(codes),'/')+". ";
+            rowReason(i)="EC has no usable K_M record at all";
+        end
+    elseif primary==""
+        note=note+"Primary substrate unresolved: set PrimarySubstrate or review KM details. ";
+        rowReason(i)="primary substrate unresolved";
+    else
+        note=note+"No matched records for "+primary+" under EC "+strjoin(cellstr(codes),'/')+ ...
+            "; review Km records, Query status and SubstrateAliases. ";
+    end
+    if opt.UseReferenceValues
+        hit=find(string({snapshot.reaction})==R.Reaction & string({snapshot.id})==R.ID);
+        if numel(hit)==1
+            candidate=snapshot(hit);
+            compatible=any(codes==string(candidate.ec)) && ...
+                normalize(candidate.equation)==normalize(R.NamesEquation) && ...
+                candidate.direction==R.Direction;
+            % Explicit caller choices take precedence over the fixed snapshot.
+            if isfield(opt.PrimarySubstrate,char(R.Reaction)), compatible=false; end
+            if preferredEC~="" && preferredEC~=string(candidate.ec), compatible=false; end
+            if compatible
+                ref=candidate;
+                chosenKm=ref.km.value; chosenKcat=ref.kcat.value; chosenEC=string(ref.ec);
+                note=string(ref.note);
+                referenceChoices(end+1,:)={ref.reaction,ref.id,ref.ec,chosenKm,chosenKcat, ...
+                    ref.km.substrate,ref.kcat.substrate,ref.km.organism,ref.kcat.organism, ...
+                    ref.km.literature,ref.kcat.literature,ref.km.kind,ref.kcat.kind, ...
+                    ref.km.n,ref.kcat.n,ref.km.conditions,ref.kcat.conditions, ...
+                    ref.km.source,ref.kcat.source,ref.assumptions,'2026-10-12'}; %#ok<AGROW>
+                % Mark the original matching view as superseded, then list
+                % the exact reference used (including product-side references).
+                for d=2:size(details,1)
+                    if strcmp(details{d,1},char(R.Reaction)) && strcmp(details{d,2},char(R.ID))
+                        details{d,5}='not selected (reference mode)';
+                    end
+                end
+                details(end+1,:)={char(R.Reaction),char(R.ID),ref.ec,ref.km.substrate, ...
+                    'reference selected',chosenKm,ref.km.n,[],chosenKm,[], ...
+                    [ref.km.organism '; ' ref.km.kind '; literature ' ref.km.literature]}; %#ok<AGROW>
+            end
+        end
+    end
+    if R.Reaction=="r_Nw"
+        note=note+"m_c activation is a design assumption; enzyme Km does not specify its activation law. ";
+    end
+    if R.Reaction=="r_I1"
+        note=note+"Printed reverse deacylase reaction needs separate feasibility review. ";
+    end
+    if numel(codes)>1, note=note+"Multiple model EC annotations retained without correction. "; end
+    values(row,1:4)={sprintf('Motif %d / Block %d',R.Motif,R.Block), ...
+        char(R.Reaction),char(R.Name),char(R.EC)};
+    if isfinite(chosenKm), values{row,5}=chosenKm; end
+    % Specific activity and molecular weight give k_cat = SA*MW/60 whenever a
+    % direct turnover number is missing. BRENDA reports both per EC, so this
+    % recovers rows the turnover query alone leaves blank.
+    % Specific activity and molecular weight are reported per enzyme, not per
+    % substrate, so they can be filled from the EC code even when no K_M
+    % record matched the printed substrate name.
+    % 'SAxMW' (the default) reproduces the original workbook: k_cat is always
+    % computed as SA*MW/60 and a BRENDA turnover number is never written to
+    % column H. It is still reported in the note so the two can be compared.
+    useSAxMW = strcmpi(char(opt.KcatSource),'SAxMW');
+    if useSAxMW && isfinite(chosenKcat)
+        note=note+sprintf('BRENDA turnover number %.4g 1/s was found but NOT used (KcatSource = SAxMW). ',chosenKcat);
+        chosenKcat=NaN;
+    end
+    saValue=NaN; mwValue=NaN; ecSAMW=chosenEC;
+    if ecSAMW==""
+        if preferredEC~=""
+            ecSAMW=preferredEC;
+        elseif numel(codes)==1
+            ecSAMW=codes(1);
+        elseif ~isempty(codes)
+            have=arrayfun(@(e) sum(SArec.EC==e & isfinite(SArec.value)),codes);
+            [most,which]=max(have);
+            if most>0, ecSAMW=codes(which); end
+        end
+    end
+    if (isempty(ref) || useSAxMW) && ~isfinite(chosenKcat) && ecSAMW~=""
+        saValue=medianFor(SArec,ecSAMW,string(opt.Organism),opt.OrganismFallback);
+        mwValue=medianFor(MWrec,ecSAMW,string(opt.Organism),opt.OrganismFallback);
+        if isfinite(saValue) && isfinite(mwValue)
+            note=note+sprintf(['k_cat ESTIMATED as SA*MW/60 from %g umol/min/mg and %g Da ' ...
+                '(medians for EC %s). BRENDA molecular weights are often the NATIVE ' ...
+                'oligomer, so this overestimates k_cat by the number of subunits. '], ...
+                saValue,mwValue,ecSAMW);
+        end
+    end
+    if ~isempty(ref) && ~isempty(ref.sa) && ~useSAxMW
+        values{row,6}=ref.sa; values{row,7}=ref.mw;
+        values{row,8}=sprintf('=F%d*G%d/60',row,row);
+    elseif isfinite(chosenKcat), values{row,8}=chosenKcat;
+    elseif isfinite(saValue) && isfinite(mwValue)
+        values{row,6}=saValue; values{row,7}=mwValue/1000;   % mg/umol
+        values{row,8}=sprintf('=F%d*G%d/60',row,row);
+    else
+        % Retain template conversion for optional manual SA/MW entry only.
+        values{row,8}=sprintf('=IF(AND(ISNUMBER(F%d),ISNUMBER(G%d)),F%d*G%d/60,"")',row,row,row,row);
+    end
+    values{row,9}=0; % User supplies enzyme concentration, as in original workbook.
+    values{row,10}=sprintf(['=IF(AND(ISNUMBER(H%d),ISNUMBER(I%d),ISNUMBER(E%d)),' ...
+        'IF(E%d>0,H%d*I%d/E%d,""),"")'],row,row,row,row,row,row,row);
+    values{row,14}=char(note);
+    saMW(end+1,:) = [{char(R.Reaction),char(R.ID),char(R.EC),char(chosenEC)}, ...
+        cell(1,12),{'SA/MW not queried; direct measured kcat used when available.'}]; %#ok<AGROW>
+    if ~isempty(ref)
+        saMW{end,17}=['Reference choice: ' ref.kcat.kind '; see Reference choices.'];
+        if ~isempty(ref.sa)
+            saMW(end,5:16)={ref.sa,1,ref.sa,ref.sa,ref.sa,ref.kcat.source, ...
+                ref.mw*1000,1,ref.mw*1000,ref.mw*1000,ref.mw*1000,ref.kcat.source};
+        end
     end
 end
 
-function v = numCol(T, name, n)
-    v = nan(n, 1);
-    if n == 0 || ~hasCol(T, name), return; end
-    x = T.(name);
-    if ~isnumeric(x), x = str2double(cellstr(x)); end
-    v = double(x(:));
+% Only first-order pool producer/consumer pairs receive G/tau formulas.
+% Cancellation and sequestration are multi-substrate steps: summing their
+% kcat[E]/Km as first-order losses would require co-substrate assumptions.
+% October 2026 nomenclature: each delay pool is produced by its feed
+% reaction and consumed by its delay reaction (m_F by r_Ff then r_Fd, etc.).
+pairs={'r_Ff','r_Fd';'r_Sf','r_Sd';'r_Ff_2','r_Fd_2';'r_Sf_2','r_Sd_2'};
+for motif=unique(Reactions.Motif)'
+    for j=1:size(pairs,1)
+        a=find(Reactions.Motif==motif & Reactions.Reaction==string(pairs{j,1}));
+        b=find(Reactions.Motif==motif & Reactions.Reaction==string(pairs{j,2}));
+        if numel(a)==1 && numel(b)==1
+            ra=a+1; rb=b+1;
+            values{ra,11}=pairs{j,2};
+            values{ra,12}=sprintf('=IFERROR(IF(COUNT(J%d,J%d)=2,J%d/J%d,""),"")',ra,rb,ra,rb);
+            values{ra,13}=sprintf('=IFERROR(IF(ISNUMBER(J%d),1/J%d,""),"")',rb,rb);
+            values{ra,14}=[values{ra,14} 'G/tau assume buffered co-substrates and first-order pool kinetics.'];
+        end
+    end
+end
+Values=cell2table(values(2:end,:),'VariableNames', ...
+    {'ReactionPair','Reaction','Enzyme','EC','Km','SA','MW','Kcat','E','k','RemovedBy','G','tau','Notes'});
+
+% Coverage report: name every reaction that is still missing a constant, so
+% an empty workbook cell is never silent.
+isNum=@(v)isnumeric(v)&&isscalar(v)&&isfinite(v);
+haveKm=cellfun(isNum,values(2:end,5));
+haveKcat=cellfun(isNum,values(2:end,8));
+fprintf('\nCoverage: K_M %d/%d, k_cat %d/%d, both %d/%d.\n', ...
+    sum(haveKm),numel(haveKm),sum(haveKcat),numel(haveKcat), ...
+    sum(haveKm&haveKcat),numel(haveKm));
+gaps=find(~(haveKm&haveKcat));
+for g=gaps(:)'
+    missing="K_M and k_cat";
+    if haveKm(g), missing="k_cat"; elseif haveKcat(g), missing="K_M"; end
+    why=rowReason(g);
+    if why=="", why="see the Notes column"; end
+    fprintf('  %-14s EC %-12s missing %-14s (%s)\n', ...
+        values{g+1,2},values{g+1,4},missing,why);
+end
+if opt.UseReferenceValues
+    fprintf('Reference snapshot applied to %d of %d rows (matched on reaction ID, equation and direction).\n', ...
+        size(referenceChoices,1)-1,height(Reactions));
 end
 
-function v = txtCol(T, name, n)
-    v = repmat({''}, n, 1);
-    if n == 0 || ~hasCol(T, name), return; end
-    v = cellstr(T.(name));
-    v = v(:);
+% Always write a fresh workbook: stale old-motif rows/sheets must not survive.
+folder=fileparts(char(xlsxFile)); if isempty(folder), folder=pwd; end
+assert(isfolder(folder),'Output folder does not exist.');
+tempFile=[tempname(folder) '.xlsx'];
+cleanup=onCleanup(@()deleteIfExists(tempFile));
+writecell(values,tempFile,'Sheet','values');
+writecell(details,tempFile,'Sheet','KM details');
+writecell(saMW,tempFile,'Sheet','SA MW details');
+writetable(Km,tempFile,'Sheet','Km records');
+writetable(Kcat,tempFile,'Sheet','kcat records');
+writetable(SArec,tempFile,'Sheet','SA records');
+writetable(MWrec,tempFile,'Sheet','MW records');
+writetable(Reactions,tempFile,'Sheet','Reaction mapping');
+writecell(status,tempFile,'Sheet','Query status');
+writecell(referenceChoices,tempFile,'Sheet','Reference choices');
+installExcelFormulas(tempFile,values);
+[ok,msg]=movefile(tempFile,char(xlsxFile),'f'); assert(ok,'%s',msg);
+fprintf('Workbook written: %s\n',char(xlsxFile));
 end
 
-function v = rangeValue(lo, hi)
-% BRENDA gives either one value or a range lo..hi; a range is replaced by its midpoint.
-    v = lo;
-    isRange = hi > lo & lo > 0 & isfinite(hi);
-    v(isRange) = (lo(isRange) + hi(isRange)) / 2;
+function T=parseMotifs(txt)
+% An empty struct without fields cannot receive a populated struct through
+% indexed assignment in MATLAB. Initialize the array with the full schema.
+template=struct('Motif',NaN,'Block',NaN,'Reaction',"",'Role',"", ...
+    'ID',"",'Name',"",'GPR',"",'EC',"",'Compartment',"", ...
+    'Direction',NaN,'FormulaEquation',"",'NamesEquation',"",'IDsEquation',"", ...
+    'PathSubstrate',"");
+records=repmat(template,0,1);
+lines=regexp(txt,'\r\n|\n|\r','split'); motif=1; block=NaN;
+% Metabolite path / Reaction path lines name the species each adapter step
+% consumes, which carries no (m_*) tag in the printed equation.
+metPath=containers.Map('KeyType','double','ValueType','any');
+rxnPath=containers.Map('KeyType','double','ValueType','any');
+current=struct();
+for i=1:numel(lines)
+    line=lines{i};
+    m=regexp(line,'^\s*MOTIF\s+(\d+)\s*$','tokens','once');
+    b=regexp(line,'^\s*BLOCK\s+(\d+)\s*:','tokens','once');
+    r=regexp(line,'^\s+(r_[A-Za-z0-9_]+)\s+\((.*)\)\s*$','tokens','once');
+    if ~isempty(m)||~isempty(b)||~isempty(r)||strcmp(strtrim(line),'ASSUMPTIONS AND INTERFACES')
+        if ~isempty(fieldnames(current)), records(end+1)=current; current=struct(); end %#ok<AGROW>
+    end
+    if ~isempty(m), motif=str2double(m{1}); block=NaN; end
+    if ~isempty(b), block=str2double(b{1}); end
+    pm=regexp(line,'^\s*Metabolite path\s*:\s*(.*)$','tokens','once');
+    pr=regexp(line,'^\s*Reaction path\s*:\s*(.*)$','tokens','once');
+    if ~isempty(pm), metPath(motif)=string(regexp(strtrim(pm{1}),'\s*->\s*','split')); end
+    if ~isempty(pr), rxnPath(motif)=string(regexp(strtrim(pr{1}),'\s*->\s*','split')); end
+    if ~isempty(r)
+        current=template;
+        current.Motif=motif; current.Block=block;
+        current.Reaction=string(r{1}); current.Role=string(r{2});
+    end
+    if isempty(fieldnames(current)), continue; end
+    f=regexp(line,'^\s*(ID|Name|GPR|EC|Compartment\(s\)|Direction|Eqn|Names|IDs)\s*:\s*(.*)$','tokens','once');
+    if isempty(f), continue; end
+    switch f{1}
+        case 'Compartment(s)', field='Compartment';
+        case 'Eqn', field='FormulaEquation';
+        case 'Names', field='NamesEquation';
+        case 'IDs', field='IDsEquation';
+        otherwise, field=f{1};
+    end
+    if strcmp(field,'Direction')
+        d=regexp(f{2},'^[+-]?\d+','match','once'); current.Direction=str2double(d);
+    else, current.(field)=string(strtrim(f{2})); end
+end
+if ~isempty(fieldnames(current)), records(end+1)=current; end
+if isempty(records), T=table(); return; end
+T=struct2table(records);
+assert(all(T.ID~="" & T.NamesEquation~="" & isfinite(T.Block)), ...
+    'Incomplete reaction record in TXT; every record needs a block, ID and Names equation.');
+% Resolve the consumed metabolite of each step on a printed path, then
+% translate its model ID into the printed name via the paired equations.
+for i=1:height(T)
+    k = T.Motif(i);
+    if ~isKey(rxnPath,k) || ~isKey(metPath,k), continue; end
+    rp = rxnPath(k); mp = metPath(k);
+    pos = find(rp==T.ID(i),1);
+    if isempty(pos) || pos > numel(mp), continue; end
+    T.PathSubstrate(i) = nameForId(T.NamesEquation(i),T.IDsEquation(i),mp(pos));
+end
 end
 
-function tf = isMutant(commentary)
-% Engineered or mutated enzymes: the word "mutant"/"mutated", or a substitution such as K45A.
-    kw = ~cellfun('isempty', regexpi(commentary, 'mutant|mutat', 'once'));
-    aa = '[ACDEFGHIKLMNPQRSTVWY]';
-    pm = ~cellfun('isempty', regexp(commentary, ...
-            ['(?<![A-Za-z0-9])' aa '\d{2,4}' aa '(?![A-Za-z0-9])'], 'once'));
-    tf = kw | pm;
+function name=nameForId(namesEquation,idsEquation,metaboliteId)
+% The Names and IDs equations are printed with the same term order, so the
+% position of an ID gives the printed name of the same species.
+name="";
+try
+    [ids,~]  = splitSide(idsEquation,'left');
+    [nms,~]  = splitSide(namesEquation,'left');
+catch
+    return
+end
+if numel(ids)~=numel(nms), return; end
+hit=find(ids==metaboliteId,1);
+if ~isempty(hit), name=nms(hit); end
 end
 
-function s = normName(s)
-% Lower case, letters and digits only: "D-Fructose 6-Phosphate" -> "dfructose6phosphate".
-    s = lower(regexprep(s, '[^A-Za-z0-9]', ''));
+function [names,tags]=splitSide(equation,side)
+halves=regexp(char(equation),'\s*->\s*','split');
+assert(numel(halves)==2,'Expected a printed -> equation.');
+if strcmp(side,'left'), part=halves{1}; else, part=halves{2}; end
+% Split spaced plus delimiters; preserve H+ and NADP(+).
+parts=regexp(part,'\s+\+\s+','split'); names=strings(numel(parts),1); tags=names;
+for i=1:numel(parts)
+    s=strtrim(parts{i}); tag=regexp(s,'\((m_[A-Za-z0-9_]+)\)\s*$','tokens','once');
+    if ~isempty(tag), tags(i)=string(tag{1}); s=regexprep(s,'\(m_[A-Za-z0-9_]+\)\s*$',''); end
+    names(i)=string(regexprep(strtrim(s),'^\d+(?:\.\d+)?\s+',''));
+end
 end
 
-% =========================================================================
-%  Choosing the values
-% =========================================================================
-function r = chooseValues(r, data, cfg)
-    nSub = numel(r.subs);
-    r.km = repmat(emptyPick(''), 1, nSub);
-    r.kcat = r.km;
-    r.sa = emptyPick('');  r.mw = emptyPick('');
-    r.primary = primarySubstrate(r, cfg);
+function name=aliasName(name,aliases)
+hit=find(normalize(aliases(:,1))==normalize(name));
+assert(numel(hit)<=1,'Duplicate substrate alias.');
+if ~isempty(hit), name=aliases(hit,2); end
+end
+function s=normalize(s)
+s=lower(strtrim(string(s))); s=regexprep(s,'\s+',' ');
+end
+function s=substrateKey(s)
+% Explicit synonym groups, grounded in the model and BRENDA record names.
+% Keep cAMP and cGMP separate; do not use fuzzy/punctuation-free matching.
+s=normalize(s);
+s(ismember(s,["camp","3',5'-camp","3',5'-cyclic amp"]))="camp";
+s(ismember(s,["cgmp","3',5'-cgmp","3',5'-cyclic gmp"]))="cgmp";
+end
+function [T,provenance]=selectRecords(T,ec,substrate,organism,relaxed,organismFallback)
+% Ranked selection. A single hard filter on EC + exact ligand name + exact
+% organism leaves most rows empty, because many EC codes have no record for
+% the requested organism at all and model metabolite names rarely equal
+% BRENDA ligand names. Try the strictest combination first and relax in a
+% fixed order, reporting which step produced the records.
+provenance="no records";
+isEC = T.EC==ec;
+exactSub = isEC & substrateKey(T.substrate)==substrateKey(substrate);
+if relaxed, looseSub = isEC & looseMatch(T.substrate,substrate);
+else,       looseSub = false(height(T),1); end
+sameOrg = normalize(T.organism)==normalize(organism);
+attempts = {exactSub & sameOrg,'exact substrate, requested organism'; ...
+            exactSub,          'exact substrate, ANY organism'; ...
+            looseSub & sameOrg,'relaxed substrate name, requested organism'; ...
+            looseSub,          'relaxed substrate name, ANY organism'};
+if organism=="",       attempts=attempts([2 4],:); end
+if ~organismFallback,  attempts=attempts(~contains(string(attempts(:,2)),"ANY organism"),:); end
+for a=1:size(attempts,1)
+    mask=attempts{a,1};
+    if any(mask & isfinite(T.value))
+        provenance=string(attempts{a,2}); T=T(mask,:); return
+    end
+end
+T=T([],:);
+end
 
-    if isempty(r.ec)
-        for j = 1:nSub, r.km(j) = emptyPick('not queried'); end
-        r.kcat = r.km;
-        r.sa = emptyPick('not queried');  r.mw = emptyPick('not queried');
+function m=medianFor(T,ec,organism,organismFallback)
+% Median of a substrate-free parameter (SA, MW) for one EC, preferring the
+% requested organism and falling back to all organisms.
+m=NaN;
+rows=T(T.EC==string(ec),:);
+if isempty(rows), return; end
+if organism~=""
+    same=rows(normalize(rows.organism)==normalize(organism),:);
+    if any(isfinite(same.value)), rows=same;
+    elseif ~organismFallback, return; end
+end
+v=rows.value(isfinite(rows.value));
+if ~isempty(v), m=median(v); end
+end
+
+function tf=looseMatch(candidates,wanted)
+% Compare the printed name, and also the abbreviation built from it, because
+% genome-scale models print "Deoxycytidine-5'-Triphosphate" where BRENDA
+% lists "dCTP". Both spellings of both sides are tried.
+a=compactName(candidates);                b=compactName(wanted);
+aAbbrev=compactName(nucleotideAbbrev(candidates));
+bAbbrev=compactName(nucleotideAbbrev(wanted));
+tf=false(size(a));
+for i=1:numel(a)
+    tf(i) = pairMatch(a(i),b)       || pairMatch(aAbbrev(i),b) || ...
+            pairMatch(a(i),bAbbrev) || pairMatch(aAbbrev(i),bAbbrev);
+end
+end
+
+function tf=pairMatch(x,y)
+% Equality at any length; containment only when the shorter name is long
+% enough to be specific, so that "ATP" never matches "dATP".
+tf=false;
+if strlength(x)<2 || strlength(y)<2, return; end
+if x==y, tf=true; return; end
+short=x; long=y;
+if strlength(x)>strlength(y), short=y; long=x; end
+tf = strlength(short)>=6 && contains(long,short);
+end
+
+function out=nucleotideAbbrev(names)
+% Build the BRENDA-style abbreviation of a nucleotide name. Returns "" for
+% anything that is not a recognisable nucleoside phosphate.
+names=string(names); out=strings(size(names));
+bases=["adenosine","A";"guanosine","G";"cytidine","C";"uridine","U"; ...
+       "thymidine","T";"inosine","I";"xanthosine","X"];
+for i=1:numel(names)
+    s=regexprep(lower(string(names(i))),'[^a-z0-9]',' ');
+    deoxy=contains(s,"deoxy");  s=erase(s,"deoxy");
+    b="";
+    for j=1:size(bases,1)
+        if contains(s,bases(j,1)), b=bases(j,2); break; end
+    end
+    if b=="", continue; end
+    if     contains(s,"triphosphate"),  p="TP";
+    elseif contains(s,"diphosphate"),   p="DP";
+    elseif contains(s,"monophosphate"), p="MP";
+    elseif contains(s,"phosphate"),     p="MP";
+    else,  continue; end
+    if deoxy, out(i)="d"+b+p; else, out(i)=b+p; end
+end
+end
+
+function s=compactName(s)
+s=lower(string(s));
+s=regexprep(s,'^(l|d|dl|r|s)[-\s]','');
+s=regexprep(s,'ic\s+acid\s*$','ate');     % "succinic acid" and "succinate" are one ligand
+s=regexprep(s,'[^a-z0-9]','');
+end
+
+function [value,ligand,n,ecUsed]=substituteKm(Km,codes,organism,organismFallback)
+% Best-sampled ligand of the same EC, preferring the requested organism.
+value=NaN; ligand=""; n=0; ecUsed="";
+for ec=codes
+    pool=Km(Km.EC==ec & isfinite(Km.value),:);
+    if isempty(pool), continue; end
+    if organism~="" && ~organismFallback
+        pool=pool(normalize(pool.organism)==normalize(organism),:);
+    elseif organism~=""
+        same=pool(normalize(pool.organism)==normalize(organism),:);
+        if ~isempty(same), pool=same; end
+    end
+    if isempty(pool), continue; end
+    names=unique(pool.substrate,'stable');
+    counts=arrayfun(@(s) sum(pool.substrate==s),names);
+    [best,where]=max(counts);
+    if best>n
+        n=best; ligand=names(where); ecUsed=ec;
+        value=median(pool.value(pool.substrate==ligand));
+    end
+end
+end
+
+function k=currencyKeys()
+% Cofactors and carriers that never act as the signal-carrying substrate.
+k=["h2o","water","h+","proton","h","atp","adp","amp","pi","phosphate", ...
+   "ppi","diphosphate","nad","nadh","nadp","nadph","nadp(+)","nad(+)", ...
+   "coa","coenzymea","co2","carbondioxide","o2","nh4","ammonium"];
+end
+
+function A=defaultAliases()
+% Model metabolite name -> the BRENDA ligand name most often reported.
+% Extend as needed; caller-supplied SubstrateAliases override these.
+A=[ "THF","tetrahydrofolate"; ...
+    "dihydrofolic acid","7,8-dihydrofolate"; ...
+    "7,8-dihydropteroate","dihydropteroate"; ...
+    "3-phospho-serine","O-phospho-L-serine"; ...
+    "3-phospho-hydroxypyruvate","3-phosphohydroxypyruvate"; ...
+    "glyceraldehyde 3-phosphate","D-glyceraldehyde 3-phosphate"; ...
+    "keto-phenylpyruvate","phenylpyruvate"; ...
+    "3-(4-hydroxyphenyl)pyruvate","4-hydroxyphenylpyruvate"; ...
+    "xanthosine-5-phosphate","XMP"; ...
+    "1-C-(indol-3-yl)glycerol 3-phosphate","indole-3-glycerol phosphate"; ...
+    "acetyl-CoA","acetyl-CoA"; ...
+    "coenzyme A","CoA"; ...
+    "2-oxoglutarate","2-oxoglutarate"; ...
+    "2-oxobutanoate","2-oxobutyrate"; ...
+    "bicarbonate","hydrogencarbonate"; ...
+    "L-cystathionine","cystathionine"; ...
+    "tRNA(Phe)","tRNAPhe"; ...
+    "tRNA(Ala)","tRNAAla"; ...
+    "tRNA(Cys)","tRNACys"; ...
+    "L-Arginosuccinic Acid","argininosuccinate"; ...
+    "L-Argininosuccinic Acid","argininosuccinate"; ...
+    "D-Glucose 1-Phosphate","alpha-D-glucose 1-phosphate"; ...
+    "D-Fructose 6-Phosphate","D-fructose 6-phosphate"; ...
+    "D-Glucosamine-6-Phosphate","D-glucosamine 6-phosphate"; ...
+    "Uridine-5'-Diphosphate-D-Galactose","UDP-alpha-D-galactose"; ...
+    "L-Aspartate","L-aspartate"];
+end
+function [email,password]=readCredentials(file)
+assert(isfile(file),'Credentials file is missing. Create credentials.txt locally with email and password on two lines.');
+lines=regexp(fileread(file),'\r\n|\n|\r','split');
+% Only strip email whitespace; spaces inside a password must be preserved.
+assert(numel(lines)>=2 && ~isempty(strtrim(lines{1})) && ~isempty(lines{2}), ...
+    'Credentials file must contain email on line 1 and password on line 2.');
+email=strtrim(lines{1}); password=lines{2};
+end
+function T=emptyRecords(parameter,unit)
+T=table(strings(0,1),strings(0,1),strings(0,1),nan(0,1),nan(0,1), ...
+    strings(0,1),strings(0,1),strings(0,1),strings(0,1),strings(0,1), ...
+    repmat(string(parameter),0,1),repmat(string(unit),0,1), ...
+    'VariableNames',{'EC','organism','substrate','value','valueMaximum', ...
+    'rawValue','rawValueMaximum','commentary','literature','ligandStructureId','parameter','unit'});
+end
+function [T,status]=fetchBothPools(ec,opt,email,password,parameter)
+% Fetch the requested organism AND all organisms, and keep both. A query
+% restricted to one organism can return plenty of records yet none for the
+% ligand this reaction needs (EC 2.7.4.6 in human has ADP, ATP, GTP and dTDP
+% but no dGDP), so retrying only when the first query is EMPTY is not enough.
+% selectRecords still ranks the requested organism first, so nothing changes
+% for reactions that already matched.
+[T,status]=fetchRecords(ec,char(opt.Organism),email,password,parameter);
+if ~opt.OrganismFallback || isempty(char(opt.Organism)), return; end
+if ~startsWith(status,'OK') && ~startsWith(status,'No records'), return; end  % real failure
+[T2,status2]=fetchRecords(ec,'',email,password,parameter);
+if height(T2)>0
+    % Drop duplicates of the organism-specific rows before pooling.
+    key  = @(X) string(X.organism)+"|"+string(X.substrate)+"|"+string(X.rawValue);
+    T2   = T2(~ismember(key(T2),key(T)),:);
+    T    = [T;T2];
+    status=[status '; ALL ORGANISMS: ' status2];
+end
+end
+
+function [T,status]=fetchRecords(ec,organism,email,password,parameter)
+hasSubstrate=true;
+switch parameter
+    case 'Km'
+        operation='getKmValue'; field='kmValue'; maximum='kmValueMaximum'; unit='mM';
+    case 'kcat'
+        operation='getTurnoverNumber'; field='turnoverNumber'; maximum='turnoverNumberMaximum'; unit='1/s';
+    case 'SA'
+        operation='getSpecificActivity'; field='specificActivity';
+        maximum='specificActivityMaximum'; unit='umol/min/mg'; hasSubstrate=false;
+    case 'MW'
+        operation='getMolecularWeight'; field='molecularWeight';
+        maximum='molecularWeightMaximum'; unit='Da'; hasSubstrate=false;
+    otherwise
+        error('Unknown BRENDA parameter %s.',parameter);
+end
+T=emptyRecords(parameter,unit);
+try
+    % Zeep's dynamic classes/proxies must stay inside Python. MATLAB only
+    % receives a built-in str containing JSON, never a SOAP object or callable.
+    persistent bridge
+    if isempty(bridge), bridge=py.dict; end
+    bridge.update(py.dict(pyargs('email',email,'password',password, ...
+        'ec',ec,'organism',organism,'operation',operation, ...
+        'field',field,'maximum',maximum,'has_substrate',hasSubstrate)));
+    clear email password
+    code={ ...
+        'import json'; ...
+        'phase = "import Python dependencies"'; ...
+        'try:'; ...
+        '    import hashlib, time, zeep'; ...
+        '    from zeep.transports import Transport'; ...
+        '    from zeep.helpers import serialize_object'; ...
+        '    phase = "load BRENDA WSDL"'; ...
+        '    if "client" not in globals():'; ...
+        '        client = zeep.Client("https://www.brenda-enzymes.org/soap/brenda_zeep.wsdl", settings=zeep.Settings(strict=False), transport=Transport(timeout=60, operation_timeout=120))'; ...
+        '    phase = "resolve SOAP operation"'; ...
+        '    soap_call = getattr(client.service, operation)'; ...
+        '    password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()'; ...
+        '    phase = "execute SOAP request"'; ...
+        '    time.sleep(1.1)'; ...
+        '    if has_substrate:'; ...
+        '        args = [email, password_hash, "ecNumber*" + ec, field + "*", maximum + "*", "substrate*", "commentary*", "organism*" + organism, "ligandStructureId*", "literature*"]'; ...
+        '    else:'; ...
+        '        args = [email, password_hash, "ecNumber*" + ec, field + "*", maximum + "*", "commentary*", "organism*" + organism, "literature*"]'; ...
+        '    raw = soap_call(*args)'; ...
+        '    phase = "serialize SOAP response"'; ...
+        '    response_json = json.dumps({"ok": True, "records": serialize_object(raw)})'; ...
+        'except Exception as exc:'; ...
+        '    response_json = json.dumps({"ok": False, "phase": phase, "error_type": type(exc).__module__ + "." + type(exc).__name__})'; ...
+        'finally:'; ...
+        '    for key in ("email", "password", "password_hash", "raw", "soap_call", "args"):'; ...
+        '        globals().pop(key, None)'};
+    py.exec(strjoin(code,newline),bridge);
+    response=jsondecode(char(bridge.get('response_json')));
+    if ~response.ok
+        status=sprintf('Query failed during %s (%s).',response.phase,response.error_type);
+        warning('brendaKineticsTable:QueryFailed','%s / %s: %s',ec,parameter,status);
         return
     end
-    D = data.(ecKey(r.ec));
-    if ~isempty(D.error)
-        msg = ['BRENDA error: ' D.error];
-        for j = 1:nSub, r.km(j) = emptyPick(msg); end
-        r.kcat = r.km;
-        r.sa = emptyPick(msg);  r.mw = emptyPick(msg);
-        return
+    records=response.records;
+    if isempty(records), status='No records'; return; end
+    assert(isstruct(records)||iscell(records),'Unexpected SOAP result type.');
+    for i=1:numel(records)
+        if iscell(records), r=records{i}; else, r=records(i); end
+        assert(isstruct(r),'Unexpected SOAP record type.');
+        rv=textField(r,field); rm=textField(r,maximum);
+        T(end+1,:)={textField(r,'ecNumber'),textField(r,'organism'), ...
+            textField(r,'substrate'),str2double(rv),str2double(rm),rv,rm, ...
+            textField(r,'commentary'),textField(r,'literature'), ...
+            textField(r,'ligandStructureId'),string(parameter),string(unit)}; %#ok<AGROW>
+        if T.EC(end)=="", T.EC(end)=string(ec); end
     end
-
-    org   = cfg.organism;
-    never = normName(cfg.neverSubstrate);
-
-    % K_M and k_cat: substrate first, organism second
-    isOrg = strcmpi(D.km.org, org);
-    isOrgK = strcmpi(D.kc.org, org);
-    for j = 1:nSub
-        if any(strcmp(normName(r.subs{j}), never))
-            r.km(j) = emptyPick('not a K_M substrate');
-            r.kcat(j) = r.km(j);
-            continue
-        end
-        isSub = ismember(D.km.subKey, synonymKeys(r.subs{j}, cfg));
-        levels = { ...
-            D.km.ok & isSub & isOrg,  org; ...
-            D.km.ok & isSub,          'other organisms'; ...
-            D.km.ok & isOrg,          [org ', OTHER SUBSTRATES']; ...
-            D.km.ok,                  'other organisms, OTHER SUBSTRATES'};
-        if ~cfg.kmOtherSubstrates, levels = levels(1:2, :); end
-        r.km(j) = pickFirst(D.km.val, cfg.kmStat, 'no K_M in BRENDA for this substrate', levels);
-
-        isSub = ismember(D.kc.subKey, synonymKeys(r.subs{j}, cfg));
-        levels = { ...
-            D.kc.ok & isSub & isOrgK,  org; ...
-            D.kc.ok & isSub,           'other organisms'; ...
-            D.kc.ok & isOrgK,          [org ', OTHER SUBSTRATES']; ...
-            D.kc.ok,                   'other organisms, OTHER SUBSTRATES'};
-        if ~cfg.kmOtherSubstrates, levels = levels(1:2, :); end
-        r.kcat(j) = pickFirst(D.kc.val, cfg.kcatStat, 'no k_cat in BRENDA for this substrate', levels);
-    end
-
-    % Specific activity
-    isOrg = strcmpi(D.sa.org, org);
-    r.sa = pickFirst(D.sa.val, cfg.saStat, 'no SA in BRENDA', { ...
-        D.sa.ok & isOrg,  org; ...
-        D.sa.ok,          'other organisms'});
-
-    % Molecular weight [Da]: subunit mass first, organism second
-    isOrg = strcmpi(D.mw.org, org);
-    r.mw = pickFirst(D.mw.val, cfg.mwStat, 'no MW in BRENDA', { ...
-        D.mw.ok & D.mw.subunit & isOrg,  [org ', subunit']; ...
-        D.mw.ok & D.mw.subunit,          'other organisms, subunit'; ...
-        D.mw.ok & isOrg,                 [org ', native or unspecified']; ...
-        D.mw.ok,                         'other organisms, native or unspecified'});
+    T.value(~isfinite(T.value)|T.value<=0)=NaN;
+    T.valueMaximum(~isfinite(T.valueMaximum)|T.valueMaximum<=0)=NaN;
+    status=sprintf('OK: %d records',height(T));
+catch ME
+    T=emptyRecords(parameter,unit);
+    % Never expose remote exception messages that might include request secrets.
+    status=['Query failed (' ME.identifier '); check local Python/zeep and BRENDA access.'];
+    warning('brendaKineticsTable:QueryFailed','%s / %s: %s',ec,parameter,status);
+end
+end
+function value=textField(record,field)
+value="";
+if ~isfield(record,field)||isempty(record.(field)), return; end
+v=record.(field);
+if ischar(v)||(isstring(v)&&isscalar(v)), value=string(v);
+else, value=string(jsonencode(v)); end
+end
+function deleteIfExists(file)
+if isfile(file), delete(file); end
 end
 
-function rx = findRemovers(rx, cfg)
-% For every reaction: its product (the motif species the report tags on the
-% right-hand side) and the reactions of the same motif that consume it.
-    skip = [normName(cfg.neverSubstrate), normName(cfg.currency)];
-    for i = 1:numel(rx)
-        rx(i).product = '';  rx(i).removers = [];  rx(i).removerOtherKm = [];
-        key = normName(rx(i).prods);
-        k = find(rx(i).prodTagged & ~ismember(key, skip), 1);
-        if isempty(k), continue; end
-        rx(i).product = rx(i).prods{k};
-        for j = 1:numel(rx)
-            if j == i || rx(j).motif ~= rx(i).motif, continue; end
-            if any(rx(j).tagged & strcmp(normName(rx(j).subs), key{k}))
-                rx(i).removers(end+1) = j;
-                % true when row j's K_M is for another of its substrates
-                other = rx(j).primary == 0 || ~strcmp(normName(rx(j).subs{rx(j).primary}), key{k});
-                rx(i).removerOtherKm(end+1) = other;
-            end
+function installExcelFormulas(file,values)
+% Explicit OpenXML formula nodes: writecell can export formula strings as
+% text when Excel is unavailable (e.g. on Linux/HPC). No Excel COM required.
+root=tempname; mkdir(root); guard=onCleanup(@()rmdir(root,'s'));
+unzip(file,root);
+sheetFile=fullfile(root,'xl','worksheets','sheet1.xml');
+doc=xmlread(sheetFile); cells=doc.getElementsByTagName('c');
+ns='http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+for i=0:cells.getLength-1
+    cellNode=cells.item(i); address=char(cellNode.getAttribute('r'));
+    token=regexp(address,'^([A-Z]+)(\d+)$','tokens','once');
+    if isempty(token), continue; end
+    col=0;
+    for ch=token{1}, col=26*col+double(ch)-double('A')+1; end
+    row=str2double(token{2});
+    if row>size(values,1)||col>size(values,2), continue; end
+    v=values{row,col};
+    if ~(ischar(v)&&~isempty(v)&&v(1)=='='), continue; end
+    % Remove shared/inline text and any stale cache, then install the formula.
+    while cellNode.hasChildNodes, cellNode.removeChild(cellNode.getFirstChild); end
+    cellNode.removeAttribute('t');
+    f=doc.createElementNS(ns,'f'); f.appendChild(doc.createTextNode(v(2:end)));
+    cellNode.appendChild(f);
+    % Cache the two explicit SA/MW estimates for readcell on Linux/HPC.
+    if col==8 && isnumeric(values{row,6}) && isscalar(values{row,6}) && ...
+            isnumeric(values{row,7}) && isscalar(values{row,7})
+        cached=values{row,6}*values{row,7}/60;
+        if isfinite(cached)
+            node=doc.createElementNS(ns,'v');
+            node.appendChild(doc.createTextNode(sprintf('%.17g',cached)));
+            cellNode.appendChild(node);
         end
     end
 end
-
-function p = emptyPick(basis)
-    p = struct('value', NaN, 'n', 0, 'min', NaN, 'median', NaN, 'max', NaN, 'basis', basis);
+xmlwrite(sheetFile,doc);
+workbookFile=fullfile(root,'xl','workbook.xml');
+doc=xmlread(workbookFile); nodes=doc.getElementsByTagName('calcPr');
+if nodes.getLength==0
+    calc=doc.createElementNS(ns,'calcPr'); doc.getDocumentElement.appendChild(calc);
+else, calc=nodes.item(0); end
+calc.setAttribute('calcMode','auto'); calc.setAttribute('fullCalcOnLoad','1');
+calc.setAttribute('forceFullCalc','1'); xmlwrite(workbookFile,doc);
+archive=[tempname '.zip']; archiveGuard=onCleanup(@()deleteIfExists(archive));
+entries=dir(root); entries=entries(~ismember({entries.name},{'.','..'}));
+zip(archive,{entries.name},root);
+[ok,msg]=movefile(archive,file,'f'); assert(ok,'%s',msg);
 end
 
-function p = pickFirst(val, how, noneText, levels)
-% levels: {row mask, description}; the first mask with any rows wins.
-    p = emptyPick(noneText);
-    for i = 1:size(levels, 1)
-        v = val(levels{i, 1});
-        if isempty(v), continue; end
-        p.n = numel(v);  p.min = min(v);  p.median = median(v);  p.max = max(v);
-        switch how
-            case 'median',  p.value = p.median;
-            case 'max',     p.value = p.max;
-            case 'min',     p.value = p.min;
-            case 'geomean', p.value = exp(mean(log(v)));
-            otherwise, error('brendaKineticsTable:stat', 'Unknown statistic "%s".', how);
-        end
-        p.basis = levels{i, 2};
-        return
-    end
-end
-
-function keys = synonymKeys(name, cfg)
-    key  = normName(name);
-    keys = {key};
-    for i = 1:size(cfg.synonyms, 1)
-        if strcmp(normName(cfg.synonyms{i, 1}), key)
-            more = normName(cfg.synonyms{i, 2});
-            keys = [keys, more(:).'];                     %#ok<AGROW>
-        end
-    end
-end
-
-function j = primarySubstrate(r, cfg)
-% The substrate whose K_M goes on the "values" sheet: the motif species the
-% report tags on the left-hand side, cofactors last, protons and water never.
-    j = 0;
-    if isempty(r.subs), return; end
-    key   = normName(r.subs);
-    never = ismember(key, normName(cfg.neverSubstrate));
-    cur   = ismember(key, normName(cfg.currency));
-    order = { r.tagged & ~cur & ~never, r.tagged & cur & ~never, ~cur & ~never, ~never };
-    for i = 1:numel(order)
-        k = find(order{i}, 1);
-        if ~isempty(k), j = k; return; end
-    end
-end
-
-% =========================================================================
-%  Workbook
-% =========================================================================
-function writeWorkbook(xlsxFile, rx, cfg)
-    manyMotifs = numel(unique([rx.motif])) > 1;
-
-    % ---- sheet 1: values (same layout as the template) -------------------
-    % styles: 0 plain, 1 centred + thin line below, 2 header (medium line below),
-    %         3 header centred, 4 group label, 5 thin line below, 6 wrapped text,
-    %         7 wrapped text + thin line below
-    c = {};                                             % rows of {ref, kind, value, style}
-    c(end+1, :) = {'E1', 's', 'Constants', 1};
-    for col = 'FGHIJKLM', c(end+1, :) = {[col '1'], 's', '', 1}; end       %#ok<AGROW>
-    hdr = {'Reaction pair', '', 'Enzyme', 'EC code', 'K_M [mM]', 'SA [{mu}mol/min/mg]', ...
-            'MW [mg/{mu}mol]', 'k_cat [s^-1]', '[E] [mM]', 'k = k_cat [E] / K_M [s^-1]', ...
-            'Removed by (* = K_M there is for another substrate)', 'G', '{tau} [s]', 'Notes'};
-    for j = 1:numel(hdr)
-        c(end+1, :) = {[colName(j) '2'], 's', hdr{j}, 2 + (j <= 2)}; %#ok<AGROW>
-    end
-    merges = {'E1:M1', 'A2:B2'};
-
-    row = 2;  i = 1;
-    while i <= numel(rx)
-        % rows i..last form one group
-        last = i;
-        while last < numel(rx) && rx(last+1).motif == rx(i).motif && strcmp(rx(last+1).group, rx(i).group)
-            last = last + 1;
-        end
-        first = row + 1;
-        for q = i:last
-            row = row + 1;  r = rx(q);  n = sprintf('%d', row);
-            under = (q == last);                        % line under the last row of a group
-            if q == i
-                c(end+1, :) = {['A' n], 's', groupTitle(r, cfg, manyMotifs), 4}; %#ok<AGROW>
-            else
-                c(end+1, :) = {['A' n], 's', '', 4};    %#ok<AGROW>
-            end
-            c(end+1, :) = {['B' n], 's', r.label, 5 * under};         %#ok<AGROW>
-            c(end+1, :) = {['C' n], 's', r.name,  5 * under};         %#ok<AGROW>
-            c(end+1, :) = {['D' n], 's', r.ec,    5 * under};         %#ok<AGROW>
-            km = NaN;
-            if r.primary > 0, km = r.km(r.primary).value; end
-            mw = r.mw.value / 1000;                     % Da -> mg/umol
-            c(end+1, :) = {['E' n], 'n', km,         5 * under};      %#ok<AGROW>
-            c(end+1, :) = {['F' n], 'n', r.sa.value, 5 * under};      %#ok<AGROW>
-            c(end+1, :) = {['G' n], 'n', mw,         5 * under};      %#ok<AGROW>
-            % k_cat [1/s] = SA [umol/min/mg] * MW [mg/umol] / 60
-            c(end+1, :) = {['H' n], 'f', {sprintf('IF(AND(ISNUMBER(F%s),ISNUMBER(G%s)),F%s*G%s/60,"")', n, n, n, n), ...
-                                          r.sa.value * mw / 60}, 5 * under}; %#ok<AGROW>
-            c(end+1, :) = {['I' n], 'n', 0, 5 * under};               %#ok<AGROW>   % [E]: 0 for now, type the real value here
-            % k = k_cat [E] / K_M
-            kcN = kcatRef(cfg, row);
-            f = sprintf('IF(AND(ISNUMBER(%s),ISNUMBER(I%s),ISNUMBER(E%s)),IF(E%s>0,%s*I%s/E%s,""),"")', kcN, n, n, n, kcN, n, n);
-            k0 = NaN;
-            if km > 0 && isfinite(kcatValue(cfg, r, mw)), k0 = 0; end   % value shown while [E] = 0
-            c(end+1, :) = {['J' n], 'f', {f, k0}, 5 * under};         %#ok<AGROW>
-            % removal reactions: reaction q is on row q + 2
-            names = cell(1, numel(r.removers));  refs = names;
-            for t = 1:numel(r.removers)
-                names{t} = rx(r.removers(t)).label;
-                if r.removerOtherKm(t), names{t} = [names{t} '*']; end
-                refs{t} = sprintf('J%d', r.removers(t) + 2);
-            end
-            c(end+1, :) = {['K' n], 's', strjoin(names, ', '), 5 * under}; %#ok<AGROW>
-            if isempty(refs)
-                c(end+1, :) = {['L' n], 's', '', 5 * under};          %#ok<AGROW>
-                c(end+1, :) = {['M' n], 's', '', 5 * under};          %#ok<AGROW>
-            elseif numel(refs) == 1
-                % one removal reaction on row rr: Eqs. (26) and (27) written out
-                %   G   = k_cat,f [E]f K_M,r / (k_cat,r [E]r K_M,f)
-                %   tau = K_M,r / (k_cat,r [E]r)
-                rr = r.removers(1) + 2;  kcR = kcatRef(cfg, rr);
-                fG = sprintf('IFERROR((%s*I%s*E%d)/(%s*I%d*E%s),"")', kcN, n, rr, kcR, rr, n);
-                fT = sprintf('IFERROR(E%d/(%s*I%d),"")', rr, kcR, rr);
-                c(end+1, :) = {['L' n], 'f', {fG, NaN}, 5 * under};   %#ok<AGROW>
-                c(end+1, :) = {['M' n], 'f', {fT, NaN}, 5 * under};   %#ok<AGROW>
-            else
-                % several removal reactions: k_r is the sum of their rate constants
-                allK = strjoin(refs, ',');  m = numel(refs);
-                fG = sprintf('IFERROR(IF(COUNT(%s)=%d,J%s/SUM(%s),""),"")', allK, m, n, allK);
-                fT = sprintf('IFERROR(IF(COUNT(%s)=%d,1/SUM(%s),""),"")', allK, m, allK);
-                c(end+1, :) = {['L' n], 'f', {fG, NaN}, 5 * under};   %#ok<AGROW>
-                c(end+1, :) = {['M' n], 'f', {fT, NaN}, 5 * under};   %#ok<AGROW>
-            end
-            c(end+1, :) = {['N' n], 's', noteText(r), 6 + under};     %#ok<AGROW>
-        end
-        if row > first, merges{end+1} = sprintf('A%d:A%d', first, row); end %#ok<AGROW>
-        i = last + 1;
-    end
-    sheet1 = sheetXml(c, merges, [26 12 44 10 11 18 15 12 10 24 30 10 10 70]);
-
-    % ---- sheet 2: K_M and k_cat for every substrate ----------------------
-    c = {};  row = 1;
-    hdr = {'Reaction', 'Reaction ID', 'EC used', 'Substrate', 'On values sheet', 'K_M [mM]', ...
-            'n', 'min', 'median', 'max', 'K_M taken from'};
-    for j = 1:numel(hdr), c(end+1, :) = {[colName(j) '1'], 's', hdr{j}, 2}; end %#ok<AGROW>
-    for q = 1:numel(rx)
-        r = rx(q);
-        for j = 1:numel(r.subs)
-            if any(strcmp(normName(r.subs{j}), normName(cfg.neverSubstrate))), continue; end
-            row = row + 1;  p = r.km(j);  mark = '';
-            if j == r.primary, mark = 'yes'; end
-            vals = {r.label, r.id, r.ec, r.subs{j}, mark, p.value, p.n, p.min, p.median, p.max, p.basis};
-            c = [c; rowCells(row, vals)];               %#ok<AGROW>
-        end
-    end
-    sheet2 = sheetXml(c, {}, [14 12 10 48 14 11 6 11 11 11 44]);
-
-    % ---- sheet 3: SA and MW ----------------------------------------------
-    c = {};  row = 1;
-    hdr = {'Reaction', 'Reaction ID', 'EC in model', 'EC used', ...
-            'SA [{mu}mol/min/mg]', 'n', 'min', 'median', 'max', 'SA taken from', ...
-            'MW [Da]', 'n', 'min', 'median', 'max', 'MW taken from', 'EC note'};
-    for j = 1:numel(hdr), c(end+1, :) = {[colName(j) '1'], 's', hdr{j}, 2}; end %#ok<AGROW>
-    for q = 1:numel(rx)
-        r = rx(q);  row = row + 1;
-        vals = {r.label, r.id, r.ecFile, r.ec, ...
-                r.sa.value, r.sa.n, r.sa.min, r.sa.median, r.sa.max, r.sa.basis, ...
-                r.mw.value, r.mw.n, r.mw.min, r.mw.median, r.mw.max, r.mw.basis, r.ecNote};
-        c = [c; rowCells(row, vals)];                   %#ok<AGROW>
-    end
-    sheet3 = sheetXml(c, {}, [14 12 12 10 18 6 11 11 11 30 11 6 11 11 11 40 70]);
-
-    % ---- package ----------------------------------------------------------
-    ns   = 'http://schemas.openxmlformats.org/';
-    decl = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-    ws   = 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml';
-    types = [decl '<Types xmlns="' ns 'package/2006/content-types">' ...
-        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' ...
-        '<Default Extension="xml" ContentType="application/xml"/>' ...
-        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' ...
-        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="' ws '"/>' ...
-        '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="' ws '"/>' ...
-        '<Override PartName="/xl/worksheets/sheet3.xml" ContentType="' ws '"/>' ...
-        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' ...
-        '</Types>'];
-    rels = [decl '<Relationships xmlns="' ns 'package/2006/relationships">' ...
-        '<Relationship Id="rId1" Type="' ns 'officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' ...
-        '</Relationships>'];
-    workbook = [decl '<workbook xmlns="' ns 'spreadsheetml/2006/main" xmlns:r="' ns 'officeDocument/2006/relationships">' ...
-        '<sheets><sheet name="values" sheetId="1" r:id="rId1"/>' ...
-        '<sheet name="KM details" sheetId="2" r:id="rId2"/>' ...
-        '<sheet name="SA MW details" sheetId="3" r:id="rId3"/></sheets>' ...
-        '<calcPr fullCalcOnLoad="1"/></workbook>'];
-    rt = [ns 'officeDocument/2006/relationships/'];
-    wbRels = [decl '<Relationships xmlns="' ns 'package/2006/relationships">' ...
-        '<Relationship Id="rId1" Type="' rt 'worksheet" Target="worksheets/sheet1.xml"/>' ...
-        '<Relationship Id="rId2" Type="' rt 'worksheet" Target="worksheets/sheet2.xml"/>' ...
-        '<Relationship Id="rId3" Type="' rt 'worksheet" Target="worksheets/sheet3.xml"/>' ...
-        '<Relationship Id="rId4" Type="' rt 'styles" Target="styles.xml"/>' ...
-        '</Relationships>'];
-    names = {'[Content_Types].xml', '_rels/.rels', 'xl/workbook.xml', 'xl/_rels/workbook.xml.rels', ...
-             'xl/styles.xml', 'xl/worksheets/sheet1.xml', 'xl/worksheets/sheet2.xml', 'xl/worksheets/sheet3.xml'};
-    parts = {types, rels, workbook, wbRels, stylesXml(), sheet1, sheet2, sheet3};
-
-    % Written to a temporary file first: Java resolves relative paths against
-    % its own start-up folder, not against MATLAB's current folder.
-    tmp = [tempname '.xlsx'];
-    writeZip(tmp, names, parts);
-    [ok, msg] = movefile(tmp, xlsxFile, 'f');
-    if ~ok
-        error('brendaKineticsTable:write', 'Could not write %s (is it open in Excel?): %s', xlsxFile, msg);
-    end
-end
-
-function ref = kcatRef(cfg, row) %#ok<INUSL>
-% Cell holding k_cat (= SA x MW / 60) for a sheet row.
-    ref = sprintf('H%d', row);
-end
-
-function v = kcatValue(cfg, r, mw) %#ok<INUSL>
-    v = r.sa.value * mw / 60;
-end
-
-function t = groupTitle(r, cfg, manyMotifs)
-    t = r.group;
-    j = find(strcmpi(cfg.groupTitle(:, 1), r.group), 1);
-    if ~isempty(j), t = cfg.groupTitle{j, 2}; end
-    if manyMotifs, t = sprintf('Motif %d: %s', r.motif, t); end
-end
-
-function s = noteText(r)
-    if isempty(r.ec), s = ['Not queried. ' r.ecNote]; return; end
-    p = {};
-    if ~isempty(r.ecNote), p{end+1} = r.ecNote; end
-    if r.primary > 0
-        k = r.km(r.primary);
-        p{end+1} = sprintf('K_M for %s: %s', r.subs{r.primary}, withN(k));
-    end
-    p{end+1} = ['SA: ' withN(r.sa)];
-    p{end+1} = ['MW: ' withN(r.mw)];
-    s = strjoin(p, ' | ');
-end
-
-function s = withN(p)
-    s = p.basis;
-    if p.n > 0, s = sprintf('%s (n=%d)', p.basis, p.n); end
-end
-
-function c = rowCells(row, vals)
-    c = cell(numel(vals), 4);
-    for j = 1:numel(vals)
-        kind = 's';
-        if isnumeric(vals{j}), kind = 'n'; end
-        c(j, :) = {sprintf('%s%d', colName(j), row), kind, vals{j}, 0};
-    end
-end
-
-function s = colName(j)
-    s = char('A' + j - 1);                               % A..Z is enough here
-end
-
-function xml = sheetXml(cells, merges, widths)
-% cells: rows of {ref, kind, value, style}; kind is 's' text, 'n' number,
-% 'f' formula with value = {formula, cached result}. Cells must be in row order.
-    ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
-    out = cell(1, size(cells, 1) + 8);  k = 0;
-    k = k + 1;  out{k} = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="' ns '"><cols>'];
-    w = '';
-    for j = 1:numel(widths)
-        w = [w sprintf('<col min="%d" max="%d" width="%g" customWidth="1"/>', j, j, widths(j))]; %#ok<AGROW>
-    end
-    k = k + 1;  out{k} = [w '</cols><sheetData>'];
-
-    current = 0;
-    for i = 1:size(cells, 1)
-        ref = cells{i, 1};  kind = cells{i, 2};  v = cells{i, 3};  st = cells{i, 4};
-        rowNum = str2double(regexp(ref, '\d+$', 'match', 'once'));
-        s = '';
-        if rowNum ~= current
-            if current > 0, s = '</row>'; end
-            s = [s sprintf('<row r="%d">', rowNum)];     %#ok<AGROW>
-            current = rowNum;
-        end
-        a = sprintf(' r="%s"', ref);
-        if st > 0, a = [a sprintf(' s="%d"', st)]; end   %#ok<AGROW>
-        switch kind
-            case 'n'
-                if isempty(v) || ~isfinite(v)
-                    if st > 0, s = [s '<c' a '/>']; end  %#ok<AGROW>   % empty cell, keeps its border
-                else
-                    s = [s '<c' a '><v>' sprintf('%.15g', v) '</v></c>']; %#ok<AGROW>
-                end
-            case 'f'
-                if isfinite(v{2})
-                    s = [s '<c' a '><f>' xmlText(v{1}) '</f><v>' sprintf('%.15g', v{2}) '</v></c>']; %#ok<AGROW>
-                else
-                    s = [s '<c' a ' t="str"><f>' xmlText(v{1}) '</f><v></v></c>']; %#ok<AGROW>
-                end
-            otherwise
-                if isempty(v)
-                    if st > 0, s = [s '<c' a '/>']; end  %#ok<AGROW>
-                else
-                    s = [s '<c' a ' t="inlineStr"><is><t xml:space="preserve">' xmlText(v) '</t></is></c>']; %#ok<AGROW>
-                end
-        end
-        k = k + 1;  out{k} = s;
-    end
-    tail = '';
-    if current > 0, tail = '</row>'; end
-    tail = [tail '</sheetData>'];
-    if ~isempty(merges)
-        tail = [tail sprintf('<mergeCells count="%d">', numel(merges))];
-        for j = 1:numel(merges), tail = [tail '<mergeCell ref="' merges{j} '"/>']; end %#ok<AGROW>
-        tail = [tail '</mergeCells>'];
-    end
-    k = k + 1;  out{k} = [tail '</worksheet>'];
-    xml = [out{1:k}];
-end
-
-function xml = stylesXml()
-    ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
-    bd   = @(style) ['<border><left/><right/><top/><bottom style="' style '"><color auto="1"/></bottom><diagonal/></border>'];
-    xf   = @(border, align) ['<xf numFmtId="0" fontId="0" fillId="0" borderId="' border '" xfId="0"' ...
-                             ' applyBorder="1" applyAlignment="1">' align '</xf>'];
-    xml = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="' ns '">' ...
-        '<fonts count="1"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts>' ...
-        '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' ...
-        '<borders count="3"><border><left/><right/><top/><bottom/><diagonal/></border>' bd('thin') bd('medium') '</borders>' ...
-        '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' ...
-        '<cellXfs count="8">' ...
-        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' ...
-        xf('1', '<alignment horizontal="center"/>') ...
-        xf('2', '<alignment/>') ...
-        xf('2', '<alignment horizontal="center"/>') ...
-        xf('1', '<alignment horizontal="center" vertical="center" wrapText="1"/>') ...
-        xf('1', '<alignment/>') ...
-        xf('0', '<alignment vertical="top" wrapText="1"/>') ...
-        xf('1', '<alignment vertical="top" wrapText="1"/>') ...
-        '</cellXfs>' ...
-        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' ...
-        '</styleSheet>'];
-end
-
-function s = xmlText(s)
-% Escape for XML and keep the result pure ASCII: characters above 126 become
-% numeric references, so the file does not depend on any text encoding.
-% {mu} and {tau} stand for the Greek letters in the headers.
-    s = char(s);
-    s = s(:).';
-    code = double(s);
-    s(code < 32 & code ~= 9 & code ~= 10) = ' ';
-    s = strrep(s, '&', '&amp;');
-    s = strrep(s, '<', '&lt;');
-    s = strrep(s, '>', '&gt;');
-    code = double(s);
-    if any(code > 126)
-        piece = cell(1, numel(s));
-        for i = 1:numel(s)
-            if code(i) <= 126
-                piece{i} = s(i);
-            elseif (code(i) >= 55296 && code(i) <= 57343) || code(i) >= 65534
-                piece{i} = '?';
-            else
-                piece{i} = sprintf('&#%d;', code(i));
-            end
-        end
-        s = [piece{:}];
-    end
-    s = strrep(s, '{mu}', '&#956;');
-    s = strrep(s, '{tau}', '&#964;');
-end
-
-function writeZip(zipFile, names, contents)
-% An .xlsx file is a zip archive of XML parts.
-    fos = javaObject('java.io.FileOutputStream', zipFile);
-    zos = javaObject('java.util.zip.ZipOutputStream', fos);
-    for i = 1:numel(names)
-        zos.putNextEntry(javaObject('java.util.zip.ZipEntry', names{i}));
-        bytes = int8(contents{i});                       % ASCII only, see xmlText
-        zos.write(bytes, int32(0), int32(numel(bytes)));
-        zos.closeEntry();
-    end
-    zos.close();
-end
-
-% =========================================================================
-function printSummary(rx)
-    fprintf('%-11s %-10s %-12s %-12s %-12s %-12s\n', 'Reaction', 'EC', 'K_M [mM]', 'SA', 'MW [Da]', 'k_cat [1/s]');
-    for i = 1:numel(rx)
-        r = rx(i);  km = NaN;
-        if r.primary > 0, km = r.km(r.primary).value; end
-        fprintf('%-11s %-10s %-12s %-12s %-12s %-12s\n', r.label, r.ec, num(km), num(r.sa.value), ...
-                num(r.mw.value), num(r.sa.value * r.mw.value / 1000 / 60));
-    end
-    fprintf('\n');
-end
-
-function s = num(x)
-    if isfinite(x), s = sprintf('%.4g', x); else, s = '-'; end
+function records=referenceSnapshot()
+% Frozen, cited BRENDA selections approved for exploratory simulation.
+% Numeric values are never represented as fresh query results.
+payload={ ...
+    '[{"reaction":"r_adapter_1","id":"r_0033","ec":"3.1.4.17","model_ec":"3.1.4.17; 3.1.4.53","equation":"3'',5''-cyclic AMP + H2O  ->  AMP + H+","direction":1,"km":{"value":0.00285,"substrate":"3'',5''-cAMP","organism":"Homo sapiens","literature":"135219; 653640; 667684; 668133; 668990; 669403; 678221; 679784","conditions":"Median of 14 positive records; multiple assays/variants may be included.","kind":"median","n":14,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=3.1.4.17"},"kcat":{"value":0.49,"substrate":"3'',5''-cAMP","organism":"Homo sapiens","literature":"667684; 669403","conditions":"Median of 4 positive records; multiple assays/variants may be included.","kind":"median","n":4,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=3.1.4.17"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 3.1.4.17. K_M=0.00285 mM for 3'',5''-cAMP; Homo sapiens; BRENDA literature 135219; 653640; 667684; 668133; 668990; 669403; 678221; 679784; Median of 14 positive records; multiple assays/variants may be included. k_cat=0.49 s^-1 for 3'',5''-cAMP; Homo sapiens; BRENDA literature 667684; 669403; Median of 4 positive records; multiple assays/variants may be included. Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized."},'; ...
+    '{"reaction":"r_adapter_2","id":"r_0208","ec":"6.3.4.5","model_ec":"6.3.4.5","equation":"(N(omega)-L-arginino)succinic acid + AMP + diphosphate + H+  ->  ATP + L-aspartate + L-citrulline","direction":-1,"km":{"value":0.051,"substrate":"ATP","organism":"Homo sapiens","literature":"1598","conditions":"wild-type enzyme","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=6.3.4.5"},"kcat":{"value":3.01,"substrate":"ATP + citrulline + aspartate","organism":"Homo sapiens","literature":"1581","conditions":"Estimated from purified-enzyme SA=4.2 umol/min/mg and subunit MW=43 mg/umol: SA*MW/60; assumes one active site per subunit.","kind":"derived SA*MW/60","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=6.3.4.5&r=1581"},"sa":4.2,"mw":43,"note":"PROVISIONAL REFERENCE; EC selected: 6.3.4.5. K_M=0.051 mM for ATP; Homo sapiens; BRENDA literature 1598; wild-type enzyme k_cat=3.01 s^-1 for ATP + citrulline + aspartate; Homo sapiens; BRENDA literature 1581; Estimated from purified-enzyme SA=4.2 umol/min/mg and subunit MW=43 mg/umol: SA*MW/60; assumes one active site per subunit. BRENDA''s reference reaction runs in the opposite direction, consuming ATP, aspartate and citrulline. Model consumes argininosuccinate, AMP and diphosphate. Forward constants used as reverse-model assumptions; not measured AMP/reverse kinetics. Km and kcat come from different studies. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"BRENDA''s reference reaction runs in the opposite direction, consuming ATP, aspartate and citrulline. Model consumes argininosuccinate, AMP and diphosphate. Forward constants used as reverse-model assumptions; not measured AMP/reverse kinetics. Km and kcat come from different studies."},'; ...
+    '{"reaction":"r_adapter_3","id":"r_0211","ec":"6.3.5.4","model_ec":"6.3.5.4","equation":"ATP + H2O + L-aspartate + L-glutamine  ->  AMP + diphosphate + H+ + L-asparagine + L-glutamate(m_d1)","direction":1,"km":{"value":1.9,"substrate":"L-glutamine","organism":"Homo sapiens","literature":"660816","conditions":"pH 8, C-terminally tagged recombinant enzyme","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=6.3.5.4"},"kcat":{"value":1.7,"substrate":"glutamine","organism":"Homo sapiens","literature":"660816","conditions":"pH 8, C-terminally tagged recombinant enzyme","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=6.3.5.4"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 6.3.5.4. K_M=1.9 mM for L-glutamine; Homo sapiens; BRENDA literature 660816; pH 8, C-terminally tagged recombinant enzyme k_cat=1.7 s^-1 for glutamine; Homo sapiens; BRENDA literature 660816; pH 8, C-terminally tagged recombinant enzyme Glutamine selected from multiple reactants. ATP and aspartate are not separately parameterized. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Glutamine selected from multiple reactants. ATP and aspartate are not separately parameterized."},'; ...
+    '{"reaction":"r_adapter_4","id":"r_0918","ec":"2.6.1.52","model_ec":"2.6.1.52","equation":"3-phospho-hydroxypyruvate + L-glutamate(m_d1)  ->  2-oxoglutarate + 3-phospho-serine","direction":1,"km":{"value":1.03,"substrate":"L-glutamate","organism":"Synechocystis sp.","literature":"739017","conditions":"pH 9.0; 30 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=2.6.1.52&r=739017"},"kcat":{"value":2.49,"substrate":"L-glutamate","organism":"Synechocystis sp.","literature":"739017","conditions":"pH 9.0; 30 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=2.6.1.52&r=739017"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 2.6.1.52. K_M=1.03 mM for L-glutamate; Synechocystis sp.; BRENDA literature 739017; pH 9.0; 30 C. k_cat=2.49 s^-1 for L-glutamate; Synechocystis sp.; BRENDA literature 739017; pH 9.0; 30 C. Non-human reference pair; assay conditions may differ from the simulation. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Non-human reference pair; assay conditions may differ from the simulation."},'; ...
+    '{"reaction":"r_adapter_5","id":"r_0917","ec":"3.1.3.3","model_ec":"3.1.3.3","equation":"3-phospho-serine + H2O  ->  L-serine(m_in) + phosphate","direction":1,"km":{"value":0.036,"substrate":"L-phosphoserine","organism":"Homo sapiens","literature":"81054","conditions":"Assay conditions not specified in this record.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=3.1.3.3"},"kcat":{"value":1.508,"substrate":"L-phosphoserine","organism":"Porphyromonas gingivalis","literature":"682506","conditions":"pH 7.5; 30 C; 5 mM MgCl2; one reported scalar selected.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=3.1.3.3&r=682506"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 3.1.3.3. K_M=0.036 mM for L-phosphoserine; Homo sapiens; BRENDA literature 81054; Assay conditions not specified in this record. k_cat=1.508 s^-1 for L-phosphoserine; Porphyromonas gingivalis; BRENDA literature 682506; pH 7.5; 30 C; 5 mM MgCl2; one reported scalar selected. Model 3-phospho-serine interpreted as L-phosphoserine. Km and kcat are from DIFFERENT organisms/studies; unpaired modelling reference. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Model 3-phospho-serine interpreted as L-phosphoserine. Km and kcat are from DIFFERENT organisms/studies; unpaired modelling reference."},'; ...
+    '{"reaction":"r_Ff","id":"r_0309","ec":"4.2.1.22","model_ec":"4.2.1.22","equation":"L-homocysteine + L-serine(m_in)  ->  H2O + L-cystathionine(m_F)","direction":1,"km":{"value":2.13,"substrate":"L-serine","organism":"Homo sapiens","literature":"649869; 650017; 663623; 665593; 677837; 680084; 698182; 701064; 746768; 747922; 770220","conditions":"Median of 34 positive records; multiple assays/variants may be included.","kind":"median","n":34,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=4.2.1.22"},"kcat":{"value":5.4,"substrate":"L-serine","organism":"Homo sapiens","literature":"649869; 650017; 663623; 665593; 677837; 680084; 701064; 746768; 770220","conditions":"Median of 27 positive records; multiple assays/variants may be included.","kind":"median","n":27,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=4.2.1.22"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 4.2.1.22. K_M=2.13 mM for L-serine; Homo sapiens; BRENDA literature 649869; 650017; 663623; 665593; 677837; 680084; 698182; 701064; 746768; 747922; 770220; Median of 34 positive records; multiple assays/variants may be included. k_cat=5.4 s^-1 for L-serine; Homo sapiens; BRENDA literature 649869; 650017; 663623; 665593; 677837; 680084; 701064; 746768; 770220; Median of 27 positive records; multiple assays/variants may be included. Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized."},'; ...
+    '{"reaction":"r_Fd","id":"r_0310","ec":"4.4.1.1","model_ec":"4.4.1.1","equation":"H2O + L-cystathionine(m_F)  ->  2-oxobutanoate + ammonium + L-cysteine(m_P1)","direction":1,"km":{"value":0.55,"substrate":"L-cystathionine","organism":"Homo sapiens","literature":"34508; 690967; 693241","conditions":"Median of 6 positive records; multiple assays/variants may be included.","kind":"median","n":6,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=4.4.1.1"},"kcat":{"value":1.7,"substrate":"L-cystathionine","organism":"Homo sapiens","literature":"690967; 693241","conditions":"Median of 5 positive records; multiple assays/variants may be included.","kind":"median","n":5,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=4.4.1.1"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 4.4.1.1. K_M=0.55 mM for L-cystathionine; Homo sapiens; BRENDA literature 34508; 690967; 693241; Median of 6 positive records; multiple assays/variants may be included. k_cat=1.7 s^-1 for L-cystathionine; Homo sapiens; BRENDA literature 690967; 693241; Median of 5 positive records; multiple assays/variants may be included. Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized."},'; ...
+    '{"reaction":"r_Sf","id":"r_1055","ec":"4.2.1.20","model_ec":"4.2.1.20","equation":"1-C-(indol-3-yl)glycerol 3-phosphate + L-serine(m_in)  ->  glyceraldehyde 3-phosphate(m_S) + H2O + L-tryptophan","direction":1,"km":{"value":0.49,"substrate":"L-serine","organism":"Escherichia coli","literature":"771571","conditions":"Wild-type TrpA/TrpB complex; pH 7.5; temperature unspecified.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=4.2.1.20&r=771571"},"kcat":{"value":2.83,"substrate":"L-serine","organism":"Escherichia coli","literature":"771571","conditions":"Wild-type TrpA/TrpB complex; pH 7.5; temperature unspecified.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=4.2.1.20&r=771571"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 4.2.1.20. K_M=0.49 mM for L-serine; Escherichia coli; BRENDA literature 771571; Wild-type TrpA/TrpB complex; pH 7.5; temperature unspecified. k_cat=2.83 s^-1 for L-serine; Escherichia coli; BRENDA literature 771571; Wild-type TrpA/TrpB complex; pH 7.5; temperature unspecified. Non-human reference pair; indoleglycerol phosphate cosubstrate not separately parameterized. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Non-human reference pair; indoleglycerol phosphate cosubstrate not separately parameterized."},'; ...
+    '{"reaction":"r_Sd","id":"r_4211","ec":"4.3.3.6","model_ec":"4.3.3.6; 3.5.1.2","equation":"glyceraldehyde 3-phosphate(m_S) + L-glutamine + aldehydo-D-ribose 5-phosphate  ->  H+ + 3 H2O + L-glutamate(m_d1) + phosphate + pyridoxal 5''-phosphate","direction":1,"km":{"value":1.06,"substrate":"D-glyceraldehyde 3-phosphate","organism":"Geobacillus kaustophilus","literature":"748203","conditions":"pH 8.5; 37 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=4.3.3.6"},"kcat":{"value":0.00017,"substrate":"D-glyceraldehyde 3-phosphate","organism":"Geobacillus kaustophilus","literature":"748203","conditions":"pH 8.5; 37 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=4.3.3.6"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 4.3.3.6. K_M=1.06 mM for D-glyceraldehyde 3-phosphate; Geobacillus kaustophilus; BRENDA literature 748203; pH 8.5; 37 C. k_cat=0.00017 s^-1 for D-glyceraldehyde 3-phosphate; Geobacillus kaustophilus; BRENDA literature 748203; pH 8.5; 37 C. EC 4.3.3.6 selected for PLP synthesis; alternative annotation 3.5.1.2 not used. Non-human pair; model glyceraldehyde phosphate interpreted as D isomer. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"EC 4.3.3.6 selected for PLP synthesis; alternative annotation 3.5.1.2 not used. Non-human pair; model glyceraldehyde phosphate interpreted as D isomer."},'; ...
+    '{"reaction":"r_I","id":"r_0460","ec":"6.3.2.2","model_ec":"6.3.2.2","equation":"ATP + L-cysteine(m_P1) + L-glutamate(m_d1)  ->  ADP + H+ + L-gamma-glutamyl-L-cysteine + phosphate","direction":1,"km":{"value":0.07,"substrate":"L-Cys","organism":"Homo sapiens","literature":"714265","conditions":"wild-type, CGL holoenzyme, pH 8.0, 37?C","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=6.3.2.2"},"kcat":{"value":8.2,"substrate":"L-cysteine","organism":"Mus musculus","literature":"660892","conditions":"Holoenzyme; pH 7.2; 37 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=6.3.2.2&r=660892"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 6.3.2.2. K_M=0.07 mM for L-Cys; Homo sapiens; BRENDA literature 714265; wild-type, CGL holoenzyme, pH 8.0, 37?C k_cat=8.2 s^-1 for L-cysteine; Mus musculus; BRENDA literature 660892; Holoenzyme; pH 7.2; 37 C. Cysteine reference chosen for cancellation. Km is human, kcat is mouse; unpaired modelling values. ATP/glutamate dependence requires additional parameters. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Cysteine reference chosen for cancellation. Km is human, kcat is mouse; unpaired modelling values. ATP/glutamate dependence requires additional parameters."},'; ...
+    '{"reaction":"r_Fr","id":"r_0313","ec":"6.1.1.16","model_ec":"6.1.1.16","equation":"ATP + L-cysteine(m_P1) + tRNA(Cys)  ->  AMP + Cys-tRNA(Cys) + diphosphate","direction":1,"km":{"value":0.0153,"substrate":"L-cysteine","organism":"Homo sapiens","literature":"675435","conditions":"Median of 2 positive records; multiple assays/variants may be included.","kind":"median","n":2,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=6.1.1.16"},"kcat":{"value":14.200000000000001,"substrate":"L-cysteine","organism":"Homo sapiens","literature":"675435","conditions":"Median of 2 positive records; multiple assays/variants may be included.","kind":"median","n":2,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=6.1.1.16"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 6.1.1.16. K_M=0.0153 mM for L-cysteine; Homo sapiens; BRENDA literature 675435; Median of 2 positive records; multiple assays/variants may be included. k_cat=14.2 s^-1 for L-cysteine; Homo sapiens; BRENDA literature 675435; Median of 2 positive records; multiple assays/variants may be included. Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized."},'; ...
+    '{"reaction":"r_Ff_2","id":"r_0851","ec":"2.6.1.39","model_ec":"2.6.1.39; 2.6.1.57","equation":"keto-phenylpyruvate + L-glutamate(m_d1)  ->  2-oxoglutarate + L-phenylalanine(m_F2)","direction":-1,"km":{"value":12.5,"substrate":"L-glutamate","organism":"Homo sapiens","literature":"639983","conditions":"pH 8.0, 37?C, isoenzyme AadAT-II","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.39"},"kcat":{"value":12.8,"substrate":"L-glutamate","organism":"Saccharomyces cerevisiae","literature":"721430","conditions":"pH 7.0; temperature unspecified.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.39"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 2.6.1.39. K_M=12.5 mM for L-glutamate; Homo sapiens; BRENDA literature 639983; pH 8.0, 37?C, isoenzyme AadAT-II k_cat=12.8 s^-1 for L-glutamate; Saccharomyces cerevisiae; BRENDA literature 721430; pH 7.0; temperature unspecified. Model Direction=-1. Glutamate records are not verified for the model phenylpyruvate reaction. Human Km and yeast kcat are an unpaired reference; EC 2.6.1.57 not used. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Model Direction=-1. Glutamate records are not verified for the model phenylpyruvate reaction. Human Km and yeast kcat are an unpaired reference; EC 2.6.1.57 not used."},'; ...
+    '{"reaction":"r_Fd_2","id":"r_2117","ec":"2.6.1.7","model_ec":"2.6.1.58; 2.6.1.7","equation":"L-phenylalanine(m_F2) + pyruvate  ->  keto-phenylpyruvate + L-alanine(m_d2)","direction":1,"km":{"value":1.7,"substrate":"L-phenylalanine","organism":"Homo sapiens","literature":"658649","conditions":"Median of 1 positive records; multiple assays/variants may be included.","kind":"median","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.7"},"kcat":{"value":91,"substrate":"L-phenylalanine","organism":"Homo sapiens","literature":"658649","conditions":"Median of 1 positive records; multiple assays/variants may be included.","kind":"median","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.7"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 2.6.1.7. K_M=1.7 mM for L-phenylalanine; Homo sapiens; BRENDA literature 658649; Median of 1 positive records; multiple assays/variants may be included. k_cat=91 s^-1 for L-phenylalanine; Homo sapiens; BRENDA literature 658649; Median of 1 positive records; multiple assays/variants may be included. Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized."},'; ...
+    '{"reaction":"r_Sf_2","id":"r_0989","ec":"1.5.1.10","model_ec":"1.5.1.10","equation":"H+ + L-allysine + L-glutamate(m_d1) + NADPH  ->  H2O + L-saccharopine + NADP(+)(m_S2)","direction":1,"km":{"value":2.32,"substrate":"L-saccharopine","organism":"Saccharomyces cerevisiae","literature":"437757","conditions":"Scalar saccharopine value.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=1.5.1.10"},"kcat":{"value":224.49999999999997,"substrate":"L-saccharopine","organism":"Saccharomyces cerevisiae","literature":"437757","conditions":"Estimated from purified-enzyme SA=269.4 umol/min/mg and monomer MW=50 mg/umol: SA*MW/60; assumes one active site per monomer.","kind":"derived SA*MW/60","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=1.5.1.10"},"sa":269.4,"mw":50,"note":"PROVISIONAL REFERENCE; EC selected: 1.5.1.10. K_M=2.32 mM for L-saccharopine; Saccharomyces cerevisiae; BRENDA literature 437757; Scalar saccharopine value. k_cat=224.5 s^-1 for L-saccharopine; Saccharomyces cerevisiae; BRENDA literature 437757; Estimated from purified-enzyme SA=269.4 umol/min/mg and monomer MW=50 mg/umol: SA*MW/60; assumes one active site per monomer. Model makes saccharopine; reference consumes it. Reverse/substrate surrogate despite model Direction=1. Reference does not provide glutamate or NADPH Km. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Model makes saccharopine; reference consumes it. Reverse/substrate surrogate despite model Direction=1. Reference does not provide glutamate or NADPH Km."},'; ...
+    '{"reaction":"r_Sd_2","id":"r_0939","ec":"1.3.1.13","model_ec":"1.3.1.13","equation":"NADP(+)(m_S2) + prephenate  ->  3-(4-hydroxyphenyl)pyruvate(m_N2) + carbon dioxide + NADPH","direction":1,"km":{"value":0.38,"substrate":"prephenate","organism":"Methanothrix harundinacea","literature":"763088","conditions":"Wild-type; pH 7.6; temperature unspecified.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=1.3.1.13"},"kcat":{"value":2.44,"substrate":"prephenate","organism":"Methanothrix harundinacea","literature":"763088","conditions":"Wild-type; pH 7.6; temperature unspecified.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=1.3.1.13"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 1.3.1.13. K_M=0.38 mM for prephenate; Methanothrix harundinacea; BRENDA literature 763088; Wild-type; pH 7.6; temperature unspecified. k_cat=2.44 s^-1 for prephenate; Methanothrix harundinacea; BRENDA literature 763088; Wild-type; pH 7.6; temperature unspecified. Non-human prephenate reference; model tagged input is NADP(+), whose Km is not represented by this value. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Non-human prephenate reference; model tagged input is NADP(+), whose Km is not represented by this value."},'; ...
+    '{"reaction":"r_I_2","id":"r_2119","ec":"2.6.1.7","model_ec":"2.6.1.57; 2.6.1.7","equation":"3-(4-hydroxyphenyl)pyruvate(m_N2) + L-alanine(m_d2)  ->  L-tyrosine + pyruvate","direction":1,"km":{"value":1.5,"substrate":"hydroxyphenylpyruvate","organism":"Homo sapiens","literature":"702779","conditions":"in 100 mM potassium phosphate buffer (pH 7.4), at 37?C","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.7"},"kcat":{"value":0.39,"substrate":"hydroxyphenylpyruvate","organism":"Homo sapiens","literature":"702779","conditions":"in 100 mM potassium phosphate buffer (pH 7.4), at 37?C","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.7"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 2.6.1.7. K_M=1.5 mM for hydroxyphenylpyruvate; Homo sapiens; BRENDA literature 702779; in 100 mM potassium phosphate buffer (pH 7.4), at 37?C k_cat=0.39 s^-1 for hydroxyphenylpyruvate; Homo sapiens; BRENDA literature 702779; in 100 mM potassium phosphate buffer (pH 7.4), at 37?C EC 2.6.1.7 selected. Hydroxyphenylpyruvate reference used for the model hydroxyphenylpyruvate; donor/cosubstrate equivalence to L-alanine not established. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"EC 2.6.1.7 selected. Hydroxyphenylpyruvate reference used for the model hydroxyphenylpyruvate; donor/cosubstrate equivalence to L-alanine not established."},'; ...
+    '{"reaction":"r_Sr_2","id":"r_4669","ec":"4.1.1.1","model_ec":"4.1.1.1","equation":"3-(4-hydroxyphenyl)pyruvate(m_N2) + H+  ->  carbon dioxide + (4-hydroxyphenyl)acetaldehyde","direction":1,"km":{"value":0.68,"substrate":"pyruvate","organism":"Zymomonas mobilis","literature":"650009","conditions":"Wild-type PDC; 30 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=4.1.1.1&r=650009"},"kcat":{"value":113,"substrate":"pyruvate","organism":"Zymomonas mobilis","literature":"650009","conditions":"Wild-type PDC; 30 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=4.1.1.1&r=650009"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 4.1.1.1. K_M=0.68 mM for pyruvate; Zymomonas mobilis; BRENDA literature 650009; Wild-type PDC; 30 C. k_cat=113 s^-1 for pyruvate; Zymomonas mobilis; BRENDA literature 650009; Wild-type PDC; 30 C. Non-human, DIFFERENT substrate: pyruvate constants used as surrogates for 3-(4-hydroxyphenyl)pyruvate. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Non-human, DIFFERENT substrate: pyruvate constants used as surrogates for 3-(4-hydroxyphenyl)pyruvate."},'; ...
+    '{"reaction":"r_c","id":"r_0156","ec":"2.6.1.44","model_ec":"2.6.1.44","equation":"glyoxylate + L-alanine(m_d2)  ->  L-glycine(m_c) + pyruvate","direction":1,"km":{"value":31.0,"substrate":"L-alanine","organism":"Homo sapiens","literature":"640079; 640081; 640087; 684989; 704634; 721718; 739610; 758860; 759779","conditions":"Median of 32 positive records; multiple assays/variants may be included.","kind":"median","n":32,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.44"},"kcat":{"value":25.5,"substrate":"L-alanine","organism":"Homo sapiens","literature":"684989; 704634; 721718; 739610; 758860; 759779","conditions":"Median of 28 positive records; multiple assays/variants may be included.","kind":"median","n":28,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.44"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 2.6.1.44. K_M=31 mM for L-alanine; Homo sapiens; BRENDA literature 640079; 640081; 640087; 684989; 704634; 721718; 739610; 758860; 759779; Median of 32 positive records; multiple assays/variants may be included. k_cat=25.5 s^-1 for L-alanine; Homo sapiens; BRENDA literature 684989; 704634; 721718; 739610; 758860; 759779; Median of 28 positive records; multiple assays/variants may be included. Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Existing candidate medians retained; not a matched enzyme/assay pair. Other substrates are not separately parameterized."},'; ...
+    '{"reaction":"r_I1","id":"r_4218","ec":"3.1.1.96","model_ec":"3.1.1.96","equation":"H+ + L-glycine(m_c) + tRNA(Ala)(m_I)  ->  H2O + Glycyl-tRNA(Ala)","direction":-1,"km":{"value":0.00112,"substrate":"D-Tyr-tRNATyr","organism":"Thermus thermophilus","literature":"769120","conditions":"Wild-type; pH 7.5; 37 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=3.1.1.96"},"kcat":{"value":0.37,"substrate":"D-Tyr-tRNATyr","organism":"Thermus thermophilus","literature":"769120","conditions":"Wild-type; pH 7.5; 37 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=3.1.1.96"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 3.1.1.96. K_M=0.00112 mM for D-Tyr-tRNATyr; Thermus thermophilus; BRENDA literature 769120; Wild-type; pH 7.5; 37 C. k_cat=0.37 s^-1 for D-Tyr-tRNATyr; Thermus thermophilus; BRENDA literature 769120; Wild-type; pH 7.5; 37 C. Non-human, DIFFERENT substrate and opposite reaction: measured deacylation reference applied to model Gly-tRNA formation. Does not establish reverse synthesis or glycine-binding kinetics. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Non-human, DIFFERENT substrate and opposite reaction: measured deacylation reference applied to model Gly-tRNA formation. Does not establish reverse synthesis or glycine-binding kinetics."},'; ...
+    '{"reaction":"r_I2","id":"r_0157","ec":"6.1.1.7","model_ec":"6.1.1.7","equation":"ATP + L-alanine(m_d2) + tRNA(Ala)(m_I)  ->  Ala-tRNA(Ala) + AMP + diphosphate","direction":1,"km":{"value":3.43,"substrate":"L-alanine","organism":"Homo sapiens","literature":"767641","conditions":"pH 8, 37?C","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=6.1.1.7"},"kcat":{"value":0.067,"substrate":"L-alanine","organism":"Homo sapiens","literature":"767641","conditions":"pH 8, 37?C","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=6.1.1.7"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 6.1.1.7. K_M=3.43 mM for L-alanine; Homo sapiens; BRENDA literature 767641; pH 8, 37?C k_cat=0.067 s^-1 for L-alanine; Homo sapiens; BRENDA literature 767641; pH 8, 37?C Alanine chosen from multiple tagged reactants. ATP and tRNA kinetics are not separately parameterized. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Alanine chosen from multiple tagged reactants. ATP and tRNA kinetics are not separately parameterized."},'; ...
+    '{"reaction":"r_Nw","id":"r_0002","ec":"1.1.2.4","model_ec":"1.1.2.4","equation":"(R)-lactate + 2 ferricytochrome c  ->  2 ferrocytochrome c + pyruvate(m_out)","direction":1,"km":{"value":0.0682,"substrate":"(R)-lactate","organism":"Oryza sativa Indica Group","literature":"763102","conditions":"pH 8.35; 25 C; phenazine methosulfate and dichlorophenolindophenol acceptors.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=1.1.2.4"},"kcat":{"value":2.6,"substrate":"(R)-lactate","organism":"Oryza sativa Indica Group","literature":"763102","conditions":"pH 8.35; 25 C; phenazine methosulfate and dichlorophenolindophenol acceptors.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=1.1.2.4"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 1.1.2.4. K_M=0.0682 mM for (R)-lactate; Oryza sativa Indica Group; BRENDA literature 763102; pH 8.35; 25 C; phenazine methosulfate and dichlorophenolindophenol acceptors. k_cat=2.6 s^-1 for (R)-lactate; Oryza sativa Indica Group; BRENDA literature 763102; pH 8.35; 25 C; phenazine methosulfate and dichlorophenolindophenol acceptors. Non-human pair uses artificial electron acceptors, not model ferricytochrome c. Does not determine the designed m_c activation law. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Non-human pair uses artificial electron acceptors, not model ferricytochrome c. Does not determine the designed m_c activation law."},'; ...
+    '{"reaction":"r_Nb","id":"r_0674","ec":"2.6.1.2","model_ec":"2.6.1.2","equation":"2-oxoglutarate(m_b) + L-alanine  ->  L-glutamate + pyruvate(m_out)","direction":1,"km":{"value":0.20500000000000002,"substrate":"2-oxoglutarate","organism":"Homo sapiens","literature":"636722","conditions":"Median of mitochondrial/cytosolic measurements; pH 7.8; 30 C.","kind":"median","n":2,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.2"},"kcat":{"value":6.09,"substrate":"2-oxoglutarate","organism":"Saccharomyces cerevisiae","literature":"721437","conditions":"L-alanine cosubstrate; pH 8.0; 25 C.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/enzyme.php?ecno=2.6.1.2"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 2.6.1.2. K_M=0.205 mM for 2-oxoglutarate; Homo sapiens; BRENDA literature 636722; Median of mitochondrial/cytosolic measurements; pH 7.8; 30 C. k_cat=6.09 s^-1 for 2-oxoglutarate; Saccharomyces cerevisiae; BRENDA literature 721437; L-alanine cosubstrate; pH 8.0; 25 C. Human Km median and yeast kcat; unpaired organism/assay reference. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Human Km median and yeast kcat; unpaired organism/assay reference."},'; ...
+    '{"reaction":"r_Nr","id":"r_0016","ec":"2.2.1.6","model_ec":"2.2.1.6","equation":"2-oxobutanoate + H+ + pyruvate(m_out)  ->  (S)-2-acetyl-2-hydroxybutanoate + carbon dioxide","direction":1,"km":{"value":2.6,"substrate":"pyruvate","organism":"Escherichia coli","literature":"395904","conditions":"Native isoenzyme II.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=2.2.1.6&r=395904"},"kcat":{"value":66.7,"substrate":"pyruvate","organism":"Escherichia coli","literature":"395904","conditions":"Native enzyme.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=2.2.1.6&r=395904"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 2.2.1.6. K_M=2.6 mM for pyruvate; Escherichia coli; BRENDA literature 395904; Native isoenzyme II. k_cat=66.7 s^-1 for pyruvate; Escherichia coli; BRENDA literature 395904; Native enzyme. Non-human pyruvate/acetolactate assay used for the model pyruvate + 2-oxobutanoate reaction; cosubstrate/product specificity remains an assumption. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Non-human pyruvate/acetolactate assay used for the model pyruvate + 2-oxobutanoate reaction; cosubstrate/product specificity remains an assumption."}]'; ...
+    };
+records=jsondecode(strjoin(payload,newline));
 end

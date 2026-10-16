@@ -1,0 +1,2 @@
+EC numbers without entries in https://www.brenda-enzymes.info/functional_parameter_statistics.php
+4.4.1.8

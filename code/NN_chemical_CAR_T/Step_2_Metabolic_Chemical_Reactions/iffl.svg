@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" font-family="Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#334155"/>
+    </marker>
+    <marker id="cat" markerWidth="11" markerHeight="11" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8" fill="none" stroke="#c2410c" stroke-width="1.4"/>
+    </marker>
+  </defs>
+  <style>
+    .rx{fill:#0e7490;stroke:#0b5566;stroke-width:1.5}
+    .rl{fill:#fff;font-size:15px;font-weight:600;text-anchor:middle}
+    .met{fill:#1e293b;font-size:14px;text-anchor:middle;font-style:italic}
+    .flow{stroke:#334155;stroke-width:1.8;fill:none;marker-end:url(#arr)}
+    .cata{stroke:#c2410c;stroke-width:1.8;fill:none;stroke-dasharray:5 4;marker-end:url(#cat)}
+    .null{fill:#64748b;font-size:18px;text-anchor:middle}
+    .ttl{fill:#0f172a;font-size:17px;font-weight:700}
+    .note{fill:#475569;font-size:12.5px}
+    .out{fill:#0e7490;font-size:15px;font-weight:700;text-anchor:middle}
+  </style>
+
+  <text class="ttl" x="20" y="28">Block 1 differentiator — incoherent feed-forward (IFFL) primitive</text>
+
+  <!-- m_in source -->
+  <text class="met" x="55" y="235" font-style="normal" font-weight="700">m_in</text>
+  <path class="flow" d="M75,222 C120,150 120,150 150,135"/>
+  <path class="flow" d="M75,243 C120,315 120,315 150,330"/>
+
+  <!-- FAST arm (repressor path) -->
+  <circle class="rx" cx="180" cy="128" r="26"/><text class="rl" x="180" y="133">r_Ff</text>
+  <circle class="rx" cx="375" cy="128" r="26"/><text class="rl" x="375" y="133">r_Fd</text>
+  <circle class="rx" cx="570" cy="128" r="26"/><text class="rl" x="570" y="133">r_Fr</text>
+  <path class="flow" d="M206,128 H349"/><text class="met" x="278" y="118">m_Ff</text>
+  <path class="flow" d="M401,128 H544"/><text class="met" x="472" y="118">m_Fd</text>
+  <path class="flow" d="M596,128 H665"/><text class="null" x="685" y="134">&#8709;</text>
+
+  <!-- SLOW arm (producer of output) -->
+  <circle class="rx" cx="180" cy="330" r="26"/><text class="rl" x="180" y="335">r_Sf</text>
+  <circle class="rx" cx="375" cy="330" r="26"/><text class="rl" x="375" y="335">r_Sd</text>
+  <path class="flow" d="M206,330 H349"/><text class="met" x="278" y="320">m_Sf</text>
+
+  <!-- output line m_d1 -->
+  <path class="flow" d="M401,330 H560"/>
+  <circle cx="575" cy="330" r="4" fill="#0e7490"/>
+  <path class="flow" d="M575,330 H840"/>
+  <text class="out" x="700" y="320">m_d1  (output &#8594; D2)</text>
+
+  <!-- r_I repression node: m_d1 is substrate, null product, m_Fd is the (saturated) enzyme -->
+  <circle class="rx" cx="640" cy="235" r="26"/><text class="rl" x="640" y="240">r_I</text>
+  <path class="flow" d="M585,322 C610,300 625,285 636,261"/>
+  <path class="flow" d="M666,235 H735"/><text class="null" x="755" y="241">&#8709;</text>
+  <!-- catalytic (dashed) arrow: m_Fd enzyme-modulates r_I -->
+  <path class="cata" d="M472,138 C500,200 560,215 614,228"/>
+  <text x="486" y="196" class="note" fill="#c2410c" font-weight="700">m_Fd (enzyme, not consumed)</text>
+
+  <!-- leak -->
+  <circle class="rx" cx="640" cy="410" r="22"/><text class="rl" x="640" y="415" font-size="13">r_lk</text>
+  <path class="flow" d="M580,338 C605,365 618,378 632,391"/>
+  <path class="flow" d="M662,410 H730"/><text class="null" x="750" y="416">&#8709;</text>
+
+  <!-- legend -->
+  <line x1="20" y1="448" x2="55" y2="448" class="flow"/>
+  <text class="note" x="62" y="452">mass flow (substrate &#8594; product)</text>
+  <line x1="330" y1="448" x2="365" y2="448" class="cata"/>
+  <text class="note" x="372" y="452">catalytic / enzymatic modulation</text>
+  <text class="note" x="640" y="452">r_I runs saturated (zero-order in m_d1): subtracts a flux without speeding the output</text>
+</svg>
