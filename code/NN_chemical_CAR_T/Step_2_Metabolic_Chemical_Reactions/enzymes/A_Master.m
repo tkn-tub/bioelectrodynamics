@@ -43,12 +43,46 @@ opt.currency = {'h','h2o','atp','adp','amp','pi','ppi','nad','nadh','nadp','nadp
 % NEW: carrier families excluded by NAME pattern (catches crn + all acyl-carnitines,
 % acyl-CoAs, etc., which exact IDs cannot). Remove 'coenzyme a' if too aggressive.
 opt.currencyNamePatterns = {'carnitine','coenzyme a'};
+% NEW: blocks 1-4 must be ENZYMATIC. Transport/exchange reactions cross
+% compartments or move a species unchanged - they carry no programmable
+% k_cat/K_M, and in a single-pot cell-free reactor a compartment-crossing
+% step has no meaning. They are dropped from the anchors, both differentiator
+% branches, and the housekeeping picks. Block 0 (cAMP->m_in) is NOT filtered
+% here - it is handled by the exporter and will not be programmed.
+opt.excludeTransport      = true;
+opt.transportNamePatterns = {'transport','symport','antiport','uniport', ...
+    'exchange','diffusion','permease','carrier','shuttle','tcdb', ...
+    'facilitated','translocase','efflux','influx'};
+% Optional stricter gate: also require an EC number on blocks 1-4 reactions.
+% Off by default (transport exclusion already removes the EC-less transporters).
+opt.requireEC             = false;
+% Optional strict single-pot gate: drop EVERY cross-compartment reaction too.
+% WARNING: this also removes legitimate ecto-enzymes (e.g. GTMLTe, EC 2.3.2.2),
+% so leave it off unless you specifically want only single-compartment steps.
+opt.excludeMultiCompartment = false;
 % opt.ecMap = <containers.Map rxnID -> 'x.x.x.x'>;
 
 % =============================== STEP 1 ======================================
 T = iffl_coverage_check(model, brendaFile, opt);
 fprintf('\nSTEP 1: %d seed reactions.\n', height(T));
 assert(height(T)>0,'No seeds - nothing to anchor on.');
+
+% ---- drop transport anchors: r_I (and every block 1-4 reaction) must be enzymatic ----
+if opt.excludeTransport
+    trAll  = transportRxnMask(model, opt);
+    r2iAll = containers.Map(cellstr(model.rxns), num2cell(1:numel(model.rxns)));
+    keep = true(height(T),1);
+    for r = 1:height(T)
+        rn = char(T.rxn{r});
+        if isKey(r2iAll,rn), keep(r) = ~trAll(r2iAll(rn)); end
+    end
+    fprintf('Transport filter: %d/%d seed anchors enzymatic (dropped %d transport/exchange).\n', ...
+            sum(keep), numel(keep), sum(~keep));
+    T = T(keep,:);
+    assert(height(T)>0,['No enzymatic seeds remain after the transport filter. ' ...
+        'The activator-gated degraders BRENDA matched in this model are all transporters; ' ...
+        'set opt.excludeTransport=false to see them, but they are not programmable enzymes.']);
+end
 
 % =============================== STEP 2 ======================================
 M = build_iffl_from_anchor(model, T, opt);
@@ -107,7 +141,8 @@ function M = build_iffl_from_anchor(model, T, opt)
     nMet = numel(model.mets);
     curr = currencyMask(model, opt);
     ub = ones(numel(model.rxns),1); if isfield(model,'ub'), ub = model.ub(:); end
-    prodByMet = producerIndex(model.S, ub, opt.forwardOnly);
+    usable = reactionUsableMask(model, opt);   % NEW: exclude transport (and EC-less if requireEC)
+    prodByMet = producerIndex(model.S, ub, opt.forwardOnly, usable);
     metNorm = cellfun(@normLigand, model.metNames,'uni',0);
     name2met = containers.Map('KeyType','char','ValueType','any');
     for i=1:nMet, k=metNorm{i};
@@ -249,8 +284,9 @@ end
 function F = augment_housekeeping(F, model, opt)
     curr = currencyMask(model, opt);
     ub = ones(numel(model.rxns),1); if isfield(model,'ub'), ub = model.ub(:); end
-    consByMet = consumerIndex(model.S, ub, opt.forwardOnly);
-    prodByMet = producerIndex(model.S, ub, opt.forwardOnly);
+    usable = reactionUsableMask(model, opt);   % NEW: housekeeping picks must be enzymatic too
+    consByMet = consumerIndex(model.S, ub, opt.forwardOnly, usable);
+    prodByMet = producerIndex(model.S, ub, opt.forwardOnly, usable);
     % normalised metabolite name -> all metabolite indices (any compartment)
     name2met = containers.Map('KeyType','char','ValueType','any');
     for i=1:numel(model.mets), k=normLigand(model.metNames{i});
@@ -298,9 +334,13 @@ end
 function g = geneCount(model,j)
     if isfield(model,'rxnGeneMat')&&~isempty(model.rxnGeneMat), g=nnz(model.rxnGeneMat(j,:)); else, g=1; end
 end
-function P = consumerIndex(S,ub,forwardOnly)
+function P = consumerIndex(S,ub,forwardOnly,usable)
     nMet=size(S,1); P=cell(nMet,1);
-    for m=1:nMet, js=find(S(m,:)<0); if forwardOnly, js=js(ub(js)>0); end, P{m}=js; end
+    if nargin<4 || isempty(usable), usable=true(size(S,2),1); end
+    for m=1:nMet
+        js=find(S(m,:)<0); if forwardOnly, js=js(ub(js)>0); end
+        js=js(usable(js)); P{m}=js;
+    end
 end
 
 % ------------------------------- helpers -----------------------------------
@@ -343,9 +383,13 @@ function out = tracePath(c,pred,target,kind)
     end
     if strcmp(kind,'rxn'), out=rx; else, out=mt; end
 end
-function P = producerIndex(S,ub,forwardOnly)
+function P = producerIndex(S,ub,forwardOnly,usable)
     nMet=size(S,1); P=cell(nMet,1);
-    for m=1:nMet, js=find(S(m,:)>0); if forwardOnly, js=js(ub(js)>0); end, P{m}=js; end
+    if nargin<4 || isempty(usable), usable=true(size(S,2),1); end
+    for m=1:nMet
+        js=find(S(m,:)>0); if forwardOnly, js=js(ub(js)>0); end
+        js=js(usable(js)); P{m}=js;
+    end
 end
 function curr = currencyMask(model, opt)
     base = lower(regexprep(model.mets,'\[[a-z]\]$',''));
@@ -361,6 +405,54 @@ function n = unionGenes(model,rxnIdx)
     if isfield(model,'rxnGeneMat')&&~isempty(model.rxnGeneMat)
         n=nnz(any(model.rxnGeneMat(rxnIdx,:)~=0,1));
     else, n=numel(rxnIdx); end
+end
+
+% ---- NEW: which reactions may be used in blocks 1-4 (enzymatic only) ----
+function usable = reactionUsableMask(model, opt)
+    nR = numel(model.rxns);
+    usable = true(nR,1);
+    if isfield(opt,'excludeTransport') && opt.excludeTransport
+        usable = usable & ~transportRxnMask(model, opt);
+    end
+    if isfield(opt,'requireEC') && opt.requireEC && isfield(model,'rxnECNumbers')
+        hasEC = ~cellfun(@(e) isempty(char(e)), model.rxnECNumbers(:));
+        usable = usable & hasEC;
+    end
+end
+
+% ---- NEW: flag transport / exchange / boundary reactions ----
+% A reaction is transport-like if it (a) is a boundary reaction (one
+% metabolite: exchange/demand/sink), (b) moves a species UNCHANGED across
+% compartments (same base id appears as both reactant and product -- the
+% defining signature of symport/antiport/facilitated transport), or (c) its
+% name matches a transport keyword.
+%
+% Note it does NOT flag a reaction merely for spanning two compartments: an
+% ecto-enzyme such as G-glutamyltransferase (GTMLTe, EC 2.3.2.2) has cytosolic
+% substrates and extracellular products yet is a genuine catalytic transfer
+% (no species crosses unchanged), so it is kept. For a strict single-pot view
+% set opt.excludeMultiCompartment=true to drop every cross-compartment
+% reaction as well (this WILL remove ecto-enzymes like GTMLTe).
+function tr = transportRxnMask(model, opt)
+    nR = numel(model.rxns);
+    tr = false(nR,1);
+    cmp = regexp(model.mets,'\[([a-z0-9]+)\]$','tokens','once');
+    cmp = cellfun(@(c) char([c{:}]), cmp, 'uni', 0);        % '' when no bracket
+    base = regexprep(model.mets,'\[[a-z0-9]+\]$','');
+    pats = {}; if isfield(opt,'transportNamePatterns'), pats = opt.transportNamePatterns; end
+    strictMC = isfield(opt,'excludeMultiCompartment') && opt.excludeMultiCompartment;
+    nm = repmat({''},nR,1); if isfield(model,'rxnNames'), nm = model.rxnNames; end
+    for j = 1:nR
+        mi = find(model.S(:,j)~=0);
+        if numel(mi) <= 1, tr(j) = true; continue; end       % exchange / demand / sink
+        subs = base(model.S(:,j)<0); pros = base(model.S(:,j)>0);
+        if ~isempty(intersect(subs,pros)), tr(j) = true; continue; end % species crosses unchanged
+        if strictMC && numel(unique(cmp(mi))) > 1, tr(j) = true; continue; end
+        hay = lower(char(nm{j}));
+        for p = 1:numel(pats)
+            if contains(hay, lower(pats{p})), tr(j) = true; break; end
+        end
+    end
 end
 function s = normLigand(s)
     s=lower(strtrim(char(s)));

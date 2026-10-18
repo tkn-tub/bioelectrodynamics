@@ -1,40 +1,54 @@
 ############################################################
 FULL CHEMICAL CHAIN (IFFL mapping, cAMP-ranked)
-Exported 16-Oct-2026 13:37:37
-Selection 2 of 19657 | input Gamma-L-Glutamyl-L-Cysteine | cAMP steps 3 | block genes 6
+Exported 18-Oct-2026 20:44:32
+Selection 2 of 2116 | input (R)-Lactaldehyde | cAMP steps 4 | block genes 7
 ############################################################
 
 SELECTED MOTIF: SIGNAL METABOLITES
-  m_in    | glucys[c]            | Gamma-L-Glutamyl-L-Cysteine                | C8H13N2O5S     | c
+  m_in    | lald_D[c]            | (R)-Lactaldehyde                           | C3H6O2         | c
+  m_Ff1   | lgt_S[c]             | (R)-S-Lactoylglutathionate                 | C13H20N3O8S    | c
+  m_Ff2   | gthrd[c]             | Reduced Glutathione                        | C10H16N3O6S    | c
   m_Fd    | cys_L[c]             | L-Cysteine                                 | C3H7NO2S       | c
-  m_Sf    | gthrd[c]             | Reduced Glutathione                        | C10H16N3O6S    | c
+  m_Sf1   | mthgxl[c]            | Methylglyoxal                              | C3H4O2         | c
+  m_Sf2   | pyr[c]               | Pyruvate                                   | C3H3O3         | c
+  m_Sf3   | HC00591[c]           | 2-Oxoglutaramate                           | C5H6NO4        | c
   m_D1    | akg[c]               | 2-Oxoglutarate                             | C5H4O5         | c
   m_Fd_2  | cit[c]               | Citrate                                    | C6H5O7         | c
-  m_D2    | fum[c]               | Fumarate                                   | C4H2O4         | c
-  m_out   | CE7081[c]            | 15R-Hydroxy-5Z,8Z,11Z,13E,17Z-Eicosapentaenoic Acid | C20H29O3       | c
+  m_D2    | mal_L[c]             | (S)-Malate                                 | C4H4O5         | c
+  m_c     | glu_L[c]             | L-Glutamate                                | C5H8NO4        | c
+  m_I     | leuktrE4[c]          | Leukotriene E4                             | C23H36NO5S     | c
+  m_out   | ppbng[c]             | Porphobilinogen                            | C10H13N2O4     | c
   m_aux   | 42A3HP24DB[c]        | 4-(2-Amino-3-Hydroxyphenyl)-2,4-Dioxobutanoate | C10H8NO5       | c
-  m_aux   | glu_L[c]             | L-Glutamate                                | C5H8NO4        | c
   m_aux   | hLkynr[c]            | 3-Hydroxy-L-Kynurenine                     | C10H12N2O4     | c
-  m_aux   | CE7081[e]            | 15R-Hydroxy-5Z,8Z,11Z,13E,17Z-Eicosapentaenoic Acid | C20H29O3       | e
-  m_aux   | mal_L[c]             | (S)-Malate                                 | C4H4O5         | c
+  m_aux   | 3sala[c]             | 3-Sulfino-L-Alanine                        | C3H5NO4S       | c
+  m_aux   | 3snpyr[c]            | 3-Sulfinopyruvate                          | C3H2O5S        | c
+  m_aux   | akg[m]               | 2-Oxoglutarate                             | C5H4O5         | m
+  m_aux   | asp_L[m]             | L-Aspartate                                | C4H6NO4        | m
+  m_aux   | glu_L[m]             | L-Glutamate                                | C5H8NO4        | m
+  m_aux   | oaa[m]               | Oxaloacetate                               | C4H2O5         | m
+  m_aux   | accoa[m]             | Acetyl Coenzyme A                          | C23H34N7O17P3S | m
+  m_aux   | cit[m]               | Citrate                                    | C6H5O7         | m
+  m_aux   | Lcystin[c]           | L-Cystine                                  | C6H12N2O4S2    | c
+  m_aux   | gthox[c]             | Glutathione Disulfide (Oxidized Glutathione) | C20H30N6O12S2  | c
   m_aux   | fum[m]               | Fumarate                                   | C4H2O4         | m
   m_aux   | mal_L[m]             | (S)-Malate                                 | C4H4O5         | m
-  m_aux   | gly[c]               | Glycine                                    | C2H5NO2        | c
-  m_aux   | CE7091[c]            | 15(S)-Hydroperoxy-Epe                      | C20H29O4       | c
+  m_aux   | leuktrF4[c]          | Leukotriene F4                             | C28H42N2O8S    | c
+  m_aux   | lac_D[c]             | (R)-Lactate                                | C3H5O3         | c
+  m_aux   | hmbil[c]             | Hydroxymethylbilane                        | C40H38N4O17    | c
   m_aux   | 4hpro_LT[m]          | Trans-4-Hydroxy-L-Proline                  | C5H9NO3        | m
-  m_aux   | akg[m]               | 2-Oxoglutarate                             | C5H4O5         | m
   m_aux   | pro_L[m]             | L-Proline                                  | C5H9NO2        | m
   m_aux   | succ[m]              | Succinate                                  | C4H4O4         | m
-  m_aux   | 5oxpro[c]            | 5-Oxoprolinate                             | C5H6NO3        | c
-  m_aux   | cit[m]               | Citrate                                    | C6H5O7         | m
-  m_aux   | gthrd[m]             | Reduced Glutathione                        | C10H16N3O6S    | m
+  m_aux   | oaa[c]               | Oxaloacetate                               | C4H2O5         | c
+  m_aux   | 5aop[c]              | 5-Amino-4-Oxopentanoate                    | C5H9NO3        | c
+  m_aux   | ala_L[c]             | L-Alanine                                  | C3H7NO2        | c
+  m_aux   | gln_L[c]             | L-Glutamine                                | C5H10N2O3      | c
 
 ------------------------------------------------------------
-BLOCK 0: cAMP INPUT CONNECTION (OUTPUT m_in = Gamma-L-Glutamyl-L-Cysteine)
+BLOCK 0: cAMP INPUT CONNECTION (OUTPUT m_in = (R)-Lactaldehyde)
 ------------------------------------------------------------
-  Status: reachable | conversion steps: 3
-  Metabolite path: camp[c] -> adp[c] -> atp[c] -> glucys[c]
-  Reaction path  : CAMPt -> PYK -> GLUCYS
+  Status: reachable, collision-free | conversion steps: 4
+  Metabolite path: camp[c] -> adp[c] -> atp[c] -> nad[c] -> lald_D[c]
+  Reaction path  : CAMPt -> r0860 -> HMR_4261 -> ALCD21_D
   Routes through AMP (amp[c]): 0
 
   r_CAMP (input connector)
@@ -46,20 +60,28 @@ BLOCK 0: cAMP INPUT CONNECTION (OUTPUT m_in = Gamma-L-Glutamyl-L-Cysteine)
       Names : Adenosine Triphosphate + 3,5-Cyclic Adenosine Monophosphate + Water  ->  Adenosine Diphosphate + 3,5-Cyclic Adenosine Monophosphate + Proton + Orthophosphate
 
   r_CAMP (input connector)
-      ID  : PYK
-      Name: Pyruvate Kinase
-      EC  : 3.4.2.1
-      Bounds: [0, 1000]
-      IDs   : adp[c] + h[c] + pep[c]  ->  atp[c] + pyr[c]
-      Names : Adenosine Diphosphate + Proton + Phosphoenolpyruvate  ->  Adenosine Triphosphate + Pyruvate
+      ID  : r0860
+      Name: Utilized Transport
+      EC  : 
+      Bounds: [-1000, 1000]
+      IDs   : adp[c] + atp[x]  ->  adp[x] + atp[c]
+      Names : Adenosine Diphosphate + Adenosine Triphosphate  ->  Adenosine Diphosphate + Adenosine Triphosphate
 
   r_CAMP (input connector)
-      ID  : GLUCYS
-      Name: Gamma-Glutamylcysteine Synthetase
-      EC  : 
+      ID  : HMR_4261
+      Name: Deamido-NAD+:Ammonia Ligase (AMP-Forming)
+      EC  : EC:6.3.5.1
       Bounds: [0, 1000]
-      IDs   : atp[c] + cys_L[c](m_Fd) + glu_L[c]  ->  adp[c] + glucys[c](m_in) + h[c] + pi[c]
-      Names : Adenosine Triphosphate + L-Cysteine(m_Fd) + L-Glutamate  ->  Adenosine Diphosphate + Gamma-L-Glutamyl-L-Cysteine(m_in) + Proton + Orthophosphate
+      IDs   : atp[c] + dnad[c] + nh4[c]  ->  amp[c] + h[c] + nad[c] + ppi[c]
+      Names : Adenosine Triphosphate + Deamino-Nad+ + Ammonium  ->  Adenosine Monophosphate + Proton + Nicotinamide Adenine Dinucleotide + Diphosphate
+
+  r_CAMP (input connector)
+      ID  : ALCD21_D
+      Name: Alcohol Dehydrogenase (D-1, 2-Propanediol)
+      EC  : 1.1.1.1
+      Bounds: [0, 1000]
+      IDs   : 12ppd_R[c] + nad[c]  ->  h[c] + lald_D[c](m_in) + nadh[c]
+      Names : (R)-Propane-1,2-Diol + Nicotinamide Adenine Dinucleotide  ->  Proton + (R)-Lactaldehyde(m_in) + Nicotinamide Adenine Dinucleotide - Reduced
 
 
 ------------------------------------------------------------
@@ -67,36 +89,68 @@ BLOCK 1: DIFFERENTIATOR 1 (IFFL, OUTPUT m_d1)
 ------------------------------------------------------------
 
   fast branch
-      ID  : r0568
-      Name: (5-L-Glutamyl)-L-Amino-Acid 5-Glutamyltransferase (Cyclizing)
-      EC  : 2.3.2.4
-      Bounds: [0, 1000]
-      IDs   : glucys[c](m_in)  ->  5oxpro[c] + cys_L[c](m_Fd)
-      Names : Gamma-L-Glutamyl-L-Cysteine(m_in)  ->  5-Oxoprolinate + L-Cysteine(m_Fd)
+      ID  : LALDO
+      Name: D-Lactaldehyde:NAD+ Oxidoreductase (Glutathione-Formylating)
+      EC  : 1.1.1.1
+      Bounds: [-1000, 1000]
+      IDs   : gthrd[c](m_Ff2) + lald_D[c](m_in) + nad[c]  ->  h[c] + lgt_S[c](m_Ff1) + nadh[c]
+      Names : Reduced Glutathione(m_Ff2) + (R)-Lactaldehyde(m_in) + Nicotinamide Adenine Dinucleotide  ->  Proton + (R)-S-Lactoylglutathionate(m_Ff1) + Nicotinamide Adenine Dinucleotide - Reduced
 
   ...
-      ID  : GTHS
-      Name: Glutathione Synthetase
-      EC  : 
+      ID  : GLYOX
+      Name: Hydroxyacylglutathione Hydrolase
+      EC  : 3.1.2.6
       Bounds: [0, 1000]
-      IDs   : atp[c] + glucys[c](m_in) + gly[c]  ->  adp[c] + gthrd[c](m_Sf) + h[c] + pi[c]
-      Names : Adenosine Triphosphate + Gamma-L-Glutamyl-L-Cysteine(m_in) + Glycine  ->  Adenosine Diphosphate + Reduced Glutathione(m_Sf) + Proton + Orthophosphate
+      IDs   : h2o[c] + lgt_S[c](m_Ff1)  ->  gthrd[c](m_Ff2) + h[c] + lac_D[c]
+      Names : Water + (R)-S-Lactoylglutathionate(m_Ff1)  ->  Reduced Glutathione(m_Ff2) + Proton + (R)-Lactate
 
   slow branch
-      ID  : r2520
-      Name: Mitochondrial Carrier (Mc) Tcdb:2.A.29.2.1
-      EC  : 
+      ID  : CYSGLTH
+      Name: Glutathione:Cystine Oxidoreductase
+      EC  : 1.8.4.4
       Bounds: [-1000, 1000]
-      IDs   : akg[m] + gthrd[c](m_Sf)  ->  akg[c](m_D1) + gthrd[m]
-      Names : 2-Oxoglutarate + Reduced Glutathione(m_Sf)  ->  2-Oxoglutarate(m_D1) + Reduced Glutathione
+      IDs   : Lcystin[c] + 2 gthrd[c](m_Ff2)  ->  2 cys_L[c](m_Fd) + gthox[c]
+      Names : L-Cystine + 2 Reduced Glutathione(m_Ff2)  ->  2 L-Cysteine(m_Fd) + Glutathione Disulfide (Oxidized Glutathione)
 
   r_I (saturated degrader, activated by m_Fd)
+      ID  : ALCD22_D
+      Name: Alcohol Dehydrogenase (D-Lactaldehyde)
+      EC  : 1.1.1.78
+      Bounds: [0, 1000]
+      IDs   : lald_D[c](m_in) + nad[c]  ->  h[c] + mthgxl[c](m_Sf1) + nadh[c]
+      Names : (R)-Lactaldehyde(m_in) + Nicotinamide Adenine Dinucleotide  ->  Proton + Methylglyoxal(m_Sf1) + Nicotinamide Adenine Dinucleotide - Reduced
+
+  
+      ID  : r0055
+      Name: 2-Oxopropanal:NADP+ Oxidoreductase
+      EC  : 1.2.1.49
+      Bounds: [0, 1000]
+      IDs   : h2o[c] + mthgxl[c](m_Sf1) + nadp[c]  ->  2 h[c] + nadph[c] + pyr[c](m_Sf2)
+      Names : Water + Methylglyoxal(m_Sf1) + Nicotinamide Adenine Dinucleotide Phosphate  ->  2 Proton + Nicotinamide Adenine Dinucleotide Phosphate - Reduced + Pyruvate(m_Sf2)
+
+  
+      ID  : r0156
+      Name: L-Glutamine:Pyruvate Aminotransferase
+      EC  : 2.6.1.15
+      Bounds: [0, 1000]
+      IDs   : gln_L[c] + pyr[c](m_Sf2)  ->  HC00591[c](m_Sf3) + ala_L[c]
+      Names : L-Glutamine + Pyruvate(m_Sf2)  ->  2-Oxoglutaramate(m_Sf3) + L-Alanine
+
+  
+      ID  : r0085
+      Name: 2-Oxoglutaramate Amidohydrolase
+      EC  : 3.5.1.3
+      Bounds: [0, 1000]
+      IDs   : HC00591[c](m_Sf3) + h2o[c]  ->  akg[c](m_D1) + nh4[c]
+      Names : 2-Oxoglutaramate(m_Sf3) + Water  ->  2-Oxoglutarate(m_D1) + Ammonium
+
+  
       ID  : 3HKYNAKGAT
       Name: 3-Hydroxy-L-Kynurenine:2-Oxoglutarate Aminotransferase
       EC  : 2.6.1.7
       Bounds: [0, 1000]
-      IDs   : akg[c](m_D1) + hLkynr[c]  ->  42A3HP24DB[c] + glu_L[c]
-      Names : 2-Oxoglutarate(m_D1) + 3-Hydroxy-L-Kynurenine  ->  4-(2-Amino-3-Hydroxyphenyl)-2,4-Dioxobutanoate + L-Glutamate
+      IDs   : akg[c](m_D1) + hLkynr[c]  ->  42A3HP24DB[c] + glu_L[c](m_c)
+      Names : 2-Oxoglutarate(m_D1) + 3-Hydroxy-L-Kynurenine  ->  4-(2-Amino-3-Hydroxyphenyl)-2,4-Dioxobutanoate + L-Glutamate(m_c)
 
 
 ------------------------------------------------------------
@@ -104,14 +158,22 @@ BLOCK 2: DIFFERENTIATOR 2 (INPUT m_d1, OUTPUT m_d2)
 ------------------------------------------------------------
 
   fast branch
-      ID  : r2381
-      Name: Mitochondrial Carrier (Mc) Tcdb:2.A.29.7.2
-      EC  : 
-      Bounds: [0, 1000]
-      IDs   : akg[m] + cit[c](m_Fd_2) + h[c]  ->  akg[c](m_D1) + cit[m] + h[m]
-      Names : 2-Oxoglutarate + Citrate(m_Fd_2) + Proton  ->  2-Oxoglutarate(m_D1) + Citrate + Proton
+      ID  : ASPTAm
+      Name: Aspartate Transaminase
+      EC  : 2.6.1.1
+      Bounds: [-1000, 1000]
+      IDs   : akg[m] + asp_L[m]  ->  glu_L[m] + oaa[m]
+      Names : 2-Oxoglutarate + L-Aspartate  ->  L-Glutamate + Oxaloacetate
 
   ...
+      ID  : CSm
+      Name: Citrate Synthase
+      EC  : 4.1.3.7
+      Bounds: [0, 1000]
+      IDs   : accoa[m] + h2o[m] + oaa[m]  ->  cit[m] + coa[m] + h[m]
+      Names : Acetyl Coenzyme A + Water + Oxaloacetate  ->  Citrate + Coenzyme A + Proton
+
+  slow branch
       ID  : HMR_4777
       Name: L-Proline, 2-Oxoglutarate:Oxygen Oxidoreductase (4-Hydroxylating)
       EC  : EC:1.14.11.2
@@ -119,7 +181,7 @@ BLOCK 2: DIFFERENTIATOR 2 (INPUT m_d1, OUTPUT m_d2)
       IDs   : akg[m] + o2[m] + pro_L[m]  ->  4hpro_LT[m] + co2[m] + succ[m]
       Names : 2-Oxoglutarate + Oxygen + L-Proline  ->  Trans-4-Hydroxy-L-Proline + Carbon Dioxide + Succinate
 
-  slow branch
+  r_I_2 (activated by m_Fd2)
       ID  : r0509
       Name: Succinate:Ubiquinone Oxidoreductase
       EC  : 1.3.5.1
@@ -127,7 +189,7 @@ BLOCK 2: DIFFERENTIATOR 2 (INPUT m_d1, OUTPUT m_d2)
       IDs   : q10[m] + succ[m]  ->  fum[m] + q10h2[m]
       Names : Ubiquinone-10 + Succinate  ->  Fumarate + Ubiquinol-10
 
-  r_I_2 (activated by m_Fd2)
+  
       ID  : FUMm
       Name: Fumarase, Mitochondrial
       EC  : 4.2.1.2
@@ -135,34 +197,42 @@ BLOCK 2: DIFFERENTIATOR 2 (INPUT m_d1, OUTPUT m_d2)
       IDs   : fum[m] + h2o[m]  ->  mal_L[m]
       Names : Fumarate + Water  ->  (S)-Malate
 
+  
+      ID  : MDHm
+      Name: Malate Dehydrogenase, Mitochondrial
+      EC  : 1.1.1.37
+      Bounds: [-1000, 1000]
+      IDs   : mal_L[m] + nad[m]  ->  h[m] + nadh[m] + oaa[m]
+      Names : (S)-Malate + Nicotinamide Adenine Dinucleotide  ->  Proton + Nicotinamide Adenine Dinucleotide - Reduced + Oxaloacetate
+
 
 ------------------------------------------------------------
 BLOCK 3: COUNTER (OUTPUT m_c)
 ------------------------------------------------------------
 
   r_c (activated by m_d2)
-      ID  : r0509
-      Name: Succinate:Ubiquinone Oxidoreductase
-      EC  : 1.3.5.1
+      ID  : 3SALATAi
+      Name: 3-Sulfino-Alanine Transaminase (Irreversible)
+      EC  : 2.6.1.1
       Bounds: [0, 1000]
-      IDs   : q10[m] + succ[m]  ->  fum[m] + q10h2[m]
-      Names : Ubiquinone-10 + Succinate  ->  Fumarate + Ubiquinol-10
+      IDs   : 3sala[c] + akg[c](m_D1) + h[c]  ->  3snpyr[c] + glu_L[c](m_c)
+      Names : 3-Sulfino-L-Alanine + 2-Oxoglutarate(m_D1) + Proton  ->  3-Sulfinopyruvate + L-Glutamate(m_c)
 
   r_I1 (reset, consumes m_c)
-      ID  : FUM
-      Name: Fumarase
-      EC  : 4.2.1.2
+      ID  : GGT6
+      Name: Gamma-Glutamyltransferase
+      EC  : 2.3.2.2
       Bounds: [-1000, 1000]
-      IDs   : fum[c](m_D2) + h2o[c]  ->  mal_L[c]
-      Names : Fumarate(m_D2) + Water  ->  (S)-Malate
+      IDs   : glu_L[c](m_c) + leuktrE4[c](m_I)  ->  h2o[c] + leuktrF4[c]
+      Names : L-Glutamate(m_c) + Leukotriene E4(m_I)  ->  Water + Leukotriene F4
 
   r_I2 (sequestration, consumes m_d2)
-      ID  : FUM
-      Name: Fumarase
-      EC  : 4.2.1.2
+      ID  : MDH
+      Name: Malate Dehydrogenase
+      EC  : 1.1.1.37
       Bounds: [-1000, 1000]
-      IDs   : fum[c](m_D2) + h2o[c]  ->  mal_L[c]
-      Names : Fumarate(m_D2) + Water  ->  (S)-Malate
+      IDs   : mal_L[c](m_D2) + nad[c]  ->  h[c] + nadh[c] + oaa[c]
+      Names : (S)-Malate(m_D2) + Nicotinamide Adenine Dinucleotide  ->  Proton + Nicotinamide Adenine Dinucleotide - Reduced + Oxaloacetate
 
 
 ------------------------------------------------------------
@@ -170,20 +240,20 @@ BLOCK 4: SINGLE NEURON (OUTPUT m_out)
 ------------------------------------------------------------
 
   r_Nw (weight, activated by m_c)
-      ID  : CE7081tm
-      Name: Transport of 15(R)-HEPE, Extracellular Space, Active Transport
-      EC  : 3.1.2.2
+      ID  : PPBNGS
+      Name: Porphobilinogen Synthase
+      EC  : 4.2.1.24
       Bounds: [0, 1000]
-      IDs   : CE7081[c](m_out) + atp[c] + h2o[c]  ->  CE7081[e] + adp[c] + h[c] + pi[c]
-      Names : 15R-Hydroxy-5Z,8Z,11Z,13E,17Z-Eicosapentaenoic Acid(m_out) + Adenosine Triphosphate + Water  ->  15R-Hydroxy-5Z,8Z,11Z,13E,17Z-Eicosapentaenoic Acid + Adenosine Diphosphate + Proton + Orthophosphate
+      IDs   : 2 5aop[c]  ->  2 h2o[c] + h[c] + ppbng[c](m_out)
+      Names : 2 5-Amino-4-Oxopentanoate  ->  2 Water + Proton + Porphobilinogen(m_out)
 
   r_Nr (removal, consumes m_out)
-      ID  : HMR_2560
-      Name: HMR_2560
-      EC  : EC:1.14.19.1
-      Bounds: [-1000, 1000]
-      IDs   : CE7081[c](m_out) + h2o[c]  ->  CE7091[c] + 2 h[c]
-      Names : 15R-Hydroxy-5Z,8Z,11Z,13E,17Z-Eicosapentaenoic Acid(m_out) + Water  ->  15(S)-Hydroperoxy-Epe + 2 Proton
+      ID  : HMBS
+      Name: Hydroxymethylbilane Synthase
+      EC  : 4.3.1.8
+      Bounds: [0, 1000]
+      IDs   : h2o[c] + 4 ppbng[c](m_out)  ->  hmbil[c] + 4 nh4[c]
+      Names : Water + 4 Porphobilinogen(m_out)  ->  Hydroxymethylbilane + 4 Ammonium
 
 
 ASSUMPTIONS AND INTERFACES

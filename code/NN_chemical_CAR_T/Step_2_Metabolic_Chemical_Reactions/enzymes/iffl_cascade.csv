@@ -1,173 +1,21 @@
 D1_anchor,D1_input,D1_mFd,D1_out,D2_anchor,D2_mFd,D2_out,link,nGenesTotal
-GLUDxm,L-Leucine,L-Leucine,L-Glutamate,ASPGLUm,2-Oxoglutarate,L-Aspartate,L-Glutamate,7
-GTMLTe,Reduced Glutathione,L-Cysteine,L-Alanine,SERt4,L-Methionine,L-Serine,L-Alanine,7
-GLUDxm,L-Aspartate,L-Aspartate,L-Glutamate,GTMLTe,L-Glutamine,L-Alanine,L-Glutamate,8
-GLUDxm,L-Aspartate,L-Aspartate,L-Glutamate,ILEt5m,L-Glutamate,L-Isoleucine,L-Glutamate,8
-GLUDxm,L-Leucine,L-Leucine,L-Glutamate,GTMLTe,L-Glutamine,L-Alanine,L-Glutamate,8
-GLUDxm,L-Leucine,L-Leucine,L-Glutamate,NTD9,L-Aspartate,Guanosine-5'-Monophosphate,L-Glutamate,8
-GLUDxm,L-Leucine,L-Leucine,L-Glutamate,ASPCTr,L-Aspartate,Carbamoyl Phosphate,L-Glutamate,8
-GLUDxm,L-Leucine,L-Leucine,L-Glutamate,ILEt5m,L-Glutamate,L-Isoleucine,L-Glutamate,8
-GTMLTe,Reduced Glutathione,L-Cysteine,L-Alanine,LYSOXp,Glycine,L-Lysine,L-Alanine,8
-GTMLTe,L-Cysteine,L-Cysteine,L-Alanine,SERt4,L-Methionine,L-Serine,L-Alanine,8
-GTMLTe,L-Glutamate,L-Glutamine,L-Alanine,SERt4,L-Methionine,L-Serine,L-Alanine,8
-GTMLTe,L-Glutamine,L-Lysine,L-Alanine,SERt4,L-Methionine,L-Serine,L-Alanine,8
-GTMLTe,L-Asparagine,L-Proline,L-Alanine,SERt4,L-Methionine,L-Serine,L-Alanine,8
-GTMLTe,L-Glutamine,L-Proline,L-Alanine,SERt4,L-Methionine,L-Serine,L-Alanine,8
-BHBt,(S)-Lactate,(S)-Lactate,(R)-3-Hydroxybutyrate,ADCim,Acetate,Acetoacetate,(R)-3-Hydroxybutyrate,8
-BHBt,(S)-Lactate,(S)-Lactate,(R)-3-Hydroxybutyrate,ADCim,Butyrate,Acetoacetate,(R)-3-Hydroxybutyrate,8
-BHBt,2-Oxoglutarate,Succinate,(R)-3-Hydroxybutyrate,ADCim,Acetate,Acetoacetate,(R)-3-Hydroxybutyrate,8
-BHBt,2-Oxoglutarate,Succinate,(R)-3-Hydroxybutyrate,ADCim,Butyrate,Acetoacetate,(R)-3-Hydroxybutyrate,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PE203_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PE224_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PE226_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PE2LINL_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEAR_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEDH12_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEDH13_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEDH14_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEDH15_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEDH161_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEDH17_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEDH203_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PELINL_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEOLE_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,PEPALM_HSPLA2,L-Serine,Phosphatidylethanolamine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,METDECARc,Ethanolamine,4-Methyl-Thio-Oxo-Butyrate,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,3MHISt1,Phosphatidylserine,3-Methylhistidine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,3MHISt1,L-Serine,3-Methylhistidine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,AMETt,Phosphatidylserine,S-Adenosyl-L-Methionine,L-Serine,8
-SERt4,L-Alanine,L-Methionine,L-Serine,AMETt,L-Serine,S-Adenosyl-L-Methionine,L-Serine,8
-3HKYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-3HKYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-3HKYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-3HKYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-3HKYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-3HKYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-3HKYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-3HKYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-3HKYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-KYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-KYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-KYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-KYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-KYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-KYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-KYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-KYNAKGAT,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-KYNAKGAT,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE1233C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-RE1233C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-RE1233C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-RE1233C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-RE1233C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-RE1233C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE1233C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE1233C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Cysteine,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Cysteine,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE1233C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE2349C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-RE2349C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-RE2349C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-RE2349C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-RE2349C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-RE2349C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE2349C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE2349C,Gamma-L-Glutamyl-L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Cysteine,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Cysteine,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Cysteine,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Cysteine,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,8
-RE2349C,L-Cysteine,L-Tryptophan,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,8
-ORNtiDF,L-Arginine,L-Cysteine,Ornithine,ADMDC,Putrescine,S-Adenosyl-L-Methionine,Ornithine,8
-ORNtiDF,L-Arginine,L-Cysteine,Ornithine,r0615,Putrescine,Trans-4-Hydroxy-L-Proline,Ornithine,8
-ORNtiDF,L-Arginine,L-Cysteine,Ornithine,r0617,Putrescine,Trans-4-Hydroxy-L-Proline,Ornithine,8
-ACITL,Phosphoenolpyruvate,Phosphoenolpyruvate,Citrate,FUMm,Acetate,Fumarate,Citrate,9
-ACITL,Cis-Aconitate,Phosphoenolpyruvate,Citrate,FUMm,Acetate,Fumarate,Citrate,9
-GLUDxm,L-Aspartate,L-Aspartate,L-Glutamate,RE2954C,L-Glutamine,Phosphoenolpyruvate,L-Glutamate,9
-GLUDxm,L-Aspartate,L-Aspartate,L-Glutamate,RE2954C,L-Methionine,Phosphoenolpyruvate,L-Glutamate,9
-GLUDxm,L-Leucine,L-Leucine,L-Glutamate,RE2954C,L-Glutamine,Phosphoenolpyruvate,L-Glutamate,9
-GLUDxm,L-Leucine,L-Leucine,L-Glutamate,RE2954C,L-Methionine,Phosphoenolpyruvate,L-Glutamate,9
-ACS,Acetaldehyde,Acetate,Acetate,BDHm,(S)-Lactate,(R)-3-Hydroxybutyrate,Acetate,9
-ACSm,Citrate,Acetate,Acetate,BDHm,(S)-Lactate,(R)-3-Hydroxybutyrate,Acetate,9
-r0097,Acetaldehyde,Acetate,Acetate,BDHm,(S)-Lactate,(R)-3-Hydroxybutyrate,Acetate,9
-GTMLTe,L-Cysteine,L-Cysteine,L-Alanine,LYSOXp,Glycine,L-Lysine,L-Alanine,9
-GTMLTe,L-Glutamate,L-Glutamine,L-Alanine,LYSOXp,Glycine,L-Lysine,L-Alanine,9
-GTMLTe,L-Asparagine,L-Proline,L-Alanine,LYSOXp,Glycine,L-Lysine,L-Alanine,9
-GTMLTe,L-Glutamine,L-Proline,L-Alanine,LYSOXp,Glycine,L-Lysine,L-Alanine,9
-SERt4,L-Alanine,L-Methionine,L-Serine,RE2675C2,Phosphatidylserine,Dihydroceramide,L-Serine,9
-ACt2m,2-Oxoglutarate,Oxaloacetate,Acetate,BDHm,(S)-Lactate,(R)-3-Hydroxybutyrate,Acetate,9
-ACt2m,Citrate,Oxaloacetate,Acetate,BDHm,(S)-Lactate,(R)-3-Hydroxybutyrate,Acetate,9
-ORNtiDF,L-Arginine,L-Cysteine,Ornithine,r0616,Putrescine,Trans-4-Hydroxy-L-Proline,Ornithine,9
-ORNtiDF,L-Arginine,L-Cysteine,Ornithine,r0618,Putrescine,Trans-4-Hydroxy-L-Proline,Ornithine,9
-3SALATAi,Ethanol,Ethanol,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,9
-3SALATAi,Ethanol,Ethanol,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,9
-3SALATAi,Ethanol,Ethanol,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,9
-3SALATAi,Ethanol,Ethanol,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,9
-3SALATAi,Ethanol,Ethanol,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,9
-3SALATAi,Ethanol,Ethanol,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,9
-3SALATAi,Ethanol,Ethanol,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,9
-3SALATAi,Ethanol,Ethanol,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,9
-ASPTA,Ethanol,Ethanol,2-Oxoglutarate,FUMm,Citrate,Fumarate,2-Oxoglutarate,9
-ASPTA,Ethanol,Ethanol,2-Oxoglutarate,MDH,Citrate,(S)-Malate,2-Oxoglutarate,9
-ASPTA,Ethanol,Ethanol,2-Oxoglutarate,r0083,Cis-Aconitate,Oxalosuccinate,2-Oxoglutarate,9
-ASPTA,Ethanol,Ethanol,2-Oxoglutarate,r0083,Citrate,Oxalosuccinate,2-Oxoglutarate,9
-ASPTA,Ethanol,Ethanol,2-Oxoglutarate,r0083,L-Glutamate,Oxalosuccinate,2-Oxoglutarate,9
-ASPTA,Ethanol,Ethanol,2-Oxoglutarate,SUCSALte,Citrate,Succinic Semialdehyde,2-Oxoglutarate,9
-ASPTA,Ethanol,Ethanol,2-Oxoglutarate,SUCSALte,(S)-Malate,Succinic Semialdehyde,2-Oxoglutarate,9
-ASPTA,Ethanol,Ethanol,2-Oxoglutarate,SUCSALte,Succinate,Succinic Semialdehyde,2-Oxoglutarate,9
-MDH,Reduced Glutathione,L-Cysteine,(S)-Malate,FUMm,Pyruvate,Fumarate,(S)-Malate,10
+3HKYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME1m,L-Glutamate,(S)-Malate,2-Oxoglutarate,13
+3HKYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME2m,L-Glutamate,(S)-Malate,2-Oxoglutarate,13
+KYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME1m,L-Glutamate,(S)-Malate,2-Oxoglutarate,13
+KYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME2m,L-Glutamate,(S)-Malate,2-Oxoglutarate,13
+RE1233C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME1m,L-Glutamate,(S)-Malate,2-Oxoglutarate,13
+RE1233C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME2m,L-Glutamate,(S)-Malate,2-Oxoglutarate,13
+RE2349C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME1m,L-Glutamate,(S)-Malate,2-Oxoglutarate,13
+RE2349C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME2m,L-Glutamate,(S)-Malate,2-Oxoglutarate,13
+3HKYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,MDHm,Citrate,(S)-Malate,2-Oxoglutarate,14
+3HKYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME1m,Citrate,(S)-Malate,2-Oxoglutarate,14
+3HKYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME2m,Citrate,(S)-Malate,2-Oxoglutarate,14
+KYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,MDHm,Citrate,(S)-Malate,2-Oxoglutarate,14
+KYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME1m,Citrate,(S)-Malate,2-Oxoglutarate,14
+KYNAKGAT,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME2m,Citrate,(S)-Malate,2-Oxoglutarate,14
+RE1233C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,MDHm,Citrate,(S)-Malate,2-Oxoglutarate,14
+RE1233C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME1m,Citrate,(S)-Malate,2-Oxoglutarate,14
+RE1233C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME2m,Citrate,(S)-Malate,2-Oxoglutarate,14
+RE2349C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,MDHm,Citrate,(S)-Malate,2-Oxoglutarate,14
+RE2349C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME1m,Citrate,(S)-Malate,2-Oxoglutarate,14
+RE2349C,(R)-Lactaldehyde,L-Cysteine,2-Oxoglutarate,ME2m,Citrate,(S)-Malate,2-Oxoglutarate,14
