@@ -380,7 +380,14 @@ function [circ, depth, why] = assemble(model, b1, b2, topo, opt, ctx, rA2)
                     if isempty(mIs), continue; end
                     depth = max(depth,8);
                     for mI = asRow(mIs)
-                        for rNw = asRow(freeOf(ctx.neuronOf{mC}, [arms rc rI1 rI2]))
+                        % consumingN: the neuron draws on m_c, so its candidates are
+                        % the CONSUMERS of m_c, not the reactions m_c regulates.
+                        if opt.consumingN
+                            rNwPool = consBy{mC};
+                        else
+                            rNwPool = ctx.neuronOf{mC};
+                        end
+                        for rNw = asRow(freeOf(rNwPool, [arms rc rI1 rI2]))
                             if ~opt.consumingN && model.S(mC, rNw) ~= 0, continue; end
                             depth = max(depth,9);
                             for mOut = asRow(rowOf(find(model.S(:,rNw) > 0), sigOK))
@@ -1035,7 +1042,8 @@ function out = selftest()
           'rc','rI1','rI2','rNw','rNb','rNr', ...
           'dCarrier1','dCarrier2','dIcarrier','dIcross','spareFr','rAdapt', ...
           'dFast1','dFast2','rA2','rFf2b','rFd2b','rSf2b','rSd2b','rIb2','rlk2b','rFr2b', ...
-          'rc2','rI2b','iFd2','iSf2','iSd2','iFr2','ilk2','irc','irI2'};
+          'rc2','rI2b','iFd2','iSf2','iSd2','iFr2','ilk2','irc','irI2', ...
+          'rNwc'};
     model.rxns = rx(:); model.rxnNames = rx(:);
     ecs = arrayfun(@(k) sprintf('9.9.9.%d',k), 1:numel(rx), 'uni', 0);
     model.rxnECNumbers = ecs(:);
@@ -1071,6 +1079,7 @@ function out = selftest()
     S = rxn(S,43,30,21);          % ilk2 : d2c  -> junk2     (output leak)
     S = rxn(S,44,30,10);          % irc  : d2c  -> c         (counter production)
     S = rxn(S,45,[30 11],14);     % irI2 : d2c + I -> w      (counter sequestration)
+    S = rxn(S,46,10,13);          % rNwc : c -> out          (CONSUMING neuron weight)
     model.S = S;
     model.lb = zeros(numel(rx),1); model.ub = 1000*ones(numel(rx),1);
     model.rxnGeneMat = speye(numel(rx));
@@ -1106,6 +1115,27 @@ function out = selftest()
     for k = 1:numel(out.circuits), flat = [flat model.rxns(out.circuits(k).rxnIdx)']; end %#ok<AGROW>
     assert(~any(strcmp(flat,'dCarrier1')), 'carrier decoy accepted: net-mass test broken');
     assert(~any(strcmp(flat,'dIcross')),  'crosstalk decoy accepted: exclusivity test broken');
+    % --- fully CONSUMING variant: m_d1 and m_c are drawn on, not read -------
+    con = map_iffl_circuit(model, T, struct('verbose',false, ...
+        'catalyticInterstage',false,'consumingN',true,'fastArmSteps',1,'requireMI',false));
+    assert(~isempty(con.circuits), 'selftest FAILED: consuming variant found no circuit');
+    cc = con.circuits(1); ct = con.topology;
+    assert(~any(strcmp(ct.rxnRoles,'r_A_2')), 'no interstage when catalyticInterstage is false');
+    assert(~any(strcmp(ct.metRoles,'m_in_2')), 'no m_in_2 in the mass-flow cascade');
+    % m_c must be a SUBSTRATE of r_Nw, and must NOT be listed as its regulator
+    mCix = cc.met.m_c;
+    assert(model.S(mCix, cc.rxn.r_Nw) < 0, 'consumingN: r_Nw must consume m_c');
+    assert(~any(strcmp(ct.regTarget,'r_Nw')), ...
+        'consumingN: r_Nw must have no catalytic regulator edge');
+    % m_d1 must be consumed by D2's arms (that is what the mass-flow link means)
+    mD1 = cc.met.m_d1;
+    assert(model.S(mD1, cc.rxn.r_Fd_2) < 0 || model.S(mD1, cc.rxn.r_Sf_2) < 0, ...
+        'mass-flow link: D2 must consume m_d1');
+    % the differentiator gates stay catalytic even here
+    assert(model.S(cc.met.m_Fd_1, cc.rxn.r_I_1) == 0, 'm_Fd_1 must stay catalytic');
+    fprintf(['consuming variant PASSED (%d circuit(s); m_d1 drawn by D2, m_c drawn by\n' ...
+             'r_Nw, gates still catalytic)\n'], numel(con.circuits));
+
     % --- hybrid: D1 on activation, D2 on INHIBITION -------------------------
     Tin = struct('rxn',{'iSd2'}, 'EC',{'9.9.9.41'}, 'regulators',{'fd2c'});
     hyb = map_iffl_circuit(model, struct('AC',T,'IN',Tin), ...

@@ -1,0 +1,2 @@
+rank,nGenes,addedSinks,regCollisions,sharedEC,r_Fd_1,r_Fr_1,r_Sf_1,r_Sd_1,r_I_1,r_lk_1,r_A_2,r_Fd_2,r_Fr_2,r_Sf_2,r_Sd_2,r_lk_2,r_c,r_I1,r_I2,r_Nw,r_Nb,r_Nr,m_in,m_Fd_1,m_Sf_1,m_d1,m_in_2,m_Fd_2,m_Sf_2,m_d2,m_c,m_b,m_out
+1,18,0,1,1,GLNS,PHACCOAGLNAC,UNK3r,METTRANSc,GTMLTe,ALAR,PSP_L,PSSA1_hs,CHOLK,PSSA2_hs,ETHAK,r0537,r0480,1331TAALThr,PETHCT,MTAP,PUNP1,ADPT,glu_L[c],gln_L[c],met_L[c],ala_L[c],ser_L[c],chol[c],etha[c],ethamp[c],ahcys[c],adn[c],ade[c]

@@ -1,0 +1,67 @@
+Ligand matching diagnostic, 21-Oct-2026 23:20:07
+Added to path: /home/ccs/torres-gomez/Downloads/bioelectrodynamics/code
+One subSystem per reaction, so each model.subSystems{x} is a character array.
+Model  : /home/ccs/torres-gomez/Downloads/bioelectrodynamics/code/database/Car_T_Cell_models/Puniya2021_TNM1055.xml
+BRENDA : /home/ccs/torres-gomez/Downloads/bioelectrodynamics/code/database/Brenda/brenda_2026_1.txt
+         5179 reactions, 3153 metabolites
+
+--- model identifier annotation -------------------------------
+  metCHEBIID       absent
+  metKEGGID        present, 1660/3153 metabolites populated
+  metInChIString   absent
+  metInChIKey      absent
+  metSmiles        absent
+  metPubChemID     present, 1842/3153 metabolites populated
+  metMetaNetXID    absent
+  metHMDBID        present, 1244/3153 metabolites populated
+  -> the model ALREADY carries identifiers, so the model half of an
+     ID cross-reference is free. Only the BRENDA half needs work.
+
+--- reaction level (field IN) ---------------------------------
+  reactions total ............................. 5179
+  reactions with an EC number ................. 2270
+  ...whose EC has IN entries in BRENDA ......... 1345
+  ...with at least one ligand name matched .... 1003
+  ...lost entirely to name matching ........... 342
+
+--- ligand level ---------------------------------------------
+  distinct activator ligand names ............. 15466
+  matched by name ............................. 317
+  spelling variant of a model metabolite ...... 1549   (10758 mentions)
+  unresolved: absent OR a true synonym ........ 13600   (113731 mentions)
+
+  The variant count is a FLOOR on what an identifier cross-reference
+  would recover, not a ceiling: a synonym sharing no words with the
+  model name (adenosine triphosphate vs ATP) lands in 'unresolved',
+  and no string method can tell it from a genuine absence.
+
+--- highest-value unresolved ligands (resolve these first) ----
+  ligand                                     rxns  nearest model name (score)
+  zn2                                         725   (0.00)
+  cu2                                         675   (0.00)
+  edta                                        673   (0.00)
+  mg2                                         622   (0.00)
+  hg2                                         613   (0.00)
+  iodoacetamide                               600   (0.00)
+  ca2                                         592   (0.00)
+  mn2                                         575   (0.00)
+  n ethylmaleimide                            528   (0.00)
+  p chloromercuribenzoate                     520   (0.00)
+  co2                                         509   (0.00)
+  atp                                         497   (0.00)
+  p hydroxymercuribenzoate                    477   (0.00)
+  n                                           472   (0.00)
+  3                                           461   (0.00)
+  2                                           437   (0.00)
+  nacl                                        436   (0.00)
+  4                                           414   (0.00)
+  triton x 100                                401   (0.00)
+  cd2                                         393   (0.00)
+
+  These 20 names account for 10620 of the 113731 unresolved mentions (9%).
+
+  Wrote Ligand_Match_Report.csv. A high token score is a hint, not proof of identity -
+  check the 'variant' rows before trusting them.
+
+Saved ligand_diagnostic.mat
+Done 21-Oct-2026 23:22:17. Files: Ligand_Diagnostic_log.txt, Ligand_Match_Report.csv, ligand_diagnostic.mat

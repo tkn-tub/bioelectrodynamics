@@ -2,16 +2,18 @@
 % Fixed-topology, crosstalk-free IFFL mapping.
 %
 %   STEP 1  BRENDA activators present in the model   -> seed table T  (cached)
-%   STEP 2  map the WHOLE circuit at once            -> iffl_stage2.mat
-%   STEP 3  diagnostic + export, read back from disk -> IFFL_Diagnostics.txt
+%   STEP 2  map the WHOLE circuit at once            -> <tag>_stage2.mat
+%   STEP 3  diagnostic + export, read back from disk -> <tag>_Diagnostics.txt
 %
 % NOTHING IS LOST IF THE SESSION DIES. Every run writes:
-%   IFFL_run_log.txt      the full console transcript (diary)
+%   <tag>_run_log.txt     the full console transcript (diary)
 %   iffl_stage1.mat       the BRENDA seed table, reused on the next run
-%   iffl_stage2.mat       the search result + a trimmed model copy
-%   IFFL_Diagnostics.txt  the funnel, histograms and verdict
+%   <tag>_stage2.mat      the search result + a trimmed model copy
+%   <tag>_Diagnostics.txt the funnel, histograms and verdict
+%   <tag>_Chain_<n>.txt   the exported circuits
+%   where <tag> = IFFL_catalytic, so this study never overwrites the other
 % To re-read any of it later without MATLAB redoing the work:
-%   Report_IFFL_From_Mat('iffl_stage2.mat')
+%   Report_IFFL_From_Mat('IFFL_catalytic_stage2.mat', '', 3, 'IFFL_catalytic')
 %
 % The search is not staged (motifs -> cascade -> counter -> neuron) and
 % deliberately so: every crosstalk failure came from a later stage picking a
@@ -25,8 +27,10 @@
 
 clc; clearvars; close all;
 diary off;
-if exist('IFFL_run_log.txt','file'), delete('IFFL_run_log.txt'); end
-diary('IFFL_run_log.txt'); diary on;
+studyTag = 'IFFL_catalytic';   % every output of this study carries this prefix
+logFile  = [studyTag '_run_log.txt'];
+if exist(logFile,'file'), delete(logFile); end
+diary(logFile); diary on;
 fprintf('IFFL run started %s\n', datestr(now));
 cleanupDiary = onCleanup(@() diary('off'));    % closes the log even on an error
 
@@ -154,16 +158,17 @@ fprintf('STEP 2: %d circuits.\n', numel(out.circuits));
 
 mdl   = trim_model(model);           % only the fields the report/export need
 stamp = datestr(now);                %#ok<NASGU>
-save('iffl_stage2.mat', 'out', 'mdl', 'opt', 'stamp', '-v7.3');
-fprintf('Saved iffl_stage2.mat\n');
+save([studyTag '_stage2.mat'], 'out', 'mdl', 'opt', 'stamp', '-v7.3');
+fprintf('Saved %s_stage2.mat\n', studyTag);
 
 % =============================== STEP 3 ====================================
 % Everything below reads the checkpoint, so you can re-run this line alone in a
-% fresh session: Report_IFFL_From_Mat('iffl_stage2.mat')
-Report_IFFL_From_Mat('iffl_stage2.mat', 'IFFL_Diagnostics.txt', 3);
-if ~isempty(out.circuits), write_circuit_csv(mdl, out, 'iffl_circuits.csv'); end
+% fresh session: Report_IFFL_From_Mat([studyTag '_stage2.mat'], '', 3, studyTag)
+Report_IFFL_From_Mat([studyTag '_stage2.mat'], [studyTag '_Diagnostics.txt'], 3, studyTag);
+if ~isempty(out.circuits), write_circuit_csv(mdl, out, [studyTag '_circuits.csv']); end
 
-fprintf('\nDone %s. Files: IFFL_run_log.txt, IFFL_Diagnostics.txt, iffl_stage2.mat\n', datestr(now));
+fprintf('\nDone %s. Files: %s_run_log.txt, %s_Diagnostics.txt, %s_stage2.mat\n', ...
+    datestr(now), studyTag, studyTag, studyTag);
 diary off;
 
 % ---------------------------------------------------------------------------

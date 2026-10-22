@@ -173,11 +173,16 @@ function topo = iffl_topology(consumingN, fastSteps, miMode, catalytic, gateMode
             topo.regTarget{end+1} = ['r_Sd' sfx]; topo.regSense{end+1} = 'inhibits';
         end
     end
-    topo.regulator{end+1} = 'm_c'; topo.regTarget{end+1} = 'r_Nw';
-    switch neuronGate
-        case 'inhibit', topo.regSense{end+1} = 'inhibits';
-        case 'any',     topo.regSense{end+1} = 'regulates';
-        otherwise,      topo.regSense{end+1} = 'activates';
+    % With consumingN the neuron READS m_c by consuming it, so there is no
+    % catalytic edge to declare - m_c is r_Nw's substrate instead, and listing
+    % it as a regulator would demand both at once.
+    if ~consumingN
+        topo.regulator{end+1} = 'm_c'; topo.regTarget{end+1} = 'r_Nw';
+        switch neuronGate
+            case 'inhibit', topo.regSense{end+1} = 'inhibits';
+            case 'any',     topo.regSense{end+1} = 'regulates';
+            otherwise,      topo.regSense{end+1} = 'activates';
+        end
     end
     if catalytic
         topo.regulator = [topo.regulator, {'m_d1'}];

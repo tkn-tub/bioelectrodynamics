@@ -1,4 +1,4 @@
-function fn = export_iffl_chain(model, out, n, cAMPid)
+function fn = export_iffl_chain(model, out, n, cAMPid, prefix)
 % EXPORT_IFFL_CHAIN  Write circuit n of map_iffl_circuit as a full-chain report
 % in the r_Ff_1 / r_Fd_1 / ... notation.
 %
@@ -9,12 +9,13 @@ function fn = export_iffl_chain(model, out, n, cAMPid)
 % Writes Selected_IFFL_Chain_<n>.txt and returns the file name.
 
     if nargin < 3 || isempty(n), n = 1; end
-    if nargin < 4, cAMPid = 'camp[c]'; end
+    if nargin < 4 || isempty(cAMPid), cAMPid = 'camp[c]'; end
+    if nargin < 5 || isempty(prefix), prefix = 'Selected_IFFL'; end
     assert(~isempty(out.circuits), 'No circuit to export.');
     assert(n <= numel(out.circuits), 'Only %d circuit(s) available.', numel(out.circuits));
 
     topo = out.topology; c = out.circuits(n); opt = out.opt;
-    fn = sprintf('Selected_IFFL_Chain_%d.txt', n);
+    fn = sprintf('%s_Chain_%d.txt', prefix, n);
     fid = fopen(fn, 'w'); cleaner = onCleanup(@() fclose(fid)); %#ok<NASGU>
 
     role = containers.Map('KeyType','double','ValueType','char');
@@ -118,8 +119,18 @@ function fn = export_iffl_chain(model, out, n, cAMPid)
         forbid(c.met.m_in) = false;
         [steps, rpath, mpath] = cleanBFS(model, ci, c.met.m_in, 12, opt, forbid);
         if isnan(steps)
-            fprintf(fid, ['  No collision-free connector within 12 steps: every route from\n' ...
-                          '  %s to m_in consumes or produces a circuit signal.\n\n'], cAMPid);
+            fprintf(fid, ['  No mass-flow connector within 12 steps from %s to m_in.\n' ...
+                          '  For cAMP this is expected, not a search failure: its only\n' ...
+                          '  consumer is PDE1 (camp + h2o -> amp + h) and both products are\n' ...
+                          '  currency metabolites, so no path from it carries any of its\n' ...
+                          '  atoms to a non-currency species. Block 0 has to be CATALYTIC.\n' ...
+                          '  Run, in this order:\n' ...
+                          '      A_Block0(''%s_stage2.mat'', %d)             %% confirm the above\n' ...
+                          '      A_Block0_Catalytic(''%s_stage2.mat'')       %% find the gate\n' ...
+                          '  The first also reports how far %s sits from EVERY circuit\n' ...
+                          '  signal, which is how you catch an input that reaches m_out\n' ...
+                          '  sooner than m_in and short-circuits the pipeline.\n\n'], ...
+                          cAMPid, prefix, n, prefix, cAMPid);
         else
             fprintf(fid, '  Collision-free, %d step(s).\n', steps);
             fprintf(fid, '  Metabolites: %s\n', strjoin(model.mets(mpath), ' -> '));
@@ -257,9 +268,20 @@ function [steps, rpath, mpath] = cleanBFS(model, src, tgt, maxd, opt, forbid)
     steps = NaN; rpath = []; mpath = [];
     base = lower(regexprep(model.mets, '\[[a-z0-9]+\]$', ''));
     curr = ismember(base, lower(opt.currency));
+    % Currency metabolites are deliberately NOT traversable. Letting the BFS
+    % pass through the adenylate pool looks like it unlocks routes, but those
+    % routes are built on false edges: in
+    %     ACITL: atp + cit + coa -> accoa + adp + oaa + pi
+    % the pair (atp, oaa) is not an atom transfer - ATP leaves as ADP + Pi and
+    % OAA comes from citrate. Such a path carries none of the input's atoms.
+    % Do not "fix" a failed Block 0 by relaxing this. See A_Block0.m.
     ub = ones(numel(model.rxns),1); if isfield(model,'ub'), ub = model.ub(:); end
     bad = full(any(model.S(forbid,:) ~= 0, 1))';
-    usable = ~bad & ub > 0;
+    % The target is exempt from `forbid` so the last step can produce it, but a
+    % reaction that CONSUMES it mid-route makes it a carrier with zero net
+    % product (as GLUCYS -> r0568 -> CYSTA did to glu_L). Strike those out.
+    eatsTgt = full(model.S(tgt,:) < 0)';
+    usable = ~bad & ~eatsTgt & ub > 0;
     nM = numel(model.mets); dd = nan(nM,1); pr = nan(nM,1); pm = nan(nM,1);
     dd(src) = 0; frontier = src;
     for d = 1:maxd

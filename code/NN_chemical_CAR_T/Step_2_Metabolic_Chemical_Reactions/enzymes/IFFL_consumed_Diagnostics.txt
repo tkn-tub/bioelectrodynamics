@@ -1,0 +1,94 @@
+======================================================================
+IFFL MAPPING DIAGNOSTIC
+======================================================================
+checkpoint : IFFL_consumed_stage2.mat
+written    : 22-Oct-2026 13:31:46
+topology   : iffl_fixed_1plus2_noneI_masslink_aigate_Na_Aa_v7
+settings   : fastArmSteps 1 | compartment c | carrierTest 1 | maxArmPaths 2000
+             distinctEC 0 | noRegulatoryCrosstalk 0 | consumingN 1
+
+======================================================================
+FUNNEL
+======================================================================
+  seed reactions read ............. 551
+    dropped as unusable:
+           2  not usable in the forward direction (ub <= 0)
+  anchors examined ................ 549
+  arms rejected as carriers ....... 79
+  differentiator blocks accepted .. 116
+  block pairs enumerated .......... 18328
+    ...with a usable interstage ... 18  (0.1%)
+  D1->D2 joins tried .............. 18
+  circuits with exclusive signals . 0
+
+  GATE FUNNEL (why so few distinct m_Fd survive)
+    metabolites that activate a usable reaction ..... 156
+    (anchor, gate) pairs examined ................... 2192
+      dropped: gate has no consumer for r_Fr ........ 291
+      dropped: no 1-step fast arm into the gate .... 433
+    (anchor, output) pairs examined ................. 1487
+      dropped: output has no consumer for r_lk ...... 359
+      dropped: no 2-step slow arm into the output ... 178
+      dropped: arms share no common source m_in ..... 773  <- largest
+
+======================================================================
+BLOCK POOL
+======================================================================
+  distinct m_Fd (gates) 11 | distinct m_d (outputs) 11 | distinct m_in 11
+
+  blocks per gate (top 11 of 11):
+        49  pail45p_hs[c]      Phosphatidylinositol 4,5-Bisphosphate
+        15  ps_hs[c]           Phosphatidylserine
+        15  sphmyln_hs[c]      Sphingomyelin 
+        13  g6p[c]             D-Glucose 6-Phosphate
+        12  f6p[c]             D-Fructose 6-Phosphate
+         4  glu_L[c]           L-Glutamate
+         3  glc_D[c]           D-Glucose
+         2  fum[c]             Fumarate
+         1  asn_L[c]           L-Asparagine
+         1  gln_L[c]           L-Glutamine
+         1  sprm[c]            Spermine
+
+  INHIBITION pool: 158 blocks | 34 gates | 41 outputs | 30 inputs
+    gates: 2obut[c] 4hpro_LT[c] Lcyst[c] ahcys[c] ala_L[c] chol[c] cit[c] dcyt[c] ...
+    shared with the activation pool: 6/34 gates, 3 outputs, 9 inputs
+
+  hinges (a species that is some block's m_d AND another's m_in): 1
+    id                 name                            ending  starting
+    pchol_hs[c]        Phosphatidylcholine                 32        30
+
+======================================================================
+WHERE EACH D1->D2 JOIN STOPPED
+======================================================================
+  (18 joins in total)
+       10 / 18  ( 55.6%)  arms of D1 and D2 share a reaction
+        4 / 18  ( 22.2%)  r_c makes no usable m_c
+        4 / 18  ( 22.2%)  m_c drives no free reaction (r_Nw; see opt.neuronGate)
+
+======================================================================
+WHICH TWO ROLES CLAIMED THE SAME OBJECT
+======================================================================
+  (10 joins stopped on a role collision)
+        6 / 10  ( 60.0%)  r_I_1 = r_Sf_2
+        4 / 10  ( 40.0%)  r_I_1 = r_Fd_2
+
+======================================================================
+VERDICT
+======================================================================
+  Reported DEEPEST-first. The 4 joins at the deepest stage got furthest,
+  so that is the last thing standing between you and a circuit. The larger
+  bucket below is a shallower failure affecting a different set of joins.
+
+  [4 joins] m_c drives no free reaction (r_Nw; see opt.neuronGate)
+    The neuron is the blocker: m_c must gate a reaction producing an m_out
+    that has both a second producer (r_Nb, the bias) and a consumer (r_Nr).
+    The bias is usually what is missing, and a circuit can run with b = 0 -
+    say the word and I will make r_Nb optional.
+
+  [10 joins] arms of D1 and D2 share a reaction
+    The collision is on a REACTION. r_I_1, r_lk_1 and both of D2's arm
+    entries all consume m_d1, so the hinge is crowded and a thin pool
+    drafts one enzyme twice. Widen: opt.maxArmPaths = 20000, then
+    opt.compartment = 'any'.
+
+Written to IFFL_consumed_Diagnostics.txt

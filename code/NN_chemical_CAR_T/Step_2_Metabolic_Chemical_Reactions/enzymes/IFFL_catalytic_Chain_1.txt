@@ -1,0 +1,266 @@
+################################################################
+IFFL CIRCUIT (fixed 2+2 topology, crosstalk-free)
+Topology iffl_fixed_1plus2_noneI_catlink_aigate_Nx_Ax_v7 | circuit 1 of 1 | block genes 18
+Compartment c | single-pot: every reaction has all participants in [c]
+################################################################
+
+SIGNAL METABOLITES   (others = reactions elsewhere in the model that
+also touch this species; irrelevant in a cell-free pot, where only the
+twenty enzymes below are present, but they are competitors in vivo)
+  m_in     | glu_L[c]             | L-Glutamate                            | C5H8NO4        | others 38
+  m_Fd_1   | gln_L[c]             | L-Glutamine                            | C5H10N2O3      | others 12
+  m_Sf_1   | met_L[c]             | L-Methionine                           | C5H11NO2S      | others 4
+  m_d1     | ala_L[c]             | L-Alanine                              | C3H7NO2        | others 4
+  m_in_2   | ser_L[c]             | L-Serine                               | C3H7NO3        | others 5
+  m_Fd_2   | chol[c]              | Choline                                | C5H14NO        | others 2
+  m_Sf_2   | etha[c]              | Ethanolamine                           | C2H8NO         | others 2
+  m_d2     | ethamp[c]            | Ethanolamine Phosphate                 | C2H7NO4P       | others 2
+  m_c      | ahcys[c]             | S-Adenosyl-L-Homocysteine              | C14H20N6O5S    | others 30
+  m_b      | adn[c]               | Adenosine                              | C10H13N5O4     | others 6
+  m_out    | ade[c]               | Adenine                                | C5H5N5         | others 3
+
+REACTION ROLES
+  r_Fd_1   | GLNS           |              | Glutamine Synthetase
+  r_Fr_1   | PHACCOAGLNAC   | 2.3.1.14     | Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
+  r_Sf_1   | UNK3r          |              | 2-Keto-4-Methylthiobutyrate Transamination, Reversible
+  r_Sd_1   | METTRANSc      | 3.1.1.3      | Methionine Transaminase
+  r_I_1    | GTMLTe         | 2.3.2.2      | G-Glutamyltransferase, Extracellular
+  r_lk_1   | ALAR           | 5.1.1.1      | Alanine Racemase
+  r_A_2    | PSP_L          | 3.1.3.3      | Phosphoserine Phosphatase (L-Serine)
+  r_Fd_2   | PSSA1_hs       | 2.7.8.8      | Phosphatidylserine Synthase Homo Sapiens
+  r_Fr_2   | CHOLK          |              | Choline Kinase
+  r_Sf_2   | PSSA2_hs       | 2.7.8.8      | Phosphatidylserine Synthase Homo Sapiens
+  r_Sd_2   | ETHAK          | 2.7.1.82     | Ethanolamine Kinase
+  r_lk_2   | r0537          | 4.1.2.27     | Sphinganine-1-Phosphate Pamlmitaldehyde-Lyase Sphingolipid Metabolism
+  r_c      | r0480          | 2.1.1.103    | S-Adenosyl-L-Methionine:Ethanolamine-Phosphate N-Methyltransferase
+  r_I1     | 1331TAALThr    |              | demethylation of 13-O-desmethyl-tacrolimus to 13,31-O-Didesmethyl-tacrolimus in hepatocytes
+  r_I2     | PETHCT         | 2.7.7.14     | Phosphoethanolamine Cytidyltransferase
+  r_Nw     | MTAP           | 2.4.2.28     | 5'-Methylthioadenosine Phosphorylase
+  r_Nb     | PUNP1          | 3.4.2.1      | Purine-Nucleoside Phosphorylase (Adenosine)
+  r_Nr     | ADPT           | 2.4.2.7      | Adenine Phosphoribosyltransferase
+
+REGULATORY EDGES (the regulator is NOT consumed by its target)
+  m_Fd_1   (gln_L[c]) activates   r_I_1    (GTMLTe, EC 2.3.2.2)
+  m_Fd_2   (chol[c]) inhibits    r_Sd_2   (ETHAK, EC 2.7.1.82)
+  m_c      (ahcys[c]) inhibits    r_Nw     (MTAP, EC 2.4.2.28)
+  m_d1     (ala_L[c]) inhibits    r_A_2    (PSP_L, EC 3.1.3.3)
+  NOTE: m_c INHIBITS the neuron weight, so w is NEGATIVE - the output
+  falls as the count rises. A valid single neuron, but state the sign.
+  NOTE: the interstage INHIBITS, contributing a sign flip of its own.
+  Net cascade polarity is -1, not +1: m_d2 tracks the NEGATIVE second
+  derivative, so the counter increments on downward curvature. The
+  circuit works, but this sign must be stated when you report it.
+  stage gate modes: D1 = activate, D2 = inhibit
+  An inhibition stage has no r_I: m_d falls because its production
+  is shut off, and r_lk drains it. m_Fd is still cleared by r_Fr, so
+  the gate returns to baseline and the response stays a pulse.
+
+POLARITY AND TIMESCALES
+  Each stage is INVERTING. The fast arm raises the gated degradation of
+  m_d_k before the slow arm raises its production, so a rising stage input
+  drives m_d_k DOWN from its baseline. Stage gains: -1, -1 -> net +1.
+  Consequence: m_d1 encodes -d(m_in)/dt and m_d2 encodes +d2(m_in)/dt2.
+  Both ride on a POSITIVE baseline and the pulse is an excursion about it:
+      m_d_k* = v_Sd / ( k_lk + V_I * f(m_Fd_k*) )   must be > 0
+  so r_lk and the saturated r_I must not between them exceed v_Sd at rest.
+  Both arms have TWO steps, so the fast/slow split is kinetic, not
+  topological. Load enzymes so that, per stage:
+      tau_F = 1/k_Ff + 1/k_Fd  <  tau_S = 1/k_Sf + 1/k_Sd
+      r_I saturated in m_d_k  (m_d_k* >> K_M)  -> subtracts a FLUX
+      r_lk first order in m_d_k (m_d_k* << K_M) -> sets the baseline
+      m_Fd_k below saturation at the activator site -> graded gate
+
+----------------------------------------------------------------
+BLOCK 0: camp[c] -> m_in
+----------------------------------------------------------------
+  No collision-free connector within 12 steps: every route from
+  camp[c] to m_in consumes or produces a circuit signal.
+
+----------------------------------------------------------------
+BLOCK 1: DIFFERENTIATOR 1 (m_in -> m_d1)
+----------------------------------------------------------------
+
+  r_Fd_1
+      ID  : GLNS
+      Name: Glutamine Synthetase
+      EC  : 
+      Bounds: [0, 1000]
+      IDs   : atp[c] + glu_L[c](m_in) + nh4[c]  ->  adp[c] + gln_L[c](m_Fd_1) + h[c] + pi[c]
+      Names : Adenosine Triphosphate + L-Glutamate(m_in) + Ammonium  ->  Adenosine Diphosphate + L-Glutamine(m_Fd_1) + Proton + Orthophosphate
+
+  r_Fr_1
+      ID  : PHACCOAGLNAC
+      Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
+      EC  : 2.3.1.14
+      Bounds: [0, 1000]
+      IDs   : gln_L[c](m_Fd_1) + phaccoa[c]  ->  coa[c] + pheacgln[c]
+      Names : L-Glutamine(m_Fd_1) + Phenylacetyl Coenzyme A  ->  Coenzyme A + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate
+
+  r_Sf_1
+      ID  : UNK3r
+      Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
+      EC  : 
+      Bounds: [-1000, 1000]
+      IDs   : 2kmb[c] + glu_L[c](m_in)  ->  akg[c] + met_L[c](m_Sf_1)
+      Names : 2-Keto-4-Methylthiobutyrate + L-Glutamate(m_in)  ->  2-Oxoglutarate + L-Methionine(m_Sf_1)
+
+  r_Sd_1
+      ID  : METTRANSc
+      Name: Methionine Transaminase
+      EC  : 3.1.1.3
+      Bounds: [-1000, 1000]
+      IDs   : met_L[c](m_Sf_1) + pyr[c]  ->  4mtob[c] + ala_L[c](m_d1)
+      Names : L-Methionine(m_Sf_1) + Pyruvate  ->  4-Methyl-Thio-Oxo-Butyrate + L-Alanine(m_d1)
+
+  r_I_1
+      ID  : GTMLTe
+      Name: G-Glutamyltransferase, Extracellular
+      EC  : 2.3.2.2
+      Bounds: [0, 1000]
+      IDs   : ala_L[c](m_d1) + gthrd[c]  ->  cgly[c] + gluala[c]
+      Names : L-Alanine(m_d1) + Reduced Glutathione  ->  L-Cysteinylglycine + 5-L-Glutamyl-L-Alanine
+      REGULATED BY: m_Fd_1 = L-Glutamine (gln_L[c]) -- activates
+                    catalytic - the regulator is NOT a substrate
+
+  r_lk_1
+      ID  : ALAR
+      Name: Alanine Racemase
+      EC  : 5.1.1.1
+      Bounds: [-1000, 1000]
+      IDs   : ala_L[c](m_d1)  ->  ala_D[c]
+      Names : L-Alanine(m_d1)  ->  D-Alanine
+
+----------------------------------------------------------------
+BLOCK 2: DIFFERENTIATOR 2 (m_d1 -> m_d2)
+----------------------------------------------------------------
+
+  r_A_2
+      ID  : PSP_L
+      Name: Phosphoserine Phosphatase (L-Serine)
+      EC  : 3.1.3.3
+      Bounds: [0, 1000]
+      IDs   : h2o[c] + pser_L[c]  ->  pi[c] + ser_L[c](m_in_2)
+      Names : Water + O-Phospho-L-Serine  ->  Orthophosphate + L-Serine(m_in_2)
+      REGULATED BY: m_d1 = L-Alanine (ala_L[c]) -- inhibits
+                    catalytic - the regulator is NOT a substrate
+
+  r_Fd_2
+      ID  : PSSA1_hs
+      Name: Phosphatidylserine Synthase Homo Sapiens
+      EC  : 2.7.8.8
+      Bounds: [-1000, 1000]
+      IDs   : pchol_hs[c] + ser_L[c](m_in_2)  ->  chol[c](m_Fd_2) + ps_hs[c]
+      Names : Phosphatidylcholine + L-Serine(m_in_2)  ->  Choline(m_Fd_2) + Phosphatidylserine
+
+  r_Fr_2
+      ID  : CHOLK
+      Name: Choline Kinase
+      EC  : 
+      Bounds: [0, 1000]
+      IDs   : atp[c] + chol[c](m_Fd_2)  ->  adp[c] + cholp[c] + h[c]
+      Names : Adenosine Triphosphate + Choline(m_Fd_2)  ->  Adenosine Diphosphate + Choline Phosphate + Proton
+
+  r_Sf_2
+      ID  : PSSA2_hs
+      Name: Phosphatidylserine Synthase Homo Sapiens
+      EC  : 2.7.8.8
+      Bounds: [-1000, 1000]
+      IDs   : pe_hs[c] + ser_L[c](m_in_2)  ->  etha[c](m_Sf_2) + ps_hs[c]
+      Names : Phosphatidylethanolamine + L-Serine(m_in_2)  ->  Ethanolamine(m_Sf_2) + Phosphatidylserine
+
+  r_Sd_2
+      ID  : ETHAK
+      Name: Ethanolamine Kinase
+      EC  : 2.7.1.82
+      Bounds: [0, 1000]
+      IDs   : atp[c] + etha[c](m_Sf_2)  ->  adp[c] + ethamp[c](m_d2) + h[c]
+      Names : Adenosine Triphosphate + Ethanolamine(m_Sf_2)  ->  Adenosine Diphosphate + Ethanolamine Phosphate(m_d2) + Proton
+      REGULATED BY: m_Fd_2 = Choline (chol[c]) -- inhibits
+                    catalytic - the regulator is NOT a substrate
+
+  r_lk_2
+      ID  : r0537
+      Name: Sphinganine-1-Phosphate Pamlmitaldehyde-Lyase Sphingolipid Metabolism
+      EC  : 4.1.2.27
+      Bounds: [0, 1000]
+      IDs   : ethamp[c](m_d2) + hxdcal[c]  ->  sph1p[c]
+      Names : Ethanolamine Phosphate(m_d2) + Hexadecanal  ->  (2S,3R)-2-Azaniumyl-3-Hydroxyoctadecyl Phosphate
+
+----------------------------------------------------------------
+BLOCK 3: COUNTER (m_d2 -> m_c, shared species m_I)
+----------------------------------------------------------------
+
+  r_c
+      ID  : r0480
+      Name: S-Adenosyl-L-Methionine:Ethanolamine-Phosphate N-Methyltransferase
+      EC  : 2.1.1.103
+      Bounds: [-1000, 1000]
+      IDs   : amet[c] + ethamp[c](m_d2)  ->  HC00718[c] + ahcys[c](m_c) + h[c]
+      Names : S-Adenosyl-L-Methionine + Ethanolamine Phosphate(m_d2)  ->  N-Methylethanolaminium Phosphate + S-Adenosyl-L-Homocysteine(m_c) + Proton
+
+  r_I1
+      ID  : 1331TAALThr
+      Name: demethylation of 13-O-desmethyl-tacrolimus to 13,31-O-Didesmethyl-tacrolimus in hepatocytes
+      EC  : 
+      Bounds: [0, 1000]
+      IDs   : 13dmt[c] + ahcys[c](m_c) + h[c]  ->  1331tacr[c] + amet[c]
+      Names : 13-O-desmethyl tacrolimus, 13-DMT or M-I + S-Adenosyl-L-Homocysteine(m_c) + Proton  ->  13,31-O-Didesmethyl-tacrolimus + S-Adenosyl-L-Methionine
+
+  r_I2
+      ID  : PETHCT
+      Name: Phosphoethanolamine Cytidyltransferase
+      EC  : 2.7.7.14
+      Bounds: [0, 1000]
+      IDs   : ctp[c] + ethamp[c](m_d2) + h[c]  ->  cdpea[c] + ppi[c]
+      Names : Cytidine-5'-Triphosphate + Ethanolamine Phosphate(m_d2) + Proton  ->  Cytidine-5'-Diphosphate-Ethanolamine + Diphosphate
+
+----------------------------------------------------------------
+BLOCK 4: SINGLE NEURON (m_out = w[m_c] + b)
+----------------------------------------------------------------
+
+  r_Nw
+      ID  : MTAP
+      Name: 5'-Methylthioadenosine Phosphorylase
+      EC  : 2.4.2.28
+      Bounds: [0, 1000]
+      IDs   : 5mta[c] + pi[c]  ->  5mdr1p[c] + ade[c](m_out)
+      Names : 5-Methylthioadenosine + Orthophosphate  ->  5-Methylthio-5-Deoxy-D-Ribose 1-Phosphate + Adenine(m_out)
+      REGULATED BY: m_c = S-Adenosyl-L-Homocysteine (ahcys[c]) -- inhibits
+                    catalytic - the regulator is NOT a substrate
+
+  r_Nb
+      ID  : PUNP1
+      Name: Purine-Nucleoside Phosphorylase (Adenosine)
+      EC  : 3.4.2.1
+      Bounds: [-1000, 1000]
+      IDs   : adn[c](m_b) + pi[c]  ->  ade[c](m_out) + r1p[c]
+      Names : Adenosine(m_b) + Orthophosphate  ->  Adenine(m_out) + Alpha-D-Ribose 1-Phosphate
+
+  r_Nr
+      ID  : ADPT
+      Name: Adenine Phosphoribosyltransferase
+      EC  : 2.4.2.7
+      Bounds: [0, 1000]
+      IDs   : ade[c](m_out) + prpp[c]  ->  amp[c] + ppi[c]
+      Names : Adenine(m_out) + 5-Phospho-Alpha-D-Ribose 1-Diphosphate  ->  Adenosine Monophosphate + Diphosphate
+
+----------------------------------------------------------------
+AUDIT
+----------------------------------------------------------------
+  SIGNAL EXCLUSIVITY: PASS. Each of the 13 signals above is touched only
+  by the circuit reactions its role declares, with the declared sign;
+  m_Fd_1, m_Fd_2 and m_c appear in no stoichiometry at all.
+
+  The rest is reported, not enforced (not enforced / not enforced in this run):
+    Regulatory collisions (1) - the gate is not selective here:
+      m_Sf_2 also gates r_Sd_1
+    Shared EC (1) - one enzyme fills two roles, so you cannot load
+    them at independent concentrations:
+      2.7.8.8 shared by r_Fd_2, r_Sf_2
+    Shared auxiliary (non-signal, non-currency) species - mass coupling
+    that carries no signal. Buffer them or confirm they are in excess:
+      amet[c] (S-Adenosyl-L-Methionine)
+      ps_hs[c] (Phosphatidylserine)
+
+  Validated: connectivity, compartment, signal incidence, net arm mass.
+  NOT validated: k_cat/K_M values, activator strength, baseline feasibility.

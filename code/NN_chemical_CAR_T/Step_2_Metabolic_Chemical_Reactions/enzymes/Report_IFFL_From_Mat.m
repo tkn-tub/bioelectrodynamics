@@ -1,4 +1,4 @@
-function Report_IFFL_From_Mat(matFile, outFile, topN)
+function Report_IFFL_From_Mat(matFile, outFile, topN, prefix)
 % REPORT_IFFL_FROM_MAT  Rebuild the whole IFFL diagnostic from the checkpoint
 % written by A_Master_IFFL, with no model load, no COBRA and no BRENDA parse.
 %
@@ -13,6 +13,7 @@ function Report_IFFL_From_Mat(matFile, outFile, topN)
     if nargin < 1 || isempty(matFile), matFile = 'iffl_stage2.mat'; end
     if nargin < 2 || isempty(outFile), outFile = 'IFFL_Diagnostics.txt'; end
     if nargin < 3 || isempty(topN),    topN    = 3; end
+    if nargin < 4 || isempty(prefix),  prefix  = 'Selected_IFFL'; end
 
     assert(exist(matFile,'file') == 2, ...
         ['Checkpoint %s not found. Run A_Master_IFFL first - it writes it even\n' ...
@@ -212,7 +213,7 @@ function Report_IFFL_From_Mat(matFile, outFile, topN)
             say('\n');
             for n = 1:min(topN, numel(out.circuits))
                 try
-                    f = export_iffl_chain(mdl, out, n, 'camp[c]');
+                    f = export_iffl_chain(mdl, out, n, 'camp[c]', prefix);
                     say('  wrote %s\n', f);
                 catch ME
                     say('  export of circuit %d failed: %s\n', n, ME.message);
