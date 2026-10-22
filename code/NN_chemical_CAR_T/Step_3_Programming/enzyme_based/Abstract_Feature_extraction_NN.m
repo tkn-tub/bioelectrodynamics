@@ -7,361 +7,361 @@ Parameters                               % provides dt0 and fontsize
 
 %%
 %[text] 1\. Input data
-% load Dataset_cell2cell.mat
-% Dataset  = rmmissing(Dataset);
-% dist     = table2array(Dataset(:,1));
-% vesicles = table2array(Dataset(:,2:end));
-% 
-% row = 1;                                 % distance analysed in detail
-% N = size(vesicles,2);
-% t = (0:N-1)'*dt0;
-% assert(N >= 3 && all(isfinite(vesicles(row,:))) && all(vesicles(row,:) >= 0) && vesicles(row,1) > 0, ...
-%     'Use a finite nonnegative EV signal with a positive first sample.');
+load Dataset_cell2cell.mat
+Dataset  = rmmissing(Dataset);
+dist     = table2array(Dataset(:,1));
+vesicles = table2array(Dataset(:,2:end));
+
+row = 1;                                 % distance analysed in detail
+N = size(vesicles,2);
+t = (0:N-1)'*dt0;
+assert(N >= 3 && all(isfinite(vesicles(row,:))) && all(vesicles(row,:) >= 0) && vesicles(row,1) > 0, ...
+    'Use a finite nonnegative EV signal with a positive first sample.');
 %%
 %[text] Pulling Enzyme constants from the BRENDA workbook
 %[text] Description: This block uses your credentials at "Brenda\\\_credentials.txt" for searching at \[Brenda website\](https://www.brenda-enzymes.info/functional\_parameter\_statistics.php) the enzyme parameters. Your credentials should be included in a txt file with two lines, the first line includes your email, and the second line your password. The enzymes are identified from the file "Block\\\_7\\\_Selected\\\_Motifs.txt", which is completed by the second step and includes the chemical reaction network of the algorithm. After the code reads the enzyme parameters it prepares an excel table with the listed values per enzyme.
-% Uncomment below for reading the constants from https://www.brenda-enzymes.info/functional_parameter_statistics.php 
-
-%Loggin in Brenda for quering the enzyme parameters https://www.brenda-enzymes.info/functional_parameter_statistics.php 
-% Default values
-% Look for the credentials file on the MATLAB search path
-credentialsFile = which('BRENDA_credentials.txt');
-
-if ~isempty(credentialsFile) % which returns empty if not found
-    fid = fopen(credentialsFile,'rt','n','UTF-8');
-    assert(fid ~= -1, 'Cannot open credentials file.');
-
-    emailFromFile    = fgetl(fid);
-    passwordFromFile = fgetl(fid);
-    fclose(fid);
-
-    assert(ischar(emailFromFile) && ischar(passwordFromFile), ...
-        'Credentials file must contain two lines.');
-    assert(~isempty(strtrim(emailFromFile)) && ~isempty(passwordFromFile), ...
-        'Email and password must not be empty.');
-
-    email    = strtrim(emailFromFile);
-    password = passwordFromFile; 
-
-    clear fid emailFromFile passwordFromFile
-else
-    error('BRENDA_credentials.txt not found on the MATLAB path.');
-end
-clear brendaKineticsTable
-
-brendaKineticsTable('Selected_Full_Chain_1.txt','kinetics_BRENDA.xlsx', ... %[output:group:0077ef08] %[output:66d59597]
-        'BrendaFlatFile', which('brenda_2026_1.txt'), 'KcatSource','BRENDA else SAxMW'); %[output:group:0077ef08] %[output:66d59597]
+% % Uncomment below for reading the constants from https://www.brenda-enzymes.info/functional_parameter_statistics.php 
+% 
+% %Loggin in Brenda for quering the enzyme parameters https://www.brenda-enzymes.info/functional_parameter_statistics.php 
+% % Default values
+% % Look for the credentials file on the MATLAB search path
+% credentialsFile = which('BRENDA_credentials.txt');
+% 
+% if ~isempty(credentialsFile) % which returns empty if not found
+%     fid = fopen(credentialsFile,'rt','n','UTF-8');
+%     assert(fid ~= -1, 'Cannot open credentials file.');
+% 
+%     emailFromFile    = fgetl(fid);
+%     passwordFromFile = fgetl(fid);
+%     fclose(fid);
+% 
+%     assert(ischar(emailFromFile) && ischar(passwordFromFile), ...
+%         'Credentials file must contain two lines.');
+%     assert(~isempty(strtrim(emailFromFile)) && ~isempty(passwordFromFile), ...
+%         'Email and password must not be empty.');
+% 
+%     email    = strtrim(emailFromFile);
+%     password = passwordFromFile; 
+% 
+%     clear fid emailFromFile passwordFromFile
+% else
+%     error('BRENDA_credentials.txt not found on the MATLAB path.');
+% end
+% clear brendaKineticsTable
+% 
+% brendaKineticsTable('Selected_Full_Chain_1.txt','kinetics_BRENDA.xlsx', ... %[output:group:0077ef08] %[output:66d59597]
+%         'BrendaFlatFile', which('brenda_2026_1.txt'), 'KcatSource','BRENDA else SAxMW'); %[output:group:0077ef08] %[output:66d59597]
 %%
 
-% Sheet "values" of kinetics_BRENDA.xlsx: reaction label in column B, and the
-% columns K_M [mM], SA [umol/min/mg] and MW [mg/umol] found by their titles.
-% kcat [1/s] = SA*MW/60.
-raw = readcell('kinetics_BRENDA.xlsx','Sheet','values');
-isText = @(x) ischar(x) || (isstring(x) && isscalar(x) && ~ismissing(x));
-hdrRow = find(any(cellfun(@(x) isText(x) && startsWith(string(x),"K_M"),raw),2),1);
-assert(~isempty(hdrRow),'Header row (a cell starting with "K_M") not found in the workbook.');
-colOf = @(title) find(cellfun(@(x) isText(x) && startsWith(string(x),title),raw(hdrRow,:)),1);
-colKM = colOf("K_M");  colSA = colOf("SA");  colMW = colOf("MW"); colKcat = colOf("k_cat");
-
-%==================
-% Block 0
-%==================
-
-% ---- Constants from the workbook ----
-% Labels and chain exactly as the sheets "values" and "Reaction mapping" list them:
-%   r_adapter_1  3',5'-cyclic AMP            -> AMP                  (K_M for cAMP)
-%   r_adapter_2  AMP + argininosuccinate+PPi -> ATP                  (K_M for ATP)
-%   r_adapter_3  ATP + aspartate + glutamine -> L-glutamate (m_d1)   (K_M for ATP)
-%   r_adapter_4  L-glutamate + 3-P-hydroxypyruvate -> 3-P-L-serine   (K_M for glutamate)
-%   r_adapter_5  3-P-L-serine                -> L-serine (m_in)      (K_M for 3-P-serine)
-reactionNamesB0 = {'r_CAMP_1'};
-KM_B0 = nan(1,length(reactionNamesB0));
-kcat_B0 = nan(1,length(reactionNamesB0));
-
-for i = 1:length(reactionNamesB0)
-    r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNamesB0{i}),raw(:,2)),1);
-    assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNamesB0{i});
-    KM_B0(i)   = raw{r,colKM};
-    %kcat(i) = raw{r,colSA}*raw{r,colMW}/60;
-    val = raw{r,colKcat};
-    if isempty(val), val = NaN; end
-    kcat_B0(i) = val;
-
-end
-% assert(all(isfinite([KM_B0 kcat_B0])) && all([KM_B0 kcat_B0] > 0),'K_M, SA and MW of the five reactions must be positive numbers.');
-
-
-Km_a1_cAMP = KM_B0(1);  kcat_a1 = kcat_B0(1);   % cAMP        -> AMP
-% Km_a2_AMP  = KM_B0(2);  kcat_a2 = kcat_B0(2);   % AMP         -> ATP
-% Km_a3_ATP  = KM_B0(3);  kcat_a3 = kcat_B0(3);   % ATP         -> L-glutamate
-% Km_a4_glu  = KM_B0(4);  kcat_a4 = kcat_B0(4);   % L-glutamate -> 3-P-L-serine
-% Km_a5_pSer = KM_B0(5);  kcat_a5 = kcat_B0(5);   % 3-P-L-serine-> L-serine (m_in)
-
-%==================
-% Block 1: Differentiator
-%==================
-
-% Second-substrate constants: the workbook gives one K_M per reaction, so the
-% cosubstrate K_M values below are assumed, as for K_M of the cancelers.
-Km_a2_asuc = 0.05;  Km_a2_ppi = 0.1;            % argininosuccinate, diphosphate
-Km_a3_asp  = 0.3;   Km_a3_gln = 0.3;            % L-aspartate, L-glutamine
-Km_a4_php  = 0.01;                              % 3-phospho-hydroxypyruvate
-m_asuc_B0 = 0.05; m_ppi_B0 = 0.5;  m_asp_B0 = 1; m_gln_B0 = 2; m_php_B0 = 0.05;
-K_EV_AC = 10*vesicles(row,1);            % activation constant in DATASET EV units (assumed) %[output:812f1865]
-
-reactionNames = {'r_Sf','r_Sd','r_Ff','r_Fd','r_Fr','r_I'};
-
-KM = nan(1,length(reactionNames));
-kcat = nan(1,length(reactionNames));
-colKcat = colOf("k_cat");
-for i = 1:length(reactionNames)
-    r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNames{i}),raw(:,2)),1);
-    assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNames{i});
-    KM(i)   = raw{r,colKM};
-    %kcat(i) = raw{r,colSA}*raw{r,colMW}/60;
-    kcat(i) = raw{r,colKcat};
-end
-assert(all(isfinite([KM kcat])) && all([KM kcat] > 0),'K_M, SA and MW of the five reactions must be positive numbers.');
-
-KM_Sf_1  = KM(1);  kcat_Sf_1  = kcat(1);       % r_S :  m_in -> m_S
-KM_Sd_1 = KM(2);  kcat_Sd_1 = kcat(2);       % r_Sr:  m_S  -> m_d1  (slow rail)
-KM_Ff_1  = KM(3);  kcat_Ff_1  = kcat(3);       % r_F :  m_in -> m_F
-KM_Fd_1 = KM(4);  kcat_Fd_1 = kcat(4);       % r_Fr:  m_F  -> m_P1  (fast rail)
-KM_Fr_1 = KM(5); kcat_Fr_1 = kcat(5);
-KM_I_1  = KM(6);  kcat_I_1  = kcat(6);       % r_I :  m_P1 + m_d1 -> products (K_M used for both substrates: assumed)
-
-
-%==================
-% Block 2: Differentiator
-%==================
-
-reactionNames2 = {'r_Sf_2','r_Sd_2','r_Sr_2','r_Ff_2','r_Fd_2','r_I_2'};
-KM2 = nan(1,length(reactionNames2)); 
-kcat2 = nan(1,length(reactionNames2));
-colKcat = colOf("k_cat");
-for i = 1:length(reactionNames2)
-    r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNames2{i}),raw(:,2)),1);
-    assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNames2{i});
-    KM2(i)   = raw{r,colKM};
-    % kcat2(i) = raw{r,colSA}*raw{r,colMW}/60;
-    kcat2(i) = raw{r,colKcat};   
-    
-end
-KM_Sf_2  = KM2(1);  kcat_Sf_2  = kcat2(1);   % r_S_2 : m_d1 -> m_S2
-KM_Sd_2 = KM2(2);  kcat_Sd_2 = kcat2(2);   % r_Sr_2: m_S2 -> m_N2 (slow rail)
-KM_Sr_2 = KM2(3);  kcat_Sr_2 = kcat2(3);   % r_Sr_2: m_S2 -> m_N2 (slow rail)
-KM_Ff_2  = KM2(4);  kcat_Ff_2  = kcat2(4);   % r_F_2 : m_d1 -> m_F2
-KM_Fd_2 = KM2(5);  kcat_Fd_2 = kcat2(5);   % r_Fr_2: m_F2 -> m_d2 (fast rail)
-KM_I_2  = KM2(6);  kcat_I_2  = kcat2(6);   % r_I_2 : m_d2 + m_N2 -> products (K_M for both: assumed)
-
-
-%==================
-% Block 3: Counter
-%==================
-
-reactionNamesC = {'r_c','r_I2','r_I1'};
-KMC = nan(1,3);  kcatC = nan(1,3);
-for i = 1:3
-    r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNamesC{i}),raw(:,2)),1);
-    assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNamesC{i});
-    KMC(i)   = raw{r,colKM};
-    % kcatC(i) = raw{r,colSA}*raw{r,colMW}/60;
-    kcatC(i) = raw{r,colKcat};
-end
-%assert(all(isfinite([KM2 kcat2 KMC kcatC])) && all([KM2 kcat2 KMC kcatC] > 0),'K_M, SA and MW must be positive numbers.');
-KM_Cp   = KMC(1);  kcat_Cp = kcatC(1);   % r_c  = r_Cp: buffered substrate -> m_c, activated by m_d2
-KM_Cg_c = KMC(2);  kcat_Cg = kcatC(2);   % r_I1 = r_Cg: m_c + m_I -> products;   K_M for m_c
-KM_Cg_I = KMC(2);                        %               K_M for m_I: assumed equal
-KM_Cr   = KMC(3);  kcat_Cr = kcatC(3);   % r_I2 = r_Cr: m_I -> products, activated by m_d2
-
-%==================
-% Block 3: NN
-%==================
-
-% Neuron: the same sheet. Weight r_Ni, removal r_NiDecay; the bias source uses the row r_Nb.
-reactionNamesN = {'r_Nw','r_Nr','r_Nb'};
-KMN = nan(1,3);  kcatN = nan(1,3);
-for i = 1:3
-    r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNamesN{i}),raw(:,2)),1);
-    assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNamesN{i});
-    KMN(i)   = raw{r,colKM};
-    % kcatN(i) = raw{r,colSA}*raw{r,colMW}/60;
-    kcatN(i) = raw{r,colKcat};
-end
-%assert(all(isfinite([KMN kcatN])) && all([KMN kcatN] > 0),'K_M, SA and MW of the neuron reactions must be positive numbers.');
-KM_Nw = KMN(1);  kcat_Nw = kcatN(1);     % r_Nw = r_Ni     : weight (its K_M is used for m_c: assumed)
-KM_Nr = KMN(2);  kcat_Nr = kcatN(2);     % r_Nr = r_NiDecay: removal of m_out
-KM_Nb = KMN(3);  kcat_Nb = kcatN(3);     % r_Nb            : bias source
+% % Sheet "values" of kinetics_BRENDA.xlsx: reaction label in column B, and the
+% % columns K_M [mM], SA [umol/min/mg] and MW [mg/umol] found by their titles.
+% % kcat [1/s] = SA*MW/60.
+% raw = readcell('kinetics_BRENDA.xlsx','Sheet','values');
+% isText = @(x) ischar(x) || (isstring(x) && isscalar(x) && ~ismissing(x));
+% hdrRow = find(any(cellfun(@(x) isText(x) && startsWith(string(x),"K_M"),raw),2),1);
+% assert(~isempty(hdrRow),'Header row (a cell starting with "K_M") not found in the workbook.');
+% colOf = @(title) find(cellfun(@(x) isText(x) && startsWith(string(x),title),raw(hdrRow,:)),1);
+% colKM = colOf("K_M");  colSA = colOf("SA");  colMW = colOf("MW"); colKcat = colOf("k_cat");
+% 
+% %==================
+% % Block 0
+% %==================
+% 
+% % ---- Constants from the workbook ----
+% % Labels and chain exactly as the sheets "values" and "Reaction mapping" list them:
+% %   r_adapter_1  3',5'-cyclic AMP            -> AMP                  (K_M for cAMP)
+% %   r_adapter_2  AMP + argininosuccinate+PPi -> ATP                  (K_M for ATP)
+% %   r_adapter_3  ATP + aspartate + glutamine -> L-glutamate (m_d1)   (K_M for ATP)
+% %   r_adapter_4  L-glutamate + 3-P-hydroxypyruvate -> 3-P-L-serine   (K_M for glutamate)
+% %   r_adapter_5  3-P-L-serine                -> L-serine (m_in)      (K_M for 3-P-serine)
+% reactionNamesB0 = {'r_CAMP_1'};
+% KM_B0 = nan(1,length(reactionNamesB0));
+% kcat_B0 = nan(1,length(reactionNamesB0));
+% 
+% for i = 1:length(reactionNamesB0)
+%     r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNamesB0{i}),raw(:,2)),1);
+%     assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNamesB0{i});
+%     KM_B0(i)   = raw{r,colKM};
+%     %kcat(i) = raw{r,colSA}*raw{r,colMW}/60;
+%     val = raw{r,colKcat};
+%     if isempty(val), val = NaN; end
+%     kcat_B0(i) = val;
+% 
+% end
+% % assert(all(isfinite([KM_B0 kcat_B0])) && all([KM_B0 kcat_B0] > 0),'K_M, SA and MW of the five reactions must be positive numbers.');
+% 
+% 
+% Km_a1_cAMP = KM_B0(1);  kcat_a1 = kcat_B0(1);   % cAMP        -> AMP
+% % Km_a2_AMP  = KM_B0(2);  kcat_a2 = kcat_B0(2);   % AMP         -> ATP
+% % Km_a3_ATP  = KM_B0(3);  kcat_a3 = kcat_B0(3);   % ATP         -> L-glutamate
+% % Km_a4_glu  = KM_B0(4);  kcat_a4 = kcat_B0(4);   % L-glutamate -> 3-P-L-serine
+% % Km_a5_pSer = KM_B0(5);  kcat_a5 = kcat_B0(5);   % 3-P-L-serine-> L-serine (m_in)
+% 
+% %==================
+% % Block 1: Differentiator
+% %==================
+% 
+% % Second-substrate constants: the workbook gives one K_M per reaction, so the
+% % cosubstrate K_M values below are assumed, as for K_M of the cancelers.
+% Km_a2_asuc = 0.05;  Km_a2_ppi = 0.1;            % argininosuccinate, diphosphate
+% Km_a3_asp  = 0.3;   Km_a3_gln = 0.3;            % L-aspartate, L-glutamine
+% Km_a4_php  = 0.01;                              % 3-phospho-hydroxypyruvate
+% m_asuc_B0 = 0.05; m_ppi_B0 = 0.5;  m_asp_B0 = 1; m_gln_B0 = 2; m_php_B0 = 0.05;
+% K_EV_AC = 10*vesicles(row,1);            % activation constant in DATASET EV units (assumed) %[output:812f1865]
+% 
+% reactionNames = {'r_Sf','r_Sd','r_Ff','r_Fd','r_Fr','r_I'};
+% 
+% KM = nan(1,length(reactionNames));
+% kcat = nan(1,length(reactionNames));
+% colKcat = colOf("k_cat");
+% for i = 1:length(reactionNames)
+%     r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNames{i}),raw(:,2)),1);
+%     assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNames{i});
+%     KM(i)   = raw{r,colKM};
+%     %kcat(i) = raw{r,colSA}*raw{r,colMW}/60;
+%     kcat(i) = raw{r,colKcat};
+% end
+% assert(all(isfinite([KM kcat])) && all([KM kcat] > 0),'K_M, SA and MW of the five reactions must be positive numbers.');
+% 
+% KM_Sf_1  = KM(1);  kcat_Sf_1  = kcat(1);       % r_S :  m_in -> m_S
+% KM_Sd_1 = KM(2);  kcat_Sd_1 = kcat(2);       % r_Sr:  m_S  -> m_d1  (slow rail)
+% KM_Ff_1  = KM(3);  kcat_Ff_1  = kcat(3);       % r_F :  m_in -> m_F
+% KM_Fd_1 = KM(4);  kcat_Fd_1 = kcat(4);       % r_Fr:  m_F  -> m_P1  (fast rail)
+% KM_Fr_1 = KM(5); kcat_Fr_1 = kcat(5);
+% KM_I_1  = KM(6);  kcat_I_1  = kcat(6);       % r_I :  m_P1 + m_d1 -> products (K_M used for both substrates: assumed)
+% 
+% 
+% %==================
+% % Block 2: Differentiator
+% %==================
+% 
+% reactionNames2 = {'r_Sf_2','r_Sd_2','r_Sr_2','r_Ff_2','r_Fd_2','r_I_2'};
+% KM2 = nan(1,length(reactionNames2)); 
+% kcat2 = nan(1,length(reactionNames2));
+% colKcat = colOf("k_cat");
+% for i = 1:length(reactionNames2)
+%     r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNames2{i}),raw(:,2)),1);
+%     assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNames2{i});
+%     KM2(i)   = raw{r,colKM};
+%     % kcat2(i) = raw{r,colSA}*raw{r,colMW}/60;
+%     kcat2(i) = raw{r,colKcat};   
+% 
+% end
+% KM_Sf_2  = KM2(1);  kcat_Sf_2  = kcat2(1);   % r_S_2 : m_d1 -> m_S2
+% KM_Sd_2 = KM2(2);  kcat_Sd_2 = kcat2(2);   % r_Sr_2: m_S2 -> m_N2 (slow rail)
+% KM_Sr_2 = KM2(3);  kcat_Sr_2 = kcat2(3);   % r_Sr_2: m_S2 -> m_N2 (slow rail)
+% KM_Ff_2  = KM2(4);  kcat_Ff_2  = kcat2(4);   % r_F_2 : m_d1 -> m_F2
+% KM_Fd_2 = KM2(5);  kcat_Fd_2 = kcat2(5);   % r_Fr_2: m_F2 -> m_d2 (fast rail)
+% KM_I_2  = KM2(6);  kcat_I_2  = kcat2(6);   % r_I_2 : m_d2 + m_N2 -> products (K_M for both: assumed)
+% 
+% 
+% %==================
+% % Block 3: Counter
+% %==================
+% 
+% reactionNamesC = {'r_c','r_I2','r_I1'};
+% KMC = nan(1,3);  kcatC = nan(1,3);
+% for i = 1:3
+%     r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNamesC{i}),raw(:,2)),1);
+%     assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNamesC{i});
+%     KMC(i)   = raw{r,colKM};
+%     % kcatC(i) = raw{r,colSA}*raw{r,colMW}/60;
+%     kcatC(i) = raw{r,colKcat};
+% end
+% %assert(all(isfinite([KM2 kcat2 KMC kcatC])) && all([KM2 kcat2 KMC kcatC] > 0),'K_M, SA and MW must be positive numbers.');
+% KM_Cp   = KMC(1);  kcat_Cp = kcatC(1);   % r_c  = r_Cp: buffered substrate -> m_c, activated by m_d2
+% KM_Cg_c = KMC(2);  kcat_Cg = kcatC(2);   % r_I1 = r_Cg: m_c + m_I -> products;   K_M for m_c
+% KM_Cg_I = KMC(2);                        %               K_M for m_I: assumed equal
+% KM_Cr   = KMC(3);  kcat_Cr = kcatC(3);   % r_I2 = r_Cr: m_I -> products, activated by m_d2
+% 
+% %==================
+% % Block 3: NN
+% %==================
+% 
+% % Neuron: the same sheet. Weight r_Ni, removal r_NiDecay; the bias source uses the row r_Nb.
+% reactionNamesN = {'r_Nw','r_Nr','r_Nb'};
+% KMN = nan(1,3);  kcatN = nan(1,3);
+% for i = 1:3
+%     r = find(cellfun(@(x) isText(x) && strcmp(strtrim(char(x)),reactionNamesN{i}),raw(:,2)),1);
+%     assert(~isempty(r),'Reaction %s not found in column B of the workbook.',reactionNamesN{i});
+%     KMN(i)   = raw{r,colKM};
+%     % kcatN(i) = raw{r,colSA}*raw{r,colMW}/60;
+%     kcatN(i) = raw{r,colKcat};
+% end
+% %assert(all(isfinite([KMN kcatN])) && all([KMN kcatN] > 0),'K_M, SA and MW of the neuron reactions must be positive numbers.');
+% KM_Nw = KMN(1);  kcat_Nw = kcatN(1);     % r_Nw = r_Ni     : weight (its K_M is used for m_c: assumed)
+% KM_Nr = KMN(2);  kcat_Nr = kcatN(2);     % r_Nr = r_NiDecay: removal of m_out
+% KM_Nb = KMN(3);  kcat_Nb = kcatN(3);     % r_Nb            : bias source
 %[text] 3\. Design choices
-E_max = 0.02;                            % largest feasible enzyme concentration [mM] (20 uM)
-m_in_target = 0.00125;                   % resting input level [mM]
-
-% Differentiator 1
-tau_F_1 = 30;                             % delay of the fast branch (pool m_F) [s]
-tau_S_1 = 60;                             % delay of the slow branch (pool m_S) [s];  Delta_t = tau_S1 - tau_F1
-tau_r_1 = 30;                             % common removal time of the two rails m_P1 and m_d1 [s]
-w_1    = 1;                              % gain: m_P1 - m_d1 = w_1*(fast-delayed m_in - slow-delayed m_in)
-% Differentiator 2
-tau_F_2 = 30;                             % delay of the fast branch (pool m_F2) [s]
-tau_S_2 = 60;                             % delay of the slow branch (pool m_S2) [s]
-tau_r_2 = 30;                             % common removal time of the two rails m_d2 and m_N2 [s]
-%                                          (its gain is fixed by the load: w_2 = tau_r2/(2*tau_r1))
-% Canceler r_I and r_I_2
-ideal_canceler = false;                   % true : strong enough to leave the rails at rest_1, rest_2
-%                                          false: limited to E_max, to see what is feasible
-rest_1 = 1e-7;                           % wanted resting level of the rails of D1 [mM] (ideal canceler)
-rest_2 = 1e-8;                           % wanted resting level of the rails of D2 [mM] (ideal canceler)
-% Counter
-share_c       = 0.9;                     % share of the removal of m_d2 that goes through r_c (-> m_c);
-%                                          the rest goes through r_I2. 1 = r_I2 switched off.
-tau_reset     = 600;                     % reset time constant of m_c [s]
-m_I_base      = 2;                       % buffered level of m_I [mM] (illustrative)
-tau_I_supply  = 60;                      % refill time of m_I [s]
-% Neuron
-w_N   = 1;                               % weight: m_out = w_N*m_c + b_N
-b_N   = 5e-7;                            % bias [mM]
-tau_N = 30;                              % response time of the neuron [s]
-m_b   = 0.01;                            % buffered bias species [mM] (illustrative)
-consuming_N = false;                     % false = m_c activates r_Nw; true = r_Nw consumes m_c
-assert(w_N >= 0 && b_N >= 0 && tau_N > 0,'The neuron needs w_N >= 0, b_N >= 0 and tau_N > 0.');
-assert(tau_S_1 > tau_F_1 && tau_S_2 > tau_F_2,'The slow branch must have the larger delay.');
-assert(share_c > 0 && share_c <= 1,'share_c must lie in (0,1].');
+% E_max = 0.02;                            % largest feasible enzyme concentration [mM] (20 uM)
+% m_in_target = 0.00125;                   % resting input level [mM]
+% 
+% % Differentiator 1
+% tau_F_1 = 30;                             % delay of the fast branch (pool m_F) [s]
+% tau_S_1 = 60;                             % delay of the slow branch (pool m_S) [s];  Delta_t = tau_S1 - tau_F1
+% tau_r_1 = 30;                             % common removal time of the two rails m_P1 and m_d1 [s]
+% w_1    = 1;                              % gain: m_P1 - m_d1 = w_1*(fast-delayed m_in - slow-delayed m_in)
+% % Differentiator 2
+% tau_F_2 = 30;                             % delay of the fast branch (pool m_F2) [s]
+% tau_S_2 = 60;                             % delay of the slow branch (pool m_S2) [s]
+% tau_r_2 = 30;                             % common removal time of the two rails m_d2 and m_N2 [s]
+% %                                          (its gain is fixed by the load: w_2 = tau_r2/(2*tau_r1))
+% % Canceler r_I and r_I_2
+% ideal_canceler = false;                   % true : strong enough to leave the rails at rest_1, rest_2
+% %                                          false: limited to E_max, to see what is feasible
+% rest_1 = 1e-7;                           % wanted resting level of the rails of D1 [mM] (ideal canceler)
+% rest_2 = 1e-8;                           % wanted resting level of the rails of D2 [mM] (ideal canceler)
+% % Counter
+% share_c       = 0.9;                     % share of the removal of m_d2 that goes through r_c (-> m_c);
+% %                                          the rest goes through r_I2. 1 = r_I2 switched off.
+% tau_reset     = 600;                     % reset time constant of m_c [s]
+% m_I_base      = 2;                       % buffered level of m_I [mM] (illustrative)
+% tau_I_supply  = 60;                      % refill time of m_I [s]
+% % Neuron
+% w_N   = 1;                               % weight: m_out = w_N*m_c + b_N
+% b_N   = 5e-7;                            % bias [mM]
+% tau_N = 30;                              % response time of the neuron [s]
+% m_b   = 0.01;                            % buffered bias species [mM] (illustrative)
+% consuming_N = false;                     % false = m_c activates r_Nw; true = r_Nw consumes m_c
+% assert(w_N >= 0 && b_N >= 0 && tau_N > 0,'The neuron needs w_N >= 0, b_N >= 0 and tau_N > 0.');
+% assert(tau_S_1 > tau_F_1 && tau_S_2 > tau_F_2,'The slow branch must have the larger delay.');
+% assert(share_c > 0 && share_c <= 1,'share_c must lie in (0,1].');
 %[text] #### Enzyme concentrations
-% ---- Differentiator 1 ----
-k_r_1 = 1/tau_r_1;                         % removal of each rail
-k_Ff_1  = w_1*k_r_1;                         % m_in -> m_F
-k_Sf_1  = k_Ff_1;                              % m_in -> m_S: the same flux into both branches
-k_Fd_1 = 1/tau_F_1;                         % m_F -> m_P1
-k_Sd_1 = 1/tau_S_1;                         % m_S -> m_d1
-k_Fr_1 = k_r_1;                             % m_P1 -> products (new reaction)
-k_Ff_2 = k_r_1/2;
-k_Sf_2 = k_r_1/2;         % m_d1 -> m_F2 and m_d1 -> m_S2: together the k_r of m_d1
-
-flux_1 = k_Ff_1*m_in_target;                % resting flux through each branch [mM/s]
-m_Ff_ref = k_Ff_1*m_in_target/k_Fd_1;
-m_Sf_ref = k_Sf_1*m_in_target/k_Sd_1;
-
-if ideal_canceler
-    assert(k_r_1*rest_1 < flux_1,'rest_1 is too high: lower it.');
-    k_I_1 = (flux_1-k_r_1*rest_1)/rest_1^2;
-else
-    k_I_1 = kcat_I_1*E_max/(KM_I_1*KM_I_1);
-end
-m_Fd_ref = (-k_r_1+sqrt(k_r_1^2+4*k_I_1*flux_1))/(2*k_I_1);      % resting m_P1 = resting m_d1
-m_Sd_ref = (-k_r_1+sqrt(k_r_1^2+4*k_I_1*flux_1))/(2*k_I_1);      % resting m_P1 = resting m_d1
-
-% ---- Differentiator 2 (input: m_d1) ----
-k_r_2   = 1/tau_r_2;
-k_Fd_2 = 1/tau_F_2;                       % m_F2 -> m_d2
-k_Sd_2 = 1/tau_S_2;                       % m_S2 -> m_N2
-k_c    = share_c*k_r_2;                   % m_d2 -> m_c            (counter, r_c)
-k_I2c  = (1-share_c)*k_r_2;               % m_d2 + m_I -> products (counter, r_I2), at m_I = m_I_base
-k_Sr_2 = k_r_2;                           % removal of m_N2 (new reaction)
-flux_2 = k_Ff_2*m_Fd_ref;                   % resting flux through each branch of D2
-m_F2_ref = k_Ff_2*m_Fd_ref/k_Fd_2;
-m_S2_ref = k_Sf_2*m_Fd_ref/k_Sd_2;
-if ideal_canceler
-    assert(k_r_2*rest_2 < flux_2,'rest_2 is too high for the resting m_d1: lower it.');
-    k_I_2 = (flux_2-k_r_2*rest_2)/rest_2^2;
-else
-    k_I_2 = kcat_I_2*E_max/(KM_I_2*KM_I_2);
-end
-p2_ref = (-k_r_2+sqrt(k_r_2^2+4*k_I_2*flux_2))/(2*k_I_2);  % resting m_d2 = resting m_N2
-
-% ---- Enzyme concentrations, from k = kcat*[E]/K_M ----
-names_all = {'r_Ff_1';'r_Fd_1';'r_Fr_1';'r_Sf_1';'r_Sd_1';'r_I_1'; ... %differentiator 1
-             'r_Ff_2';'r_Fd_2';'r_Sf_2';'r_Sd_2';'r_Sr_2';'r_I_2';... %differentiator 2
-             'r_c = r_Cp';'r_I2 = r_Cr'}; %counter
-k_all = [k_Ff_1;k_Fd_1;k_Fr_1;k_Sf_1;k_Sd_1;k_I_1;...%differentiator 1
-         k_Ff_2;k_Fd_2;k_I_2;k_Sf_2;k_Sd_2;k_Sr_2;...%differentiator 2
-         k_c;k_I2c]; %counter
-
-E_all = [... %differentiator 1
-         k_Ff_1*KM_Ff_1/kcat_Ff_1; k_Fd_1*KM_Fd_1/kcat_Fd_1; k_Fr_1*KM_Fr_1/kcat_Fr_1;...%fast branch
-         k_Sf_1*KM_Sf_1/kcat_Sf_1; k_Sd_1*KM_Sd_1/kcat_Sd_1; k_I_1*KM_I_1^2/kcat_I_1; ...%slow branch
-         ... %differentiator 2 
-         k_Ff_2*KM_Ff_2/kcat_Ff_2; k_Fd_2*KM_Fd_2/kcat_Fd_2; k_I_2*KM_I_2^2/kcat_I_2; ...%fast branch
-         k_Sf_2*KM_Sf_2/kcat_Sf_2; k_Sd_2*KM_Sd_2/kcat_Sd_2; k_Sr_2*KM_Sr_2/kcat_Sr_2; ...%slow branch 
-         k_c*KM_Cp/kcat_Cp; k_I2c*KM_Cr/(kcat_Cr*(m_I_base/(KM_Cr+m_I_base)))]; %counter
-
-reaction_parameters = table(names_all,k_all,1e3*E_all, ...
-    'VariableNames',{'Reaction','k_per_s_or_per_mM_s','Enzyme_uM'});
-disp(reaction_parameters);
-for i = find(E_all > E_max).'
-    warning('%s needs %.3g uM, above the limit of %.3g uM.',names_all{i},1e3*E_all(i),1e3*E_max);
-end
-fprintf('Rest: m_F %.3g, m_S %.3g, rails of D1 %.3g, m_F2 %.3g, m_S2 %.3g, rails of D2 %.3g mM\n', ...
-    m_Ff_ref,m_Sf_ref,m_Fd_ref,m_F2_ref,m_S2_ref,p2_ref);
-
-% ---- Counter (consumes m_d2) ----
-k_I_supply = 1/tau_I_supply;
-satI_base  = m_I_base/(KM_Cr+m_I_base);                  % r_I2 is sized at m_I = m_I_base
-vc_ref  = k_c*p2_ref;                                    % resting production of m_c [mM/s]
-I_balance = @(x) k_I_supply*(m_I_base-x)-k_I2c*p2_ref*(x/(KM_Cr+x))/satI_base-vc_ref;
-m_I_ref = fzero(I_balance,[0 m_I_base]);
-% Neuron rate constants. If r_Nw consumes m_c it is part of the reset of the counter.
-k_o = 1/tau_N;   k_w = w_N*k_o;   k_b = b_N*k_o/m_b;
-k_reset_I1 = 1/tau_reset-consuming_N*k_w;                % what r_I1 still has to provide
-assert(k_reset_I1 > 0,'With consuming_N = true the neuron alone resets m_c faster than tau_reset: lower w_N/tau_N or tau_reset.');
-E_Cg = k_reset_I1*KM_Cg_c/(kcat_Cg*(m_I_ref/(KM_Cg_I+m_I_ref)));   V_Cg = kcat_Cg*E_Cg;
-c_balance = @(x) vc_ref-V_Cg*x/(KM_Cg_c+x)*m_I_ref/(KM_Cg_I+m_I_ref)-consuming_N*k_w*x;
-m_c_ref = fzero(c_balance,[0 vc_ref*tau_reset*10]);
-m_out_ref = w_N*m_c_ref+b_N;
-E_Nw = k_w*KM_Nw/kcat_Nw;  E_Nb = k_b*KM_Nb/kcat_Nb;  E_Nr = k_o*KM_Nr/kcat_Nr;
-fprintf('Neuron: enzymes r_Nw %.3g, r_Nb %.3g, r_Nr %.3g uM;  rest m_out %.3g mM\n',1e3*E_Nw,1e3*E_Nb,1e3*E_Nr,m_out_ref);
-fprintf('Counter: r_I1 %.3g uM;  rest m_c %.3g mM, m_I %.6g mM\n',1e3*E_Cg,m_c_ref,m_I_ref);
-
-% Block 0 supplies what r_S and r_F withdraw from m_in.
-j_S_ref = k_Sf_1*m_in_target;  j_F_ref = k_Ff_1*m_in_target;
+% % ---- Differentiator 1 ----
+% k_r_1 = 1/tau_r_1;                         % removal of each rail
+% k_Ff_1  = w_1*k_r_1;                         % m_in -> m_F
+% k_Sf_1  = k_Ff_1;                              % m_in -> m_S: the same flux into both branches
+% k_Fd_1 = 1/tau_F_1;                         % m_F -> m_P1
+% k_Sd_1 = 1/tau_S_1;                         % m_S -> m_d1
+% k_Fr_1 = k_r_1;                             % m_P1 -> products (new reaction)
+% k_Ff_2 = k_r_1/2;
+% k_Sf_2 = k_r_1/2;         % m_d1 -> m_F2 and m_d1 -> m_S2: together the k_r of m_d1
+% 
+% flux_1 = k_Ff_1*m_in_target;                % resting flux through each branch [mM/s]
+% m_Ff_ref = k_Ff_1*m_in_target/k_Fd_1;
+% m_Sf_ref = k_Sf_1*m_in_target/k_Sd_1;
+% 
+% if ideal_canceler
+%     assert(k_r_1*rest_1 < flux_1,'rest_1 is too high: lower it.');
+%     k_I_1 = (flux_1-k_r_1*rest_1)/rest_1^2;
+% else
+%     k_I_1 = kcat_I_1*E_max/(KM_I_1*KM_I_1);
+% end
+% m_Fd_ref = (-k_r_1+sqrt(k_r_1^2+4*k_I_1*flux_1))/(2*k_I_1);      % resting m_P1 = resting m_d1
+% m_Sd_ref = (-k_r_1+sqrt(k_r_1^2+4*k_I_1*flux_1))/(2*k_I_1);      % resting m_P1 = resting m_d1
+% 
+% % ---- Differentiator 2 (input: m_d1) ----
+% k_r_2   = 1/tau_r_2;
+% k_Fd_2 = 1/tau_F_2;                       % m_F2 -> m_d2
+% k_Sd_2 = 1/tau_S_2;                       % m_S2 -> m_N2
+% k_c    = share_c*k_r_2;                   % m_d2 -> m_c            (counter, r_c)
+% k_I2c  = (1-share_c)*k_r_2;               % m_d2 + m_I -> products (counter, r_I2), at m_I = m_I_base
+% k_Sr_2 = k_r_2;                           % removal of m_N2 (new reaction)
+% flux_2 = k_Ff_2*m_Fd_ref;                   % resting flux through each branch of D2
+% m_F2_ref = k_Ff_2*m_Fd_ref/k_Fd_2;
+% m_S2_ref = k_Sf_2*m_Fd_ref/k_Sd_2;
+% if ideal_canceler
+%     assert(k_r_2*rest_2 < flux_2,'rest_2 is too high for the resting m_d1: lower it.');
+%     k_I_2 = (flux_2-k_r_2*rest_2)/rest_2^2;
+% else
+%     k_I_2 = kcat_I_2*E_max/(KM_I_2*KM_I_2);
+% end
+% p2_ref = (-k_r_2+sqrt(k_r_2^2+4*k_I_2*flux_2))/(2*k_I_2);  % resting m_d2 = resting m_N2
+% 
+% % ---- Enzyme concentrations, from k = kcat*[E]/K_M ----
+% names_all = {'r_Ff_1';'r_Fd_1';'r_Fr_1';'r_Sf_1';'r_Sd_1';'r_I_1'; ... %differentiator 1
+%              'r_Ff_2';'r_Fd_2';'r_Sf_2';'r_Sd_2';'r_Sr_2';'r_I_2';... %differentiator 2
+%              'r_c = r_Cp';'r_I2 = r_Cr'}; %counter
+% k_all = [k_Ff_1;k_Fd_1;k_Fr_1;k_Sf_1;k_Sd_1;k_I_1;...%differentiator 1
+%          k_Ff_2;k_Fd_2;k_I_2;k_Sf_2;k_Sd_2;k_Sr_2;...%differentiator 2
+%          k_c;k_I2c]; %counter
+% 
+% E_all = [... %differentiator 1
+%          k_Ff_1*KM_Ff_1/kcat_Ff_1; k_Fd_1*KM_Fd_1/kcat_Fd_1; k_Fr_1*KM_Fr_1/kcat_Fr_1;...%fast branch
+%          k_Sf_1*KM_Sf_1/kcat_Sf_1; k_Sd_1*KM_Sd_1/kcat_Sd_1; k_I_1*KM_I_1^2/kcat_I_1; ...%slow branch
+%          ... %differentiator 2 
+%          k_Ff_2*KM_Ff_2/kcat_Ff_2; k_Fd_2*KM_Fd_2/kcat_Fd_2; k_I_2*KM_I_2^2/kcat_I_2; ...%fast branch
+%          k_Sf_2*KM_Sf_2/kcat_Sf_2; k_Sd_2*KM_Sd_2/kcat_Sd_2; k_Sr_2*KM_Sr_2/kcat_Sr_2; ...%slow branch 
+%          k_c*KM_Cp/kcat_Cp; k_I2c*KM_Cr/(kcat_Cr*(m_I_base/(KM_Cr+m_I_base)))]; %counter
+% 
+% reaction_parameters = table(names_all,k_all,1e3*E_all, ...
+%     'VariableNames',{'Reaction','k_per_s_or_per_mM_s','Enzyme_uM'});
+% disp(reaction_parameters);
+% for i = find(E_all > E_max).'
+%     warning('%s needs %.3g uM, above the limit of %.3g uM.',names_all{i},1e3*E_all(i),1e3*E_max);
+% end
+% fprintf('Rest: m_F %.3g, m_S %.3g, rails of D1 %.3g, m_F2 %.3g, m_S2 %.3g, rails of D2 %.3g mM\n', ...
+%     m_Ff_ref,m_Sf_ref,m_Fd_ref,m_F2_ref,m_S2_ref,p2_ref);
+% 
+% % ---- Counter (consumes m_d2) ----
+% k_I_supply = 1/tau_I_supply;
+% satI_base  = m_I_base/(KM_Cr+m_I_base);                  % r_I2 is sized at m_I = m_I_base
+% vc_ref  = k_c*p2_ref;                                    % resting production of m_c [mM/s]
+% I_balance = @(x) k_I_supply*(m_I_base-x)-k_I2c*p2_ref*(x/(KM_Cr+x))/satI_base-vc_ref;
+% m_I_ref = fzero(I_balance,[0 m_I_base]);
+% % Neuron rate constants. If r_Nw consumes m_c it is part of the reset of the counter.
+% k_o = 1/tau_N;   k_w = w_N*k_o;   k_b = b_N*k_o/m_b;
+% k_reset_I1 = 1/tau_reset-consuming_N*k_w;                % what r_I1 still has to provide
+% assert(k_reset_I1 > 0,'With consuming_N = true the neuron alone resets m_c faster than tau_reset: lower w_N/tau_N or tau_reset.');
+% E_Cg = k_reset_I1*KM_Cg_c/(kcat_Cg*(m_I_ref/(KM_Cg_I+m_I_ref)));   V_Cg = kcat_Cg*E_Cg;
+% c_balance = @(x) vc_ref-V_Cg*x/(KM_Cg_c+x)*m_I_ref/(KM_Cg_I+m_I_ref)-consuming_N*k_w*x;
+% m_c_ref = fzero(c_balance,[0 vc_ref*tau_reset*10]);
+% m_out_ref = w_N*m_c_ref+b_N;
+% E_Nw = k_w*KM_Nw/kcat_Nw;  E_Nb = k_b*KM_Nb/kcat_Nb;  E_Nr = k_o*KM_Nr/kcat_Nr;
+% fprintf('Neuron: enzymes r_Nw %.3g, r_Nb %.3g, r_Nr %.3g uM;  rest m_out %.3g mM\n',1e3*E_Nw,1e3*E_Nb,1e3*E_Nr,m_out_ref);
+% fprintf('Counter: r_I1 %.3g uM;  rest m_c %.3g mM, m_I %.6g mM\n',1e3*E_Cg,m_c_ref,m_I_ref);
+% 
+% % Block 0 supplies what r_S and r_F withdraw from m_in.
+% j_S_ref = k_Sf_1*m_in_target;  j_F_ref = k_Ff_1*m_in_target;
 %[text] Block 0: kinetics from BRENDA, design concentrations and capacities
-%\[text] The pool levels are no longer free: with K\_M fixed by the enzyme, the resting
-%\[text] concentration that gives the wanted response time tau\_B0 follows from the
-%\[text] linearised balance d(P)/dt = J - V\*P/(K\_M+P) about the operating point.
-tau_B0 = 30;                                     % response time of each Block 0 pool [s]
-
-
-
-% ---- Resting pool levels follow from K_M and the wanted response time ----
-J_B0_ref = j_S_ref + j_F_ref;                    % L-serine supply = what r_Sf and r_Ff withdraw
-poolRef  = @(KM) (-KM + sqrt(KM^2 + 4*J_B0_ref*KM*tau_B0))/2;
-cAMP_ref = poolRef(Km_a1_cAMP);                  % each pool is set by its consuming reaction
-% AMP_ref  = poolRef(Km_a2_AMP);
-% ATP_ref  = poolRef(Km_a3_ATP);
-% glu_ref  = poolRef(Km_a4_glu);
-% pSer_ref = poolRef(Km_a5_pSer);
-
-% Buffered cosubstrates enter as constant saturation fractions.
-a2_fraction = (m_asuc_B0/(Km_a2_asuc+m_asuc_B0))*(m_ppi_B0/(Km_a2_ppi+m_ppi_B0));
-a3_fraction = (m_asp_B0/(Km_a3_asp+m_asp_B0))*(m_gln_B0/(Km_a3_gln+m_gln_B0));
-a4_fraction = m_php_B0/(Km_a4_php+m_php_B0);
-
-% ---- Capacities and enzyme concentrations ----
-% r_EV is the receptor-coupled step that turns the EV count into cAMP production.
-% It has no row in the workbook, so its capacity is an assumption, not a measurement.
-EV_activity_ref = vesicles(row,1)/(K_EV_AC+vesicles(row,1));
-V_EV = J_B0_ref/EV_activity_ref;
-V_a1 = J_B0_ref/(cAMP_ref/(Km_a1_cAMP+cAMP_ref));
-% V_a2 = J_B0_ref/((AMP_ref/(Km_a2_AMP+AMP_ref))*a2_fraction);
-% V_a3 = J_B0_ref/((ATP_ref/(Km_a3_ATP+ATP_ref))*a3_fraction);
-% V_a4 = J_B0_ref/((glu_ref/(Km_a4_glu+glu_ref))*a4_fraction);
-% V_a5 = J_B0_ref/(pSer_ref/(Km_a5_pSer+pSer_ref));
-
-% V_B0    = [V_a1;V_a2;V_a3;V_a4;V_a5];
-V_B0    = [V_a1];
-E_B0    = V_B0./kcat_B0(:);                                  % [mM]
-% pool_B0 = [cAMP_ref;AMP_ref;ATP_ref;glu_ref;pSer_ref];       % pool consumed by each reaction
-pool_B0 = [cAMP_ref];       % pool consumed by each reaction
-
-block0_parameters = table(reactionNamesB0(:), KM_B0(:), kcat_B0(:), ...
-    1e3*E_B0, V_B0, pool_B0, pool_B0./KM_B0(:), ...
-    'VariableNames',{'Reaction','Km_mM','kcat_per_s','Enzyme_uM', ...
-                     'Vmax_mM_per_s','Pool_mM','Pool_over_Km'});
-disp(block0_parameters);
-for i = find(E_B0 > E_max).'
-    warning('%s needs %.3g uM, above the limit of %.3g uM.',reactionNamesB0{i},1e3*E_B0(i),1e3*E_max);
-end
-fprintf('Block 0 total enzyme: %.3g uM;  largest pool / K_M: %.2g;  assumed r_EV capacity %.3g mM/s\n', ...
-    1e3*sum(E_B0), max(pool_B0./KM_B0(:)), V_EV);
+% %[text] The pool levels are no longer free: with K\_M fixed by the enzyme, the resting
+% %[text] concentration that gives the wanted response time tau\_B0 follows from the
+% %[text] linearised balance d(P)/dt = J - V\*P/(K\_M+P) about the operating point.
+% tau_B0 = 30;                                     % response time of each Block 0 pool [s]
+% 
+% 
+% 
+% % ---- Resting pool levels follow from K_M and the wanted response time ----
+% J_B0_ref = j_S_ref + j_F_ref;                    % L-serine supply = what r_Sf and r_Ff withdraw
+% poolRef  = @(KM) (-KM + sqrt(KM^2 + 4*J_B0_ref*KM*tau_B0))/2;
+% cAMP_ref = poolRef(Km_a1_cAMP);                  % each pool is set by its consuming reaction
+% % AMP_ref  = poolRef(Km_a2_AMP);
+% % ATP_ref  = poolRef(Km_a3_ATP);
+% % glu_ref  = poolRef(Km_a4_glu);
+% % pSer_ref = poolRef(Km_a5_pSer);
+% 
+% % Buffered cosubstrates enter as constant saturation fractions.
+% a2_fraction = (m_asuc_B0/(Km_a2_asuc+m_asuc_B0))*(m_ppi_B0/(Km_a2_ppi+m_ppi_B0));
+% a3_fraction = (m_asp_B0/(Km_a3_asp+m_asp_B0))*(m_gln_B0/(Km_a3_gln+m_gln_B0));
+% a4_fraction = m_php_B0/(Km_a4_php+m_php_B0);
+% 
+% % ---- Capacities and enzyme concentrations ----
+% % r_EV is the receptor-coupled step that turns the EV count into cAMP production.
+% % It has no row in the workbook, so its capacity is an assumption, not a measurement.
+% EV_activity_ref = vesicles(row,1)/(K_EV_AC+vesicles(row,1));
+% V_EV = J_B0_ref/EV_activity_ref;
+% V_a1 = J_B0_ref/(cAMP_ref/(Km_a1_cAMP+cAMP_ref));
+% % V_a2 = J_B0_ref/((AMP_ref/(Km_a2_AMP+AMP_ref))*a2_fraction);
+% % V_a3 = J_B0_ref/((ATP_ref/(Km_a3_ATP+ATP_ref))*a3_fraction);
+% % V_a4 = J_B0_ref/((glu_ref/(Km_a4_glu+glu_ref))*a4_fraction);
+% % V_a5 = J_B0_ref/(pSer_ref/(Km_a5_pSer+pSer_ref));
+% 
+% % V_B0    = [V_a1;V_a2;V_a3;V_a4;V_a5];
+% V_B0    = [V_a1];
+% E_B0    = V_B0./kcat_B0(:);                                  % [mM]
+% % pool_B0 = [cAMP_ref;AMP_ref;ATP_ref;glu_ref;pSer_ref];       % pool consumed by each reaction
+% pool_B0 = [cAMP_ref];       % pool consumed by each reaction
+% 
+% block0_parameters = table(reactionNamesB0(:), KM_B0(:), kcat_B0(:), ...
+%     1e3*E_B0, V_B0, pool_B0, pool_B0./KM_B0(:), ...
+%     'VariableNames',{'Reaction','Km_mM','kcat_per_s','Enzyme_uM', ...
+%                      'Vmax_mM_per_s','Pool_mM','Pool_over_Km'});
+% disp(block0_parameters);
+% for i = find(E_B0 > E_max).'
+%     warning('%s needs %.3g uM, above the limit of %.3g uM.',reactionNamesB0{i},1e3*E_B0(i),1e3*E_max);
+% end
+% fprintf('Block 0 total enzyme: %.3g uM;  largest pool / K_M: %.2g;  assumed r_EV capacity %.3g mM/s\n', ...
+%     1e3*sum(E_B0), max(pool_B0./KM_B0(:)), V_EV);
 
 %[text] Simulation (analysed distance) from the rest state
 % Each step: (1) production and first-order removal with explicit Euler,
@@ -602,7 +602,7 @@ end
 %   data: {"dataType":"text","outputData":{"text":"Adding matlab path to: D:\\code\\bioelectrodynamics\\code\n","truncated":false}}
 %---
 %[output:66d59597]
-%   data: {"dataType":"text","outputData":{"text":"Parsed 23 reaction occurrences across 1 motif(s).\nNo BrendaFlatFile given; using the local BRENDA flat file on the path:\n  D:\\code\\bioelectrodynamics\\code\\database\\brenda_2026_1.txt\\brenda_2026_1.txt\n(SOAP is bypassed.)\nIndexing local BRENDA for 18 new EC(s) (0 already cached)...\n  Done: 18 new EC(s) indexed (18 total cached).\nSaved BRENDA index cache (18 EC(s)) to:\n  D:\\code\\bioelectrodynamics\\code\\NN_chemical_CAR_T\\Step_3_Programming\\enzyme_based\\brenda_ec_index.mat\nEC 1\/18: 6.3.5.1\nEC 2\/18: 1.1.1.1\nEC 3\/18: 3.1.2.6\nEC 4\/18: 1.8.4.4\nEC 5\/18: 1.1.1.78\nEC 6\/18: 1.2.1.49\nEC 7\/18: 2.6.1.15\nEC 8\/18: 3.5.1.3\nEC 9\/18: 2.6.1.7\nEC 10\/18: 2.6.1.1\nEC 11\/18: 4.1.3.7\nEC 12\/18: 1.14.11.2\nEC 13\/18: 1.3.5.1\nEC 14\/18: 4.2.1.2\nEC 15\/18: 1.1.1.37\nEC 16\/18: 2.3.2.2\nEC 17\/18: 2.4.1.11\nEC 18\/18: 2.4.1.18\n\nCoverage: K_M 20\/23, k_cat 11\/23, both 11\/23.\n  r_CAMP         EC              missing K_M and k_cat  (no EC code in the motif file)\n  r_CAMP         EC              missing K_M and k_cat  (no EC code in the motif file)\n  r_CAMP         EC 1.1.1.1      missing k_cat          (see the Notes column)\n  r_Ff           EC 1.1.1.1      missing k_cat          (see the Notes column)\n  r_Fd           EC 3.1.2.6      missing k_cat          (see the Notes column)\n  r_Sf           EC 1.8.4.4      missing k_cat          (see the Notes column)\n  r_I            EC 1.1.1.78     missing k_cat          (see the Notes column)\n  r_I_c1         EC 1.2.1.49     missing k_cat          (see the Notes column)\n  r_Fd_2         EC 4.1.3.7      missing K_M and k_cat  (primary substrate unresolved)\n  r_I1           EC 2.3.2.2      missing k_cat          (see the Notes column)\n  r_Nw           EC 2.4.1.11     missing k_cat          (see the Notes column)\n  r_Nr           EC 2.4.1.18     missing k_cat          (see the Notes column)\nReference snapshot applied to 0 of 23 rows (matched on reaction ID, equation and direction).\nWorkbook written: kinetics_BRENDA.xlsx\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"Parsed 27 reaction occurrences across 1 motif(s).\nNo BrendaFlatFile given; using the local BRENDA flat file on the path:\n  D:\\code\\bioelectrodynamics\\code\\database\\brenda_2026_1.txt\\brenda_2026_1.txt\n(SOAP is bypassed.)\nLoaded BRENDA index cache: 18 EC(s) from D:\\code\\bioelectrodynamics\\code\\NN_chemical_CAR_T\\Step_3_Programming\\enzyme_based\\brenda_ec_index.mat\nIndexing local BRENDA for 2 new EC(s) (18 already cached)...\n  Done: 2 new EC(s) indexed (20 total cached).\nSaved BRENDA index cache (20 EC(s)) to:\n  D:\\code\\bioelectrodynamics\\code\\NN_chemical_CAR_T\\Step_3_Programming\\enzyme_based\\brenda_ec_index.mat\nEC 1\/20: 6.3.5.1\nEC 2\/20: 1.1.1.1\nEC 3\/20: 3.1.2.6\nEC 4\/20: 1.8.4.4\nEC 5\/20: 1.1.1.78\nEC 6\/20: 1.2.1.49\nEC 7\/20: 2.6.1.15\nEC 8\/20: 3.5.1.3\nEC 9\/20: 2.6.1.7\nEC 10\/20: 2.6.1.1\nEC 11\/20: 4.1.3.7\nEC 12\/20: 2.3.3.8\nEC 13\/20: 1.14.11.2\nEC 14\/20: 1.3.5.1\nEC 15\/20: 4.2.1.2\nEC 16\/20: 1.1.1.37\nEC 17\/20: 4.1.1.21\nEC 18\/20: 2.3.2.2\nEC 19\/20: 2.4.1.11\nEC 20\/20: 2.4.1.18\n\nCoverage: K_M 23\/27, k_cat 12\/27, both 12\/27.\n  r_adapter_1    EC              missing K_M and k_cat  (no EC code in the motif file)\n  r_adapter_2    EC              missing K_M and k_cat  (no EC code in the motif file)\n  r_adapter_4    EC 1.1.1.1      missing k_cat          (see the Notes column)\n  r_D1_Ff1       EC 1.1.1.1      missing k_cat          (see the Notes column)\n  r_D1_Ff2       EC 3.1.2.6      missing k_cat          (see the Notes column)\n  r_D1_Fd        EC 1.8.4.4      missing k_cat          (see the Notes column)\n  r_D1_Fr        EC              missing K_M and k_cat  (no EC code in the motif file)\n  r_D1_Sf1       EC 1.1.1.78     missing k_cat          (see the Notes column)\n  r_D1_Sf2       EC 1.2.1.49     missing k_cat          (see the Notes column)\n  r_D2_F         EC 4.1.3.7      missing K_M and k_cat  (primary substrate unresolved)\n  r_D2_Fr        EC 2.3.3.8      missing k_cat          (see the Notes column)\n  r_D2_lk        EC 4.1.1.21     missing k_cat          (see the Notes column)\n  r_I1           EC 2.3.2.2      missing k_cat          (see the Notes column)\n  r_Nw           EC 2.4.1.11     missing k_cat          (see the Notes column)\n  r_Nr           EC 2.4.1.18     missing k_cat          (see the Notes column)\nReference snapshot applied to 0 of 27 rows (matched on reaction ID, equation and direction).\nWorkbook written: kinetics_BRENDA.xlsx\n","truncated":false}}
 %---
 %[output:812f1865]
 %   data: {"dataType":"error","outputData":{"errorType":"runtime","text":"Unrecognized function or variable 'row'."}}
