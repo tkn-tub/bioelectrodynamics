@@ -20,36 +20,38 @@ assert(N >= 3 && all(isfinite(vesicles(row,:))) && all(vesicles(row,:) >= 0) && 
 %%
 %[text] Pulling Enzyme constants from the BRENDA workbook
 %[text] Description: This block uses your credentials at "Brenda\\\_credentials.txt" for searching at \[Brenda website\](https://www.brenda-enzymes.info/functional\_parameter\_statistics.php) the enzyme parameters. Your credentials should be included in a txt file with two lines, the first line includes your email, and the second line your password. The enzymes are identified from the file "Block\\\_7\\\_Selected\\\_Motifs.txt", which is completed by the second step and includes the chemical reaction network of the algorithm. After the code reads the enzyme parameters it prepares an excel table with the listed values per enzyme.
-% % Uncomment below for reading the constants from https://www.brenda-enzymes.info/functional_parameter_statistics.php 
-% 
-% %Loggin in Brenda for quering the enzyme parameters https://www.brenda-enzymes.info/functional_parameter_statistics.php 
-% % Default values
-% % Look for the credentials file on the MATLAB search path
-% credentialsFile = which('BRENDA_credentials.txt');
-% 
-% if ~isempty(credentialsFile) % which returns empty if not found
-%     fid = fopen(credentialsFile,'rt','n','UTF-8');
-%     assert(fid ~= -1, 'Cannot open credentials file.');
-% 
-%     emailFromFile    = fgetl(fid);
-%     passwordFromFile = fgetl(fid);
-%     fclose(fid);
-% 
-%     assert(ischar(emailFromFile) && ischar(passwordFromFile), ...
-%         'Credentials file must contain two lines.');
-%     assert(~isempty(strtrim(emailFromFile)) && ~isempty(passwordFromFile), ...
-%         'Email and password must not be empty.');
-% 
-%     email    = strtrim(emailFromFile);
-%     password = passwordFromFile; 
-% 
-%     clear fid emailFromFile passwordFromFile
-% else
-%     error('BRENDA_credentials.txt not found on the MATLAB path.');
-% end
-% clear brendaKineticsTable
-% brendaKineticsTable('Block_7_Selected_Motifs_ECcompleted.txt', ...
-%                    'kinetics_BRENDA.xlsx', email, password);
+% Uncomment below for reading the constants from https://www.brenda-enzymes.info/functional_parameter_statistics.php 
+
+%Loggin in Brenda for quering the enzyme parameters https://www.brenda-enzymes.info/functional_parameter_statistics.php 
+% Default values
+% Look for the credentials file on the MATLAB search path
+credentialsFile = which('BRENDA_credentials.txt');
+
+if ~isempty(credentialsFile) % which returns empty if not found
+    fid = fopen(credentialsFile,'rt','n','UTF-8');
+    assert(fid ~= -1, 'Cannot open credentials file.');
+
+    emailFromFile    = fgetl(fid);
+    passwordFromFile = fgetl(fid);
+    fclose(fid);
+
+    assert(ischar(emailFromFile) && ischar(passwordFromFile), ...
+        'Credentials file must contain two lines.');
+    assert(~isempty(strtrim(emailFromFile)) && ~isempty(passwordFromFile), ...
+        'Email and password must not be empty.');
+
+    email    = strtrim(emailFromFile);
+    password = passwordFromFile; 
+
+    clear fid emailFromFile passwordFromFile
+else
+    error('BRENDA_credentials.txt not found on the MATLAB path.');
+end
+clear brendaKineticsTable
+brendaKineticsTable('Selected_Full_Chain_1.txt', ... %[output:group:8d4c75d9] %[output:07509d06]
+                   'kinetics_BRENDA.xlsx', email, password); %[output:group:8d4c75d9] %[output:07509d06]
+
+%%
 
 % Sheet "values" of kinetics_BRENDA.xlsx: reaction label in column B, and the
 % columns K_M [mM], SA [umol/min/mg] and MW [mg/umol] found by their titles.
@@ -591,10 +593,13 @@ end
 %[appendix]{"version":"1.0"}
 %---
 %[metadata:view]
-%   data: {"layout":"onright","rightPanelPercent":31.4}
+%   data: {"layout":"onright","rightPanelPercent":40.6}
 %---
 %[output:4c4d511c]
 %   data: {"dataType":"text","outputData":{"text":"Adding matlab path to: D:\\code\\bioelectrodynamics\\code\n","truncated":false}}
+%---
+%[output:07509d06]
+%   data: {"dataType":"text","outputData":{"text":"Parsed 18 reaction occurrences across 1 motif(s).\nNo BrendaFlatFile given; using the local BRENDA flat file on the path:\n  D:\\code\\bioelectrodynamics\\code\\database\\brenda_2026_1.txt\\brenda_2026_1.txt\n(SOAP is bypassed.)\nLoaded BRENDA index cache: 20 EC(s) from D:\\code\\bioelectrodynamics\\code\\NN_chemical_CAR_T\\Step_3_Programming\\enzyme_based\\brenda_ec_index.mat\nIndexing local BRENDA for 12 new EC(s) (20 already cached)...\n  Done: 12 new EC(s) indexed (32 total cached).\nSaved BRENDA index cache (32 EC(s)) to:\n  D:\\code\\bioelectrodynamics\\code\\NN_chemical_CAR_T\\Step_3_Programming\\enzyme_based\\brenda_ec_index.mat\nEC 1\/13: 2.3.1.14\nEC 2\/13: 3.1.1.3\nEC 3\/13: 2.3.2.2\nEC 4\/13: 5.1.1.1\nEC 5\/13: 3.1.3.3\nEC 6\/13: 2.7.8.8\nEC 7\/13: 2.7.1.82\nEC 8\/13: 4.1.2.27\nEC 9\/13: 2.1.1.103\nEC 10\/13: 2.7.7.14\nEC 11\/13: 2.4.2.28\nEC 12\/13: 3.4.2.1\nEC 13\/13: 2.4.2.7\n\nCoverage: K_M 12\/18, k_cat 0\/18, both 0\/18.\n  r_Fd_1         EC              missing K_M and k_cat  (no EC code in the motif file)\n  r_Fr_1         EC 2.3.1.14     missing K_M and k_cat  (EC has no usable K_M record at all)\n  r_Sf_1         EC              missing K_M and k_cat  (no EC code in the motif file)\n  r_Sd_1         EC 3.1.1.3      missing k_cat          (see the Notes column)\n  r_I_1          EC 2.3.2.2      missing k_cat          (see the Notes column)\n  r_lk_1         EC 5.1.1.1      missing k_cat          (see the Notes column)\n  r_A_2          EC 3.1.3.3      missing k_cat          (see the Notes column)\n  r_Fd_2         EC 2.7.8.8      missing k_cat          (see the Notes column)\n  r_Fr_2         EC              missing K_M and k_cat  (no EC code in the motif file)\n  r_Sf_2         EC 2.7.8.8      missing k_cat          (see the Notes column)\n  r_Sd_2         EC 2.7.1.82     missing k_cat          (see the Notes column)\n  r_lk_2         EC 4.1.2.27     missing k_cat          (see the Notes column)\n  r_c            EC 2.1.1.103    missing k_cat          (see the Notes column)\n  r_I1           EC              missing K_M and k_cat  (no EC code in the motif file)\n  r_I2           EC 2.7.7.14     missing k_cat          (see the Notes column)\n  r_Nw           EC 2.4.2.28     missing k_cat          (see the Notes column)\n  r_Nb           EC 3.4.2.1      missing K_M and k_cat  (EC has no usable K_M record at all)\n  r_Nr           EC 2.4.2.7      missing k_cat          (see the Notes column)\nReference snapshot applied to 0 of 18 rows (matched on reaction ID, equation and direction).\nWorkbook written: kinetics_BRENDA.xlsx\n","truncated":false}}
 %---
 %[output:077ef29b]
 %   data: {"dataType":"text","outputData":{"text":"       <strong>Reaction<\/strong>        <strong>k_per_s_or_per_mM_s<\/strong>    <strong>Enzyme_uM<\/strong> \n    <strong>_______________<\/strong>    <strong>___________________<\/strong>    <strong>__________<\/strong>\n\n    {'r_Ff_1'     }          0.033333           0.059234\n    {'r_Fd_1'     }          0.033333            0.13448\n    {'r_Fr_1'     }          0.033333             296.99\n    {'r_Sf_1'     }          0.033333           0.077133\n    {'r_Sd_1'     }          0.016667             0.1511\n    {'r_I_1'      }           0.39703                 20\n    {'r_Ff_2'     }          0.016667             1.2516\n    {'r_Fd_2'     }          0.033333            0.21014\n    {'r_Sf_2'     }            8.0213                 20\n    {'r_Sd_2'     }          0.016667             156.94\n    {'r_Sr_2'     }          0.016667         0.00051768\n    {'r_I_2'      }          0.033333             88.248\n    {'r_c = r_Cp' }              0.03          0.0039823\n    {'r_I2 = r_Cr'}         0.0033333          0.0039684\n\n","truncated":false}}

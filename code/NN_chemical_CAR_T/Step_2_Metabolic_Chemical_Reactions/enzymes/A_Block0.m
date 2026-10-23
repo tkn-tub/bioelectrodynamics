@@ -504,72 +504,28 @@ function u = usableMask(mdl)
 end
 
 function [d, rpath, mpath] = fwdBFS(mdl, src, tgt, maxd, curr, forbid)
-% Forward BFS over reactions, skipping any that touch a forbidden metabolite.
-%
-% The target is deliberately NOT in `forbid` - the last reaction has to be
-% allowed to produce it. But that exemption must not extend to CONSUMING it:
-% a route where an intermediate step eats the target and a later step hands it
-% back makes the target a CARRIER and yields zero net product. (This is what
-% the GLUCYS -> r0568 -> CYSTA route did to glu_L.) So every reaction that
-% consumes the target is struck out here, which also guarantees net
-% production >= 1: the final step makes it and nothing on the path eats it.
-    d = NaN; rpath = []; mpath = [];
-    nR = size(mdl.S,2);
-    ub = ones(nR,1); if isfield(mdl,'ub'), ub = mdl.ub(:); end
-    bad = false(nR,1);
-    if any(forbid), bad = full(any(mdl.S(forbid,:) ~= 0, 1))'; end
-    eatsTgt = full(mdl.S(tgt,:) < 0)';
-    usable = ~bad & ~eatsTgt & ub > 0;
-    nM = size(mdl.S,1);
-    dd = nan(nM,1); pr = nan(nM,1); pm = nan(nM,1);
-    dd(src) = 0; frontier = src;
-    for k = 1:maxd
-        nxt = [];
-        for m = reshape(frontier,1,[])
-            js = find(mdl.S(m,:) < 0 & usable(:)');
-            for j = js
-                for p = find(mdl.S(:,j) > 0)'
-                    if curr(p) || ~isnan(dd(p)), continue; end
-                    dd(p) = k; pr(p) = j; pm(p) = m; nxt(end+1) = p; %#ok<AGROW>
-                end
-            end
-        end
-        frontier = nxt;
-        if ~isnan(dd(tgt)) || isempty(frontier), break; end
-    end
-    if isnan(dd(tgt)), return; end
-    d = dd(tgt); cur = tgt; mpath = tgt;
-    while cur ~= src
-        rpath(end+1) = pr(cur); cur = pm(cur); mpath(end+1) = cur; %#ok<AGROW>
-    end
-    rpath = fliplr(rpath); mpath = fliplr(mpath);
+% Delegates to block0_route, which owns the search: the forbidden-metabolite
+% rule, the carrier rule (no reaction may CONSUME the target), and currency
+% skipping all live there. This file and export_iffl_chain.m used to run
+% separate BFS copies, which is how the chain file came to report "no
+% connector" while this report found a 3-step route. One implementation now.
+    R = block0_route(mdl, struct('src', src, 'tgt', tgt, 'maxSteps', maxd, ...
+                                 'curr', curr, 'forbid', forbid));
+    d = R.steps; rpath = R.rpath; mpath = R.mpath;
 end
 
 function curr = currencyMask(mdl, opt, opts)
-% Mirrors map_iffl_circuit's currencyMask, then un-marks opts.allowThrough so
-% Block 0 may route through AMP (see the note at the top of this file).
-    base = lower(regexprep(mdl.mets, '\[[a-z0-9]+\]$', ''));
-    list = {'h','h2o','pi','ppi','co2','o2','nh4','nh3','hco3','so4','na1','k','cl', ...
-            'fe2','fe3','mg2','ca2','zn2','atp','adp','amp','gtp','gdp','utp','udp', ...
-            'ctp','nad','nadh','nadp','nadph','coa','fad','fadh2','q10','q10h2'};
-    if isstruct(opt) && isfield(opt,'currency')
-        list = unique([list, lower(opt.currency)]);
+% Asks block0_route for the mask it would build, so the currency list has a
+% single definition. A self-targeted call returns immediately and does no
+% search; only R.curr is wanted.
+    at = {};
+    if isstruct(opts) && isfield(opts,'allowThrough'), at = opts.allowThrough; end
+    if isstruct(opts) && isfield(opts,'allowCurrency') && opts.allowCurrency
+        curr = false(size(mdl.S,1),1); return;
     end
-    curr = ismember(base, list);
-    if isstruct(opt) && isfield(opt,'currencyNamePatterns')
-        nm = lower(mdl.metNames);
-        for p = 1:numel(opt.currencyNamePatterns)
-            pat = lower(opt.currencyNamePatterns{p});
-            for i = 1:numel(nm)
-                if ~curr(i) && ~isempty(strfind(nm{i}, pat)), curr(i) = true; end %#ok<STREMP>
-            end
-        end
-    end
-    if opts.allowCurrency
-        curr(:) = false;
-    elseif ~isempty(opts.allowThrough)
-        curr(ismember(base, lower(opts.allowThrough))) = false;
-    end
+    R = block0_route(mdl, struct('src', 1, 'tgt', 1, 'opt', opt, ...
+                                 'allowThrough', {at}));
+    curr = R.curr;
 end
 
 function both(fid, opts, fmt, varargin)

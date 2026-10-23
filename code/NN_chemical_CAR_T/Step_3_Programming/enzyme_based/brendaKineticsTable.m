@@ -689,7 +689,12 @@ end
 % kcat[E]/Km as first-order losses would require co-substrate assumptions.
 % October 2026 nomenclature: each delay pool is produced by its feed
 % reaction and consumed by its delay reaction (m_F by r_Ff then r_Fd, etc.).
-pairs={'r_Ff','r_Fd';'r_Sf','r_Sd';'r_Ff_2','r_Fd_2';'r_Sf_2','r_Sd_2'};
+% The IFFL (Selected_Full_Chain) naming differs: per stage k the fast-arm pool
+% m_Fd_k is produced by r_Fd_k and cleared by r_Fr_k, and the slow-arm pool
+% m_Sf_k is produced by r_Sf_k and consumed by r_Sd_k. Both naming schemes are
+% listed; a pair whose two reactions are not both present is simply skipped.
+pairs={'r_Ff','r_Fd';'r_Sf','r_Sd';'r_Ff_2','r_Fd_2';'r_Sf_2','r_Sd_2'; ...
+       'r_Fd_1','r_Fr_1';'r_Sf_1','r_Sd_1';'r_Fd_2','r_Fr_2'};
 for motif=unique(Reactions.Motif)'
     for j=1:size(pairs,1)
         a=find(Reactions.Motif==motif & Reactions.Reaction==string(pairs{j,1}));
@@ -763,17 +768,37 @@ end
 function T=parseMotifs(txt)
 % Parse a selected-motif TXT into one row per reaction occurrence. Handles
 % BOTH layouts the pipeline produces:
-%   (old) Block_7 style  -- role line "  r_Ff (fast feed ...)" + fields
-%                           GPR/EC/Eqn/Names/IDs/Direction, MOTIF headers,
-%                           Metabolite path / Reaction path adapter lines.
-%   (new) Selected_Full_Chain style -- BLOCK 0..4 headers, role lines that are
-%                           either labelled ("  r_CAMP (...)", "  r_I (...)")
-%                           or branch words ("  fast branch" / "  slow branch"
-%                           / "  ..."), fields ID/Name/EC/Bounds/Names/IDs, and
-%                           inline (m_role) signal tags that are ignored here.
+%   (old) Block_7 style       -- role line "  r_Ff (fast feed ...)" followed by
+%                                GPR/EC/Eqn/Names/IDs/Direction fields, MOTIF
+%                                headers, Metabolite path / Reaction path lines.
+%   (new) Selected_Full_Chain -- "BLOCK 0..4" headers, role lines that are
+%                                either labelled ("  r_Fd_1", "  r_I (...)") or
+%                                branch words ("fast branch" / "slow branch" /
+%                                "..."), and ID/Name/EC/Bounds/IDs/Names fields.
 % Branch words carry no reaction name, so a canonical r_Ff/r_Fd/r_Sf/r_Sd label
-% is synthesized, suffixed _<block> for the second differentiator (block>=2),
-% matching the G/tau pairing table used downstream.
+% is synthesized, suffixed _<block> for the second differentiator (block>=2).
+%
+% 2026-10-22 FIX -- why this function used to return nothing:
+%   1. Field lines were matched with one alternation,
+%          '^\s*(ID|Name|GPR|EC|...|Names|IDs)\s*:\s*(.*)$'
+%      whose correctness depends on the engine backtracking OUT of the "ID"
+%      alternative into "IDs", and out of "Name" into "Names". "ID" and "Name"
+%      are proper prefixes of "IDs" and "Names", and "IDs"/"Names" are listed
+%      LAST. When that backtracking does not happen the equation lines never
+%      match, no reaction is ever completed, and the only symptom is the bare
+%      "No reaction records found in the TXT file." Keys are now split on the
+%      line's FIRST colon and compared with strcmp: no alternation, no order
+%      dependence, and a new field name can be added without re-reasoning
+%      about prefixes.
+%   2. Role lines were detected anywhere in the file. The preamble tables
+%      (SIGNAL METABOLITES, REACTION ROLES, REGULATORY EDGES, POLARITY AND
+%      TIMESCALES) and the AUDIT footer are full of r_* tokens, which armed
+%      phantom labels and could mislabel the first real reaction of block 1.
+%      Only the text BETWEEN the first BLOCK/MOTIF header and AUDIT (or
+%      ASSUMPTIONS AND INTERFACES) is parsed now.
+%   3. Failure is reported with counts (headers / role lines / ID lines /
+%      equations) instead of an empty table, so the next format drift names
+%      itself instead of surfacing as "no records".
 %
 % An empty struct without fields cannot receive a populated struct through
 % indexed assignment in MATLAB. Initialize the array with the full schema.
@@ -786,97 +811,122 @@ template=struct('Motif',NaN,'Block',NaN,'Reaction',"",'Role',"", ...
     'Direction',NaN,'FormulaEquation',"",'NamesEquation',"",'IDsEquation',"", ...
     'PathSubstrate',"");
 records=repmat(template,0,1);
-lines=regexp(txt,'\r\n|\n|\r','split'); motif=1; block=NaN;
+lines=regexp(txt,'\r\n|\n|\r','split');
 % Metabolite path / Reaction path lines name the species each adapter step
 % consumes, which carries no (m_*) tag in the printed equation.
 metPath=containers.Map('KeyType','double','ValueType','any');
 rxnPath=containers.Map('KeyType','double','ValueType','any');
+motif=1; block=NaN; inBody=false;
 current=struct();
 pendLabel=""; pendRole=""; pendUsed=true;       % role line awaiting its ID line
 lastBase=""; contIdx=0;                           % blank-role continuation labelling
 arm=""; armIdx=struct('fast',0,'slow',0);         % branch bookkeeping (new format)
+nHeader=0; nRole=0; nID=0; nEqn=0;                % diagnostics for the failure path
+% Exact field keys. Order is irrelevant: the key is compared, not scanned for.
+fieldKeys={'ID','Name','GPR','EC','Compartment(s)','Direction','Bounds','Eqn','Names','IDs'};
 for i=1:numel(lines)
-    line=lines{i};
-    m=regexp(line,'^\s*(?:MOTIF|Selection)\s+(\d+)\b','tokens','once');
-    b=regexp(line,'^\s*BLOCK\s+(\d+)\s*[:\s]','tokens','once');
-    % A role line is either a labelled reaction (r_*) or a branch word.
-    % Match on the TRIMMED line with a plain leading-token capture: MATLAB's
-    % regexp did not reliably match the '\b'-anchored "r_xxx (...)" lines, which
-    % silently demoted every labelled role (r_CAMP/r_I/r_c/r_Nw...) to a
-    % continuation step. Branch words are matched by exact string compare.
-    st   = strtrim(line);
-    rLab = regexp(st,'^(r_[A-Za-z0-9_]+)','tokens','once');
-    isBr = any(strcmp(st,{'fast branch','slow branch','...'}));
-    isRole = ~isempty(rLab) || isBr;
-    % --- MOTIF / BLOCK / ASSUMPTIONS flush the open reaction and clear state ---
-    if ~isempty(m)||~isempty(b)||strcmp(strtrim(line),'ASSUMPTIONS AND INTERFACES')
+    st=strtrim(lines{i});
+    if isempty(st), continue; end
+    if all(st=='-') || all(st=='#') || all(st=='='), continue; end   % rule lines
+    % --- section headers: flush the open reaction and reset the state ----
+    mo=regexp(st,'^(?:MOTIF|Selection)\s+(\d+)','tokens','once');
+    bl=regexp(st,'^BLOCK\s+(\d+)','tokens','once');
+    isEnd=strcmp(st,'AUDIT')||strcmp(st,'ASSUMPTIONS AND INTERFACES');
+    if ~isempty(mo)||~isempty(bl)||isEnd
         if ~isempty(fieldnames(current)) && current.ID~="", records(end+1)=current; end %#ok<AGROW>
         current=struct(); pendLabel=""; pendUsed=true; lastBase=""; contIdx=0;
+        if ~isempty(mo), motif=str2double(mo{1}); block=NaN; end
+        if ~isempty(bl), block=str2double(bl{1}); armIdx.fast=0; armIdx.slow=0; arm=""; end
+        if ~isempty(mo)||~isempty(bl), inBody=true; nHeader=nHeader+1; end
+        if isEnd, inBody=false; end
+        continue;
     end
-    if ~isempty(m), motif=str2double(m{1}); block=NaN; end
-    if ~isempty(b), block=str2double(b{1}); armIdx.fast=0; armIdx.slow=0; arm=""; end
-    pm=regexp(line,'^\s*Metabolite path\s*:\s*(.*)$','tokens','once');
-    pr=regexp(line,'^\s*Reaction path\s*:\s*(.*)$','tokens','once');
-    if ~isempty(pm), metPath(motif)=string(regexp(strtrim(pm{1}),'\s*->\s*','split')); end
-    if ~isempty(pr), rxnPath(motif)=string(regexp(strtrim(pr{1}),'\s*->\s*','split')); end
-    % --- a role line ARMS the label for the next ID line (no fields here) ---
-    if isRole
-        if ~isempty(rLab)
-            pendLabel=string(rLab{1});
-            rd=regexp(line,'\((.*)\)\s*$','tokens','once');
-            if ~isempty(rd), pendRole=string(rd{1}); else, pendRole=""; end
-        else
-            lab=st;   % the branch word itself
-            if strcmp(lab,'fast branch'), arm="fast"; armIdx.fast=1; idx=1;
-            elseif strcmp(lab,'slow branch'), arm="slow"; armIdx.slow=1; idx=1;
-            else  % "..." = the next step of whichever branch is open
-                if strlength(arm)==0, arm="fast"; end
-                armIdx.(char(arm))=armIdx.(char(arm))+1; idx=armIdx.(char(arm));
+    if ~inBody, continue; end          % preamble tables and AUDIT footer
+    % --- adapter paths ----------------------------------------------------
+    pm=regexp(st,'^Metabolite path\s*:\s*(.*)$','tokens','once');
+    if ~isempty(pm), metPath(motif)=string(regexp(strtrim(pm{1}),'\s*->\s*','split')); continue; end
+    pr=regexp(st,'^Reaction path\s*:\s*(.*)$','tokens','once');
+    if ~isempty(pr), rxnPath(motif)=string(regexp(strtrim(pr{1}),'\s*->\s*','split')); continue; end
+    % --- field line: "KEY : VALUE", split on the FIRST colon --------------
+    key=''; value='';
+    colon=strfind(st,':');
+    if ~isempty(colon)
+        hit=find(strcmpi(strtrim(st(1:colon(1)-1)),fieldKeys),1);
+        if ~isempty(hit), key=fieldKeys{hit}; value=strtrim(st(colon(1)+1:end)); end
+    end
+    if ~isempty(key)
+        if strcmp(key,'ID')
+            % an ID line STARTS a new reaction: flush the previous one first
+            if ~isempty(fieldnames(current)) && current.ID~="", records(end+1)=current; end %#ok<AGROW>
+            current=template; current.Motif=motif; current.Block=block; current.Direction=1;
+            if ~pendUsed && strlength(pendLabel)>0
+                current.Reaction=pendLabel; current.Role=pendRole; pendUsed=true;
+            else                                   % blank-role continuation step
+                contIdx=contIdx+1;
+                if strlength(lastBase)>0, b0=lastBase; else, b0="r_b"+string(blockOrZero(block)); end
+                current.Reaction=b0+"_c"+string(contIdx); current.Role="continuation step";
             end
-            if arm=="fast", base=ternary(idx==1,"r_Ff","r_Fd");
-            else,           base=ternary(idx==1,"r_Sf","r_Sd"); end
-            suf=""; if ~isnan(block)&&block>=2, suf="_"+string(block); end
-            pendLabel=base+suf; pendRole=string(lab);
-        end
-        lastBase=pendLabel; contIdx=0; pendUsed=false;
+            current.ID=string(value); nID=nID+1;
+        elseif ~isempty(fieldnames(current)) && current.ID~=""
+            switch key
+                case 'Compartment(s)', current.Compartment=string(value);
+                case 'Eqn',   current.FormulaEquation=string(value);
+                case 'Names', current.NamesEquation=string(value); nEqn=nEqn+1;
+                case 'IDs',   current.IDsEquation=string(value);
+                case 'Bounds' % new format states bounds, not model direction; keep Direction=1
+                case 'Direction'
+                    d=regexp(value,'^[+-]?\d+','match','once');
+                    if ~isempty(d), current.Direction=str2double(d); end
+                otherwise, current.(key)=string(value);   % GPR / Name / EC
+            end
+        end                                        % field before any ID: ignored
         continue;
     end
-    % --- fields ---
-    f=regexp(line,'^\s*(ID|Name|GPR|EC|Compartment\(s\)|Direction|Bounds|Eqn|Names|IDs)\s*:\s*(.*)$','tokens','once');
-    if isempty(f), continue; end
-    key=f{1};
-    if strcmp(key,'ID')
-        % an ID line STARTS a new reaction: flush the previous one first
-        if ~isempty(fieldnames(current)) && current.ID~="", records(end+1)=current; end %#ok<AGROW>
-        current=template; current.Motif=motif; current.Block=block; current.Direction=1;
-        if ~pendUsed && strlength(pendLabel)>0
-            current.Reaction=pendLabel; current.Role=pendRole; pendUsed=true;
-        else                                   % blank-role continuation step
-            contIdx=contIdx+1;
-            if strlength(lastBase)>0, b0=lastBase; else, b0="r_b"+string(blockOrZero(block)); end
-            current.Reaction=b0+"_c"+string(contIdx); current.Role="continuation step";
+    % --- role line ARMS the label for the next ID line (no fields here) ---
+    if contains(st,'|'), continue; end             % summary-table row, not a role
+    % The whole line must be the label (plus an optional parenthetical role),
+    % so prose such as "r_lk first order in m_d_k ..." is never taken as a role.
+    rLab=regexp(st,'^(r_[A-Za-z0-9_]+)\s*(?:\((.*)\))?$','tokens','once');
+    isBr=any(strcmp(st,{'fast branch','slow branch','...'}));
+    if isempty(rLab) && ~isBr, continue; end
+    nRole=nRole+1;
+    if ~isempty(rLab)
+        pendLabel=string(rLab{1});
+        if numel(rLab)>1 && ~isempty(rLab{2}), pendRole=string(rLab{2}); else, pendRole=""; end
+    else
+        lab=st;   % the branch word itself
+        if strcmp(lab,'fast branch'), arm="fast"; armIdx.fast=1; idx=1;
+        elseif strcmp(lab,'slow branch'), arm="slow"; armIdx.slow=1; idx=1;
+        else  % "..." = the next step of whichever branch is open
+            if strlength(arm)==0, arm="fast"; end
+            armIdx.(char(arm))=armIdx.(char(arm))+1; idx=armIdx.(char(arm));
         end
-        current.ID=string(strtrim(f{2}));
-        continue;
+        if arm=="fast", base=ternary(idx==1,"r_Ff","r_Fd");
+        else,           base=ternary(idx==1,"r_Sf","r_Sd"); end
+        suf=""; if ~isnan(block)&&block>=2, suf="_"+string(block); end
+        pendLabel=base+suf; pendRole=string(lab);
     end
-    if isempty(fieldnames(current)) || current.ID=="", continue; end   % field before any ID
-    switch key
-        case 'Compartment(s)', current.Compartment=string(strtrim(f{2}));
-        case 'Eqn',   current.FormulaEquation=string(strtrim(f{2}));
-        case 'Names', current.NamesEquation=string(strtrim(f{2}));
-        case 'IDs',   current.IDsEquation=string(strtrim(f{2}));
-        case 'Bounds' % new format states bounds, not model direction; keep Direction=1
-        case 'Direction'
-            d=regexp(f{2},'^[+-]?\d+','match','once'); current.Direction=str2double(d);
-        otherwise, current.(key)=string(strtrim(f{2}));   % GPR / Name / EC
-    end
+    lastBase=pendLabel; contIdx=0; pendUsed=false;
 end
 if ~isempty(fieldnames(current)) && current.ID~="", records(end+1)=current; end
-if isempty(records), T=table(); return; end
+if isempty(records)
+    error('brendaKineticsTable:NoReactions', ...
+        ['No reaction records found in the TXT.\n' ...
+         '  BLOCK / MOTIF headers seen : %d\n' ...
+         '  role lines (r_* or branch) : %d\n' ...
+         '  "ID : ..." lines seen      : %d\n' ...
+         '  "Names : ..." lines seen   : %d\n' ...
+         'A parsable file has a BLOCK (or MOTIF) header, then per reaction a ' ...
+         'role line (e.g. "  r_Fd_1") followed by ID / Name / EC / Bounds / ' ...
+         'IDs / Names lines. If the counts above are zero, the headers or the ' ...
+         'field labels differ from both supported layouts.'],nHeader,nRole,nID,nEqn);
+end
 T=struct2table(records);
 T.Direction(isnan(T.Direction))=1;   % default forward where none was printed
-assert(all(T.ID~="" & T.NamesEquation~="" & isfinite(T.Block)), ...
-    'Incomplete reaction record in TXT; every record needs a block, ID and Names equation.');
+bad=~(T.ID~="" & T.NamesEquation~="" & isfinite(T.Block));
+assert(~any(bad), ...
+    'Incomplete reaction record in TXT (%s); every record needs a block, ID and Names equation.', ...
+    strjoin(cellstr(T.Reaction(bad)),', '));
 % Resolve the consumed metabolite of each step on a printed path, then
 % translate its model ID into the printed name via the paired equations.
 for i=1:height(T)
@@ -1130,9 +1180,17 @@ end
 
 function k=currencyKeys()
 % Cofactors and carriers that never act as the signal-carrying substrate.
+% The Selected_Full_Chain printer spells cofactors out in full ("Adenosine
+% Triphosphate", "Orthophosphate"), so the abbreviations alone no longer catch
+% them and ATP/Pi were being offered as candidate signal substrates. Bare
+% "adenosine" and "adenine" are deliberately NOT here: they are signal
+% metabolites (m_b, m_out) in the neuron block.
 k=["h2o","water","h+","proton","h","atp","adp","amp","pi","phosphate", ...
    "ppi","diphosphate","nad","nadh","nadp","nadph","nadp(+)","nad(+)", ...
-   "coa","coenzymea","co2","carbondioxide","o2","nh4","ammonium"];
+   "coa","coenzymea","co2","carbondioxide","o2","nh4","ammonium", ...
+   "orthophosphate","adenosine triphosphate","adenosine diphosphate", ...
+   "adenosine monophosphate","coenzyme a","carbon dioxide", ...
+   "cytidine-5'-triphosphate","ctp"];
 end
 
 function A=defaultAliases()

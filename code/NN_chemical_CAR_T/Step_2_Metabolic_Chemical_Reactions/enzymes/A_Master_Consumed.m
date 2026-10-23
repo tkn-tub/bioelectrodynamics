@@ -4,6 +4,7 @@
 %   STEP 1  BRENDA activators present in the model   -> seed table T  (cached)
 %   STEP 2  map the WHOLE circuit at once            -> <tag>_stage2.mat
 %   STEP 3  diagnostic + export, read back from disk -> <tag>_Diagnostics.txt
+%   STEP 4  Block 0, the cAMP -> m_in connector      -> <tag>_Block0_<n>.txt
 %
 % NOTHING IS LOST IF THE SESSION DIES. Every run writes:
 %   <tag>_run_log.txt     the full console transcript (diary)
@@ -11,9 +12,11 @@
 %   <tag>_stage2.mat      the search result + a trimmed model copy
 %   <tag>_Diagnostics.txt the funnel, histograms and verdict
 %   <tag>_Chain_<n>.txt   the exported circuits
+%   <tag>_Block0_<n>.txt  the input connector for each exported circuit
 %   where <tag> = IFFL_consumed, so this study never overwrites the other
 % To re-read any of it later without MATLAB redoing the work:
 %   Report_IFFL_From_Mat('IFFL_consumed_stage2.mat', '', 3, 'IFFL_consumed')
+%   A_Block0('IFFL_consumed_stage2.mat', 1, struct('natural', true))
 %
 % The search is not staged (motifs -> cascade -> counter -> neuron) and
 % deliberately so: every crosstalk failure came from a later stage picking a
@@ -21,8 +24,10 @@
 % accepted or rejected as a unit against one incidence table.
 %
 % Needs on path: iffl_topology.m, map_iffl_circuit.m, export_iffl_chain.m,
-% Report_IFFL_From_Mat.m, parse_brenda_flat.m, iffl_coverage_check.m,
-% addingPathParentFolderByName.m, COBRA; model + brenda_2026_1.txt under 'code'.
+% Report_IFFL_From_Mat.m, A_Block0.m, parse_brenda_flat.m,
+% iffl_coverage_check.m, addingPathParentFolderByName.m, COBRA;
+% model + brenda_2026_1.txt under 'code'.
+% A_Block0_Catalytic.m is needed only if opt.block0.catalytic is turned on.
 % ---------------------------------------------------------------------------
 
 % Companion study to A_Master.m. Same model, same seeds, same filters - the one
@@ -98,6 +103,26 @@ opt.maxHousekeeping       = 80;      % candidates kept per r_Fr / r_lk slot
 opt.topBlocks             = 400;
 opt.maxCircuits           = 200;
 opt.verbose               = true;
+
+% ---- Block 0: the cAMP -> m_in input connector ----------------------------
+% DESCRIPTIVE, not built. The reactor is loaded with m_in directly, so Block 0
+% records the pathway a cell would use rather than a stage to assemble. Hence
+% natural = true, which permits hops through the adenylate pool: cAMP's only
+% consumer is PDE1 (camp + h2o -> amp + h) and both products are currency, so
+% every route from cAMP must pass through that pool. In a cell it genuinely
+% does. Set natural = false for the stricter, buildable answer - it will
+% report that no mass-flow Block 0 exists, which is the correct result for an
+% input stage but not what is wanted for a pathway description.
+opt.block0          = struct();
+opt.block0.run      = true;      % false skips STEP 4 entirely
+opt.block0.natural  = true;      % see above
+opt.block0.cAMP     = 'camp[c]'; % resolved by base name if the compartment differs
+opt.block0.maxSteps = 14;
+opt.block0.circuits = 3;         % run Block 0 for the top N circuits
+opt.block0.catalytic = false;    % also search for a cAMP-GATED Block 0. Only
+                                 % relevant if Block 0 were to be built, which
+                                 % it is not; needs iffl_stage1.mat for BRENDA
+                                 % regulator annotations.
 
 % ---- optional: collapse to a single pot -----------------------------------
 if isfield(opt,'collapseCompartments') && opt.collapseCompartments
@@ -181,15 +206,56 @@ fprintf('Saved %s_stage2.mat\n', studyTag);
 Report_IFFL_From_Mat([studyTag '_stage2.mat'], [studyTag '_Diagnostics.txt'], 3, studyTag);
 if ~isempty(out.circuits), write_circuit_csv(mdl, out, [studyTag '_circuits.csv']); end
 
+% =============================== STEP 4 ====================================
+% Block 0, the cAMP -> m_in input connector. Reads the checkpoint, so this
+% block can be re-run on its own in a fresh session:
+%   A_Block0('IFFL_consumed_stage2.mat', 1, struct('natural', true))
+% Wrapped in try/catch: STEP 2 is the expensive part and is already saved, so
+% a Block 0 problem must never lose it.
+if opt.block0.run && ~isempty(out.circuits)
+    nB0 = min(opt.block0.circuits, numel(out.circuits));
+    fprintf('\nSTEP 4: Block 0 for the top %d circuit(s).\n', nB0);
+    for n = 1:nB0
+        f = sprintf('%s_Block0_%d.txt', studyTag, n);
+        try
+            A_Block0([studyTag '_stage2.mat'], n, struct( ...
+                'natural',  opt.block0.natural, ...
+                'cAMP',     opt.block0.cAMP, ...
+                'maxSteps', opt.block0.maxSteps, ...
+                'outFile',  f, ...
+                'verbose',  opt.verbose));
+        catch e
+            fprintf('STEP 4: Block 0 failed for circuit %d: %s\n', n, e.message);
+        end
+    end
+    if opt.block0.catalytic
+        try
+            A_Block0_Catalytic([studyTag '_stage2.mat'], 'iffl_stage1.mat', 1, ...
+                struct('outFile', [studyTag '_Block0_Catalytic.txt'], ...
+                       'cAMP',    opt.block0.cAMP, ...
+                       'verbose', opt.verbose));
+        catch e
+            fprintf('STEP 4: catalytic Block 0 search failed: %s\n', e.message);
+        end
+    end
+elseif opt.block0.run
+    fprintf('\nSTEP 4: skipped - no circuits to connect an input to.\n');
+end
+
 fprintf('\nDone %s. Files: %s_run_log.txt, %s_Diagnostics.txt, %s_stage2.mat\n', ...
     datestr(now), studyTag, studyTag, studyTag);
+if opt.block0.run && ~isempty(out.circuits)
+    fprintf('        plus %s_Block0_<n>.txt for the input connector\n', studyTag);
+end
 diary off;
 
 % ---------------------------------------------------------------------------
 function m = trim_model(model)
 % keep the checkpoint small but complete enough for the report and the export
+    % grRules and genes were missing here, so the "Gene(s):" line in the chain
+    % files and the Block 0 reports silently printed nothing. Keep them.
     keep = {'mets','metNames','metFormulas','rxns','rxnNames','rxnECNumbers', ...
-            'lb','ub','S','rxnGeneMat'};
+            'lb','ub','S','rxnGeneMat','grRules','genes'};
     m = struct();
     for q = 1:numel(keep)
         if isfield(model, keep{q}), m.(keep{q}) = model.(keep{q}); end

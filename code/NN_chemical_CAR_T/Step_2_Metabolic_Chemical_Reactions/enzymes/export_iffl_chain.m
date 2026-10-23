@@ -115,29 +115,50 @@ function fn = export_iffl_chain(model, out, n, cAMPid, prefix)
     if isempty(ci)
         fprintf(fid, '  %s is not in the model; no input connector searched.\n\n', cAMPid);
     else
-        forbid = false(numel(model.mets),1); forbid(c.sig) = true;
-        forbid(c.met.m_in) = false;
-        [steps, rpath, mpath] = cleanBFS(model, ci, c.met.m_in, 12, opt, forbid);
-        if isnan(steps)
-            fprintf(fid, ['  No mass-flow connector within 12 steps from %s to m_in.\n' ...
-                          '  For cAMP this is expected, not a search failure: its only\n' ...
-                          '  consumer is PDE1 (camp + h2o -> amp + h) and both products are\n' ...
-                          '  currency metabolites, so no path from it carries any of its\n' ...
-                          '  atoms to a non-currency species. Block 0 has to be CATALYTIC.\n' ...
-                          '  Run, in this order:\n' ...
-                          '      A_Block0(''%s_stage2.mat'', %d)             %% confirm the above\n' ...
-                          '      A_Block0_Catalytic(''%s_stage2.mat'')       %% find the gate\n' ...
-                          '  The first also reports how far %s sits from EVERY circuit\n' ...
-                          '  signal, which is how you catch an input that reaches m_out\n' ...
-                          '  sooner than m_in and short-circuits the pipeline.\n\n'], ...
-                          cAMPid, prefix, n, prefix, cAMPid);
+        % Block 0 is DESCRIPTIVE: the reactor is loaded with m_in directly, so
+        % this records the shortest pathway a cell would use. Currency hops are
+        % therefore allowed - cAMP's only consumer is PDE1 and both its
+        % products are currency, so every route must pass through that pool,
+        % which in a cell it genuinely does. The search itself lives in
+        % block0_route.m, shared with A_Block0.m, so the chain file and the
+        % Block 0 report can no longer disagree.
+        base = struct('src', ci, 'tgt', c.met.m_in, 'opt', opt, ...
+                      'sig', c.sig, 'roles', {out.topology.metRoles}, ...
+                      'maxSteps', 14);
+        nat = base; nat.natural = true;
+        B = block0_route(model, nat);
+
+        if isnan(B.steps)
+            strictFb = false(numel(model.mets),1); strictFb(c.sig) = true;
+            fprintf(fid, ['  No route from %s to m_in within %d steps, even allowing\n' ...
+                          '  currency hops. Run A_Block0(''%s_stage2.mat'', %d) for the\n' ...
+                          '  full diagnosis: it reports cAMP''s direct fate and how far it\n' ...
+                          '  sits from every circuit signal.\n\n'], ...
+                          cAMPid, 14, prefix, n);
         else
-            fprintf(fid, '  Collision-free, %d step(s).\n', steps);
-            fprintf(fid, '  Metabolites: %s\n', strjoin(model.mets(mpath), ' -> '));
-            fprintf(fid, '  Reactions  : %s\n\n', strjoin(model.rxns(rpath), ' -> '));
-            for q = 1:numel(rpath)
-                printRxn(fid, model, rpath(q), sprintf('r_adapter_%d', q), role, '');
+            fprintf(fid, ['  Shortest natural route, %d step(s). DESCRIPTIVE: in the\n' ...
+                          '  reactor m_in is supplied directly, so these enzymes are not\n' ...
+                          '  loaded. This is the pathway a cell would use.\n'], B.steps);
+            fprintf(fid, '  Metabolites: %s\n', strjoin(model.mets(B.mpath), ' -> '));
+            fprintf(fid, '  Reactions  : %s\n\n', strjoin(model.rxns(B.rpath), ' -> '));
+            for q = 1:numel(B.rpath)
+                printRxn(fid, model, B.rpath(q), sprintf('r_b0_%d', q), role, '');
             end
+            fprintf(fid, '  NET (unit flux per step): %s\n', netEqn(model, B.net, B.curr));
+            fprintf(fid, '  net m_in: %+g\n', B.netTgt);
+            if ~isempty(B.collisions)
+                fprintf(fid, ['\n  WHERE THIS ROUTE MEETS THE CIRCUIT (informational - in a\n' ...
+                              '  cell these fluxes coexist, and Block 0 is not built here):\n']);
+                for q = 1:numel(B.collisions)
+                    cc = B.collisions(q);
+                    fprintf(fid, '    %-14s %s %s (%s)\n', model.rxns{cc.rxn}, ...
+                        upper(cc.verb), cc.role, strtrim(model.metNames{cc.met}));
+                end
+                fprintf(fid, ['  So this route could not be reused as a BUILT input stage\n' ...
+                              '  without rework. For the signal-free alternative and the\n' ...
+                              '  full analysis: A_Block0(''%s_stage2.mat'', %d)\n'], prefix, n);
+            end
+            fprintf(fid, '\n');
         end
     end
 
@@ -264,44 +285,28 @@ function s = side(model, j, ix, field, role)
     end
     s = strjoin(parts, ' + ');
 end
-function [steps, rpath, mpath] = cleanBFS(model, src, tgt, maxd, opt, forbid)
-    steps = NaN; rpath = []; mpath = [];
-    base = lower(regexprep(model.mets, '\[[a-z0-9]+\]$', ''));
-    curr = ismember(base, lower(opt.currency));
-    % Currency metabolites are deliberately NOT traversable. Letting the BFS
-    % pass through the adenylate pool looks like it unlocks routes, but those
-    % routes are built on false edges: in
-    %     ACITL: atp + cit + coa -> accoa + adp + oaa + pi
-    % the pair (atp, oaa) is not an atom transfer - ATP leaves as ADP + Pi and
-    % OAA comes from citrate. Such a path carries none of the input's atoms.
-    % Do not "fix" a failed Block 0 by relaxing this. See A_Block0.m.
-    ub = ones(numel(model.rxns),1); if isfield(model,'ub'), ub = model.ub(:); end
-    bad = full(any(model.S(forbid,:) ~= 0, 1))';
-    % The target is exempt from `forbid` so the last step can produce it, but a
-    % reaction that CONSUMES it mid-route makes it a carrier with zero net
-    % product (as GLUCYS -> r0568 -> CYSTA did to glu_L). Strike those out.
-    eatsTgt = full(model.S(tgt,:) < 0)';
-    usable = ~bad & ~eatsTgt & ub > 0;
-    nM = numel(model.mets); dd = nan(nM,1); pr = nan(nM,1); pm = nan(nM,1);
-    dd(src) = 0; frontier = src;
-    for d = 1:maxd
-        nxt = [];
-        for m = frontier(:)'
-            js = find(model.S(m,:) < 0 & usable(:)');
-            for j = js
-                for p = find(model.S(:,j) > 0)'
-                    if curr(p) || ~isnan(dd(p)), continue; end
-                    dd(p) = d; pr(p) = j; pm(p) = m; nxt(end+1) = p; %#ok<AGROW>
-                end
-            end
-        end
-        frontier = nxt;
-        if ~isnan(dd(tgt)) || isempty(frontier), break; end
+function s = netEqn(model, net, curr)
+% net equation with currency folded away, so the real transformation shows
+    keep = find(net ~= 0 & ~curr(:));
+    lhs = keep(net(keep) < 0); rhs = keep(net(keep) > 0);
+    s = sprintf('%s  ->  %s', netSide(model, net, lhs), netSide(model, net, rhs));
+    hid = find(net ~= 0 & curr(:));
+    if ~isempty(hid)
+        s = sprintf('%s      [+ currency: %s]', s, strjoin(model.mets(hid), ', '));
     end
-    if isnan(dd(tgt)), return; end
-    steps = dd(tgt); cur = tgt; mpath = tgt;
-    while cur ~= src
-        rpath(end+1) = pr(cur); cur = pm(cur); mpath(end+1) = cur; %#ok<AGROW>
-    end
-    rpath = fliplr(rpath); mpath = fliplr(mpath);
 end
+
+function s = netSide(model, net, ix)
+    if isempty(ix), s = '0'; return; end
+    p = cell(1,numel(ix));
+    for q = 1:numel(ix)
+        co = abs(full(net(ix(q))));
+        if co == 1, p{q} = model.mets{ix(q)};
+        else, p{q} = sprintf('%g %s', co, model.mets{ix(q)}); end
+    end
+    s = strjoin(p, ' + ');
+end
+
+% cleanBFS was removed here. The Block 0 search now lives in block0_route.m,
+% shared with A_Block0.m. Two separate implementations is what let the chain
+% file report "no connector" while the Block 0 report found a 3-step route.

@@ -73,8 +73,46 @@ POLARITY AND TIMESCALES
 ----------------------------------------------------------------
 BLOCK 0: camp[c] -> m_in
 ----------------------------------------------------------------
-  No collision-free connector within 12 steps: every route from
-  camp[c] to m_in consumes or produces a circuit signal.
+  Shortest natural route, 3 step(s). DESCRIPTIVE: in the
+  reactor m_in is supplied directly, so these enzymes are not
+  loaded. This is the pathway a cell would use.
+  Metabolites: camp[c] -> amp[c] -> prpp[c] -> glu_L[c]
+  Reactions  : PDE1 -> r0051 -> GLUPRT
+
+  r_b0_1
+      ID  : PDE1
+      Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+      EC  : 3.1.4.17
+      Bounds: [0, 1000]
+      IDs   : camp[c] + h2o[c]  ->  amp[c] + h[c]
+      Names : 3,5-Cyclic Adenosine Monophosphate + Water  ->  Adenosine Monophosphate + Proton
+
+  r_b0_2
+      ID  : r0051
+      Name: AMP:Pyrophosphate Phosphoribosyltransferase
+      EC  : 2.4.2.7
+      Bounds: [-1000, 1000]
+      IDs   : amp[c] + ppi[c]  ->  ade[c](m_out) + prpp[c]
+      Names : Adenosine Monophosphate + Diphosphate  ->  Adenine(m_out) + 5-Phospho-Alpha-D-Ribose 1-Diphosphate
+
+  r_b0_3
+      ID  : GLUPRT
+      Name: Glutamine Phosphoribosyldiphosphate Amidotransferase
+      EC  : 2.4.2.14
+      Bounds: [0, 1000]
+      IDs   : gln_L[c](m_Fd_1) + h2o[c] + prpp[c]  ->  glu_L[c](m_in) + ppi[c] + pram[c]
+      Names : L-Glutamine(m_Fd_1) + Water + 5-Phospho-Alpha-D-Ribose 1-Diphosphate  ->  L-Glutamate(m_in) + Diphosphate + 5-Phospho-Beta-D-Ribosylamine
+
+  NET (unit flux per step): camp[c] + gln_L[c]  ->  ade[c] + glu_L[c] + pram[c]      [+ currency: h2o[c], h[c]]
+  net m_in: +1
+
+  WHERE THIS ROUTE MEETS THE CIRCUIT (informational - in a
+  cell these fluxes coexist, and Block 0 is not built here):
+    r0051          PRODUCES m_out (Adenine)
+    GLUPRT         CONSUMES m_Fd_1 (L-Glutamine)
+  So this route could not be reused as a BUILT input stage
+  without rework. For the signal-free alternative and the
+  full analysis: A_Block0('IFFL_catalytic_stage2.mat', 1)
 
 ----------------------------------------------------------------
 BLOCK 1: DIFFERENTIATOR 1 (m_in -> m_d1)
