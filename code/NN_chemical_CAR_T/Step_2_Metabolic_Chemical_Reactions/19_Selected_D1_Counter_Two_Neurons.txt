@@ -1,4 +1,5 @@
 SELECTED BLOCK 0 -> D1 -> TRANSPORT -> COUNTER -> TWO CONSUMING NEURONS
+Direction policy: STRICT +1 relative to original model.S.
 r_Nf CONSUMES m_c; r_Nf_2 CONSUMES m_Nd.
 m_Sd_1 is PRODUCED by r_Sd_1 and regulates r_T (not consumed in r_T).
 Stoichiometric topology only; regulatory evidence and flux/kinetics unverified.
@@ -7,104 +8,111 @@ Stoichiometric topology only; regulatory evidence and flux/kinetics unverified.
 CANDIDATE 1
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : amp[c] | Adenosine Monophosphate
-  m_Ff     : gdp[c] | Guanosine-5'-Diphosphate
-  m_Fd     : gtp[c] | Guanosine-5'-Triphosphate
-  m_Sf     : dpcoa[c] | Dephospho Coenzyme A
+  m_in     : gdp[c] | Guanosine-5'-Diphosphate
+  m_Ff     : trdox[c] | Oxidized Thioredoxin
+  m_Fd     : trdrd[c] | Reduced Thioredoxin
+  m_Sf     : gtp[c] | Guanosine-5'-Triphosphate
   m_Sd     : adp[c] | Adenosine Diphosphate
   m_c      : gal[c] | D-Galactose
   m_Nf_1   : gal1p[c] | (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate
   m_Nd_1   : udpgal[c] | Uridine-5'-Diphosphate-D-Galactose
-  m_Nf_2   : udpg[c] | Uridine-5'-Diphosphate-Glucose
-  m_out    : g1p[c] | D-Glucose 1-Phosphate
+  m_Nf_2   : udp[c] | Uridine Diphosphate
+  m_out    : utp[c] | Uridine-5'-TrIphosphate
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> amp[c] (1 reaction(s))
+  Path: camp[c] -> gdp[c] (2 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
   Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_in) [amp[c]] + Proton [h[c]]
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
 
   EC: 3.1.4.17
+r_CAMP_2
+  ID: ADK3
+  Name: Adentylate Kinase (GTP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Monophosphate [amp[c]] + Guanosine-5'-Triphosphate (m_Sf) [gtp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Diphosphate (m_in) [gdp[c]]
+
+  EC: 2.7.4.3
   WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
+  ID: RNDR2
+  Name: Ribonucleoside-Diphosphate Reductase (GDP)
+  Direction: +1 relative to model.S
+  Equation: Guanosine-5'-Diphosphate (m_in) [gdp[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]  ->  Deoxyguanosine-5'-Diphosphate [dgdp[c]] + Water [h2o[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]
+
+  EC: 1.7.14.1
+  GPR: (( (6240) & (6241) ) | (50484) )
+  Resolved genes: 6240;6241;50484
+
+r_Fd
+  ID: TRDR
+  Name: Thioredoxin Reductase (NADPH)
+  Direction: +1 relative to model.S
+  Equation: Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]  ->  Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]
+
+  EC: 1.8.1.9
+  GPR: (7296)
+  Resolved genes: 7296
+
+r_Fr
+  ID: RE3009C
+  Name: RE3009C
+  Direction: +1 relative to model.S
+  Equation: 3'-Phosphoadenylyl Sulfate [paps[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]  ->  2 Proton [h[c]] + Adenosine 3,5-Bismonophosphate [pap[c]] + Sulfite [so3[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]
+
+  EC: 
+  GPR: (6818)
+  Resolved genes: 6818
+
+r_Sf
+  ID: NDPK1
+  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_in) [gdp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Triphosphate (m_Sf) [gtp[c]]
+
+  EC: 3.4.13.3
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
+
+r_Sd
   ID: ADK3
   Name: Adentylate Kinase (GTP)
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_in) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
+  Equation: Adenosine Monophosphate [amp[c]] + Guanosine-5'-Triphosphate (m_Sf) [gtp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Diphosphate (m_in) [gdp[c]]
 
   EC: 2.7.4.3
   GPR: (26289)
   Resolved genes: 26289
 
-r_Fd
-  ID: CYTK3
-  Name: Cytidylate Kinase (CMP) (GTP)
-  Direction: -1 relative to model.S
-  Equation: Cytidine-5'-DIphosphate [cdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Cytidine 5'-Monophosphate [cmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
-
-  EC: 
-  GPR: (26289)
-  Resolved genes: 26289
-
-r_Fr
-  ID: ADSS
-  Name: Adenylosuccinate Synthase
-  Direction: +1 relative to model.S
-  Equation: L-Aspartate [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate [dcamp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
-
-  EC: 6.3.4.4
-  GPR: ( (159) | (122622) )
-  Resolved genes: 159;122622
-
-r_Sf
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_in) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A (m_Sf) [dpcoa[c]] + Water [h2o[c]]
-
-  EC: 3.6.1.9
-  GPR: ( (5169) | (5167) )
-  Resolved genes: 5169;5167
-
-r_Sd
-  ID: DPCOAK
-  Name: Dephospho Coenzyme A Kinase
-  Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Dephospho Coenzyme A (m_Sf) [dpcoa[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Coenzyme A [coa[c]] + Proton [h[c]]
-
-  EC: 
-  GPR: (80347)
-  Resolved genes: 80347
-
 r_Sr
-  ID: PGK
-  Name: Phosphoglycerate Kinase
-  Direction: -1 relative to model.S
-  Equation: 3-Phospho-D-Glyceroyl Phosphate [13dpg[c]] + Adenosine Diphosphate (m_Sd) [adp[c]]  ->  3-Phospho-D-Glycerate [3pg[c]] + Adenosine Triphosphate [atp[c]]
+  ID: PYK
+  Name: Pyruvate Kinase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Diphosphate (m_Sd) [adp[c]] + Proton [h[c]] + Phosphoenolpyruvate [pep[c]]  ->  Adenosine Triphosphate [atp[c]] + Pyruvate [pyr[c]]
 
-  EC: 
-  GPR: ( (5230) | (375056) | (5232) )
-  Resolved genes: 5230;375056;5232
+  EC: 3.4.2.1
+  GPR: ( (5315) | (5313) )
+  Resolved genes: 5315;5313
 
 r_I
-  ID: NDPK1
-  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
-  Direction: -1 relative to model.S
-  Equation: Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
+  ID: RNDR1
+  Name: Ribonucleoside-Diphosphate Reductase (ADP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Diphosphate (m_Sd) [adp[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]  ->  Deoxyadenosine Diphosphate [dadp[c]] + Water [h2o[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]
 
-  EC: 3.4.13.3
-  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
-  Resolved genes: 4832;4831;4830;10201;29922
+  EC: 1.7.14.1
+  GPR: (( (6240) & (6241) ) | (50484) )
+  Resolved genes: 6240;6241;50484
 
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
@@ -140,41 +148,41 @@ r_Nd_1
   ID: GALT
   Name: Galactose-1-Phosphate Uridylyltransferase
   Direction: +1 relative to model.S
-  Equation: (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate (m_Nf_1) [gal1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]
+  Equation: (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate (m_Nf_1) [gal1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate (m_out) [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]
 
   EC: 2.7.7.12
 
 r_Nr_1
-  ID: UGLT
-  Name: UDPglucose-Hexose-1-Phosphate Uridylyltransferase
-  Direction: -1 relative to model.S
-  Equation: D-Glucose 1-Phosphate (m_out) [g1p[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate (m_Nf_1) [gal1p[c]] + Uridine-5'-Diphosphate-Glucose (m_Nf_2) [udpg[c]]
+  ID: RE2666C
+  Name: RE2666C
+  Direction: +1 relative to model.S
+  Equation: D-Galactosyl-N-Acylsphingosine [galside_hs[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Digalactosylceramide [digalside_hs[c]] + Proton [h[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]
 
-  EC: 2.7.7.12
+  EC: 
 
 r_Nf_2
-  ID: UDPG4E
-  Name: UDPglucose 4-Epimerase
-  Direction: -1 relative to model.S
-  Equation: Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Uridine-5'-Diphosphate-Glucose (m_Nf_2) [udpg[c]]
+  ID: HMR_0912
+  Name: UDP-Alpha-D-Galactose:Sphingosine 1-Beta-Galactosyltransferase
+  Direction: +1 relative to model.S
+  Equation: Sphingosine [sphings[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Psychosine [C01747[c]] + Proton [h[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]
 
-  EC: 5.1.3.2
+  EC: EC:2.4.1.23
 
 r_Nd_2
-  ID: GALU
-  Name: UTP-Glucose-1-Phosphate Uridylyltransferase
-  Direction: -1 relative to model.S
-  Equation: Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-Glucose (m_Nf_2) [udpg[c]]  ->  D-Glucose 1-Phosphate (m_out) [g1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate [utp[c]]
+  ID: NDPK2
+  Name: Nucleoside-Diphosphate Kinase (ATP:UDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Uridine-5'-TrIphosphate (m_out) [utp[c]]
 
-  EC: 2.7.7.9
+  EC: 3.6.1.6
 
 r_Nr_2
-  ID: PGMT
-  Name: Phosphoglucomutase
+  ID: UAGALDP
+  Name: UDP-N-Acetylgalactosamine Diphosphorylase
   Direction: +1 relative to model.S
-  Equation: D-Glucose 1-Phosphate (m_out) [g1p[c]]  ->  D-Glucose 6-Phosphate [g6p[c]]
+  Equation: N-Acetyl-D-Galactosamine 1-Phosphate [acgal1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate (m_out) [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-N-Acetyl-D-Galactosamine [udpacgal[c]]
 
-  EC: 5.4.2.2
+  EC: 
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
@@ -183,104 +191,111 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 CANDIDATE 2
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : amp[c] | Adenosine Monophosphate
-  m_Ff     : gdp[c] | Guanosine-5'-Diphosphate
-  m_Fd     : gtp[c] | Guanosine-5'-Triphosphate
-  m_Sf     : dpcoa[c] | Dephospho Coenzyme A
+  m_in     : gdp[c] | Guanosine-5'-Diphosphate
+  m_Ff     : trdox[c] | Oxidized Thioredoxin
+  m_Fd     : trdrd[c] | Reduced Thioredoxin
+  m_Sf     : gtp[c] | Guanosine-5'-Triphosphate
   m_Sd     : adp[c] | Adenosine Diphosphate
   m_c      : gal[c] | D-Galactose
   m_Nf_1   : gal1p[c] | (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate
   m_Nd_1   : udpgal[c] | Uridine-5'-Diphosphate-D-Galactose
-  m_Nf_2   : udpg[c] | Uridine-5'-Diphosphate-Glucose
-  m_out    : g1p[c] | D-Glucose 1-Phosphate
+  m_Nf_2   : udp[c] | Uridine Diphosphate
+  m_out    : utp[c] | Uridine-5'-TrIphosphate
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> amp[c] (1 reaction(s))
+  Path: camp[c] -> gdp[c] (2 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
   Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_in) [amp[c]] + Proton [h[c]]
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
 
   EC: 3.1.4.17
+r_CAMP_2
+  ID: ADK3
+  Name: Adentylate Kinase (GTP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Monophosphate [amp[c]] + Guanosine-5'-Triphosphate (m_Sf) [gtp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Diphosphate (m_in) [gdp[c]]
+
+  EC: 2.7.4.3
   WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
+  ID: RNDR2
+  Name: Ribonucleoside-Diphosphate Reductase (GDP)
+  Direction: +1 relative to model.S
+  Equation: Guanosine-5'-Diphosphate (m_in) [gdp[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]  ->  Deoxyguanosine-5'-Diphosphate [dgdp[c]] + Water [h2o[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]
+
+  EC: 1.7.14.1
+  GPR: (( (6240) & (6241) ) | (50484) )
+  Resolved genes: 6240;6241;50484
+
+r_Fd
+  ID: TRDR
+  Name: Thioredoxin Reductase (NADPH)
+  Direction: +1 relative to model.S
+  Equation: Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]  ->  Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]
+
+  EC: 1.8.1.9
+  GPR: (7296)
+  Resolved genes: 7296
+
+r_Fr
+  ID: RE3009C
+  Name: RE3009C
+  Direction: +1 relative to model.S
+  Equation: 3'-Phosphoadenylyl Sulfate [paps[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]  ->  2 Proton [h[c]] + Adenosine 3,5-Bismonophosphate [pap[c]] + Sulfite [so3[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]
+
+  EC: 
+  GPR: (6818)
+  Resolved genes: 6818
+
+r_Sf
+  ID: NDPK1
+  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_in) [gdp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Triphosphate (m_Sf) [gtp[c]]
+
+  EC: 3.4.13.3
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
+
+r_Sd
   ID: ADK3
   Name: Adentylate Kinase (GTP)
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_in) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
+  Equation: Adenosine Monophosphate [amp[c]] + Guanosine-5'-Triphosphate (m_Sf) [gtp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Diphosphate (m_in) [gdp[c]]
 
   EC: 2.7.4.3
   GPR: (26289)
   Resolved genes: 26289
 
-r_Fd
-  ID: CYTK3
-  Name: Cytidylate Kinase (CMP) (GTP)
-  Direction: -1 relative to model.S
-  Equation: Cytidine-5'-DIphosphate [cdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Cytidine 5'-Monophosphate [cmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
-
-  EC: 
-  GPR: (26289)
-  Resolved genes: 26289
-
-r_Fr
-  ID: ADSS
-  Name: Adenylosuccinate Synthase
-  Direction: +1 relative to model.S
-  Equation: L-Aspartate [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate [dcamp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
-
-  EC: 6.3.4.4
-  GPR: ( (159) | (122622) )
-  Resolved genes: 159;122622
-
-r_Sf
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_in) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A (m_Sf) [dpcoa[c]] + Water [h2o[c]]
-
-  EC: 3.6.1.9
-  GPR: ( (5169) | (5167) )
-  Resolved genes: 5169;5167
-
-r_Sd
-  ID: DPCOAK
-  Name: Dephospho Coenzyme A Kinase
-  Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Dephospho Coenzyme A (m_Sf) [dpcoa[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Coenzyme A [coa[c]] + Proton [h[c]]
-
-  EC: 
-  GPR: (80347)
-  Resolved genes: 80347
-
 r_Sr
-  ID: PGK
-  Name: Phosphoglycerate Kinase
-  Direction: -1 relative to model.S
-  Equation: 3-Phospho-D-Glyceroyl Phosphate [13dpg[c]] + Adenosine Diphosphate (m_Sd) [adp[c]]  ->  3-Phospho-D-Glycerate [3pg[c]] + Adenosine Triphosphate [atp[c]]
+  ID: PYK
+  Name: Pyruvate Kinase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Diphosphate (m_Sd) [adp[c]] + Proton [h[c]] + Phosphoenolpyruvate [pep[c]]  ->  Adenosine Triphosphate [atp[c]] + Pyruvate [pyr[c]]
 
-  EC: 
-  GPR: ( (5230) | (375056) | (5232) )
-  Resolved genes: 5230;375056;5232
+  EC: 3.4.2.1
+  GPR: ( (5315) | (5313) )
+  Resolved genes: 5315;5313
 
 r_I
-  ID: NDPK1
-  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
-  Direction: -1 relative to model.S
-  Equation: Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
+  ID: RNDR1
+  Name: Ribonucleoside-Diphosphate Reductase (ADP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Diphosphate (m_Sd) [adp[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]  ->  Deoxyadenosine Diphosphate [dadp[c]] + Water [h2o[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]
 
-  EC: 3.4.13.3
-  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
-  Resolved genes: 4832;4831;4830;10201;29922
+  EC: 1.7.14.1
+  GPR: (( (6240) & (6241) ) | (50484) )
+  Resolved genes: 6240;6241;50484
 
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
@@ -316,41 +331,41 @@ r_Nd_1
   ID: GALT
   Name: Galactose-1-Phosphate Uridylyltransferase
   Direction: +1 relative to model.S
-  Equation: (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate (m_Nf_1) [gal1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]
+  Equation: (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate (m_Nf_1) [gal1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate (m_out) [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]
 
   EC: 2.7.7.12
 
 r_Nr_1
+  ID: RE2666C
+  Name: RE2666C
+  Direction: +1 relative to model.S
+  Equation: D-Galactosyl-N-Acylsphingosine [galside_hs[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Digalactosylceramide [digalside_hs[c]] + Proton [h[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]
+
+  EC: 
+
+r_Nf_2
   ID: HMR_0912
   Name: UDP-Alpha-D-Galactose:Sphingosine 1-Beta-Galactosyltransferase
   Direction: +1 relative to model.S
-  Equation: Sphingosine [sphings[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Psychosine [C01747[c]] + Proton [h[c]] + Uridine Diphosphate [udp[c]]
+  Equation: Sphingosine [sphings[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Psychosine [C01747[c]] + Proton [h[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]
 
   EC: EC:2.4.1.23
 
-r_Nf_2
-  ID: UDPG4E
-  Name: UDPglucose 4-Epimerase
-  Direction: -1 relative to model.S
-  Equation: Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Uridine-5'-Diphosphate-Glucose (m_Nf_2) [udpg[c]]
-
-  EC: 5.1.3.2
-
 r_Nd_2
-  ID: GALU
-  Name: UTP-Glucose-1-Phosphate Uridylyltransferase
-  Direction: -1 relative to model.S
-  Equation: Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-Glucose (m_Nf_2) [udpg[c]]  ->  D-Glucose 1-Phosphate (m_out) [g1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate [utp[c]]
+  ID: NDPK2
+  Name: Nucleoside-Diphosphate Kinase (ATP:UDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Uridine-5'-TrIphosphate (m_out) [utp[c]]
 
-  EC: 2.7.7.9
+  EC: 3.6.1.6
 
 r_Nr_2
-  ID: UGLT
-  Name: UDPglucose-Hexose-1-Phosphate Uridylyltransferase
-  Direction: -1 relative to model.S
-  Equation: D-Glucose 1-Phosphate (m_out) [g1p[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate (m_Nf_1) [gal1p[c]] + Uridine-5'-Diphosphate-Glucose (m_Nf_2) [udpg[c]]
+  ID: r0191
+  Name: UTP:D-Fructose-6-Phosphate 1-Phosphotransferase
+  Direction: +1 relative to model.S
+  Equation: D-Fructose 6-Phosphate [f6p[c]] + Uridine-5'-TrIphosphate (m_out) [utp[c]]  ->  D-Fructose 1,6-Bisphosphate [fdp[c]] + Proton [h[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]
 
-  EC: 2.7.7.12
+  EC: 2.7.1.11
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
@@ -359,104 +374,111 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 CANDIDATE 3
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : amp[c] | Adenosine Monophosphate
-  m_Ff     : gdp[c] | Guanosine-5'-Diphosphate
-  m_Fd     : gtp[c] | Guanosine-5'-Triphosphate
-  m_Sf     : dpcoa[c] | Dephospho Coenzyme A
+  m_in     : gdp[c] | Guanosine-5'-Diphosphate
+  m_Ff     : trdox[c] | Oxidized Thioredoxin
+  m_Fd     : trdrd[c] | Reduced Thioredoxin
+  m_Sf     : gtp[c] | Guanosine-5'-Triphosphate
   m_Sd     : adp[c] | Adenosine Diphosphate
   m_c      : gal[c] | D-Galactose
   m_Nf_1   : gal1p[c] | (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate
   m_Nd_1   : udpgal[c] | Uridine-5'-Diphosphate-D-Galactose
-  m_Nf_2   : udpg[c] | Uridine-5'-Diphosphate-Glucose
-  m_out    : g1p[c] | D-Glucose 1-Phosphate
+  m_Nf_2   : udp[c] | Uridine Diphosphate
+  m_out    : utp[c] | Uridine-5'-TrIphosphate
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> amp[c] (1 reaction(s))
+  Path: camp[c] -> gdp[c] (2 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
   Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_in) [amp[c]] + Proton [h[c]]
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
 
   EC: 3.1.4.17
+r_CAMP_2
+  ID: ADK3
+  Name: Adentylate Kinase (GTP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Monophosphate [amp[c]] + Guanosine-5'-Triphosphate (m_Sf) [gtp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Diphosphate (m_in) [gdp[c]]
+
+  EC: 2.7.4.3
   WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
+  ID: RNDR2
+  Name: Ribonucleoside-Diphosphate Reductase (GDP)
+  Direction: +1 relative to model.S
+  Equation: Guanosine-5'-Diphosphate (m_in) [gdp[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]  ->  Deoxyguanosine-5'-Diphosphate [dgdp[c]] + Water [h2o[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]
+
+  EC: 1.7.14.1
+  GPR: (( (6240) & (6241) ) | (50484) )
+  Resolved genes: 6240;6241;50484
+
+r_Fd
+  ID: TRDR
+  Name: Thioredoxin Reductase (NADPH)
+  Direction: +1 relative to model.S
+  Equation: Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]  ->  Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]
+
+  EC: 1.8.1.9
+  GPR: (7296)
+  Resolved genes: 7296
+
+r_Fr
+  ID: RE3009C
+  Name: RE3009C
+  Direction: +1 relative to model.S
+  Equation: 3'-Phosphoadenylyl Sulfate [paps[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]  ->  2 Proton [h[c]] + Adenosine 3,5-Bismonophosphate [pap[c]] + Sulfite [so3[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]
+
+  EC: 
+  GPR: (6818)
+  Resolved genes: 6818
+
+r_Sf
+  ID: NDPK1
+  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_in) [gdp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Triphosphate (m_Sf) [gtp[c]]
+
+  EC: 3.4.13.3
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
+
+r_Sd
   ID: ADK3
   Name: Adentylate Kinase (GTP)
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_in) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
+  Equation: Adenosine Monophosphate [amp[c]] + Guanosine-5'-Triphosphate (m_Sf) [gtp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Diphosphate (m_in) [gdp[c]]
 
   EC: 2.7.4.3
   GPR: (26289)
   Resolved genes: 26289
 
-r_Fd
-  ID: CYTK3
-  Name: Cytidylate Kinase (CMP) (GTP)
-  Direction: -1 relative to model.S
-  Equation: Cytidine-5'-DIphosphate [cdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Cytidine 5'-Monophosphate [cmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
-
-  EC: 
-  GPR: (26289)
-  Resolved genes: 26289
-
-r_Fr
-  ID: ADSS
-  Name: Adenylosuccinate Synthase
-  Direction: +1 relative to model.S
-  Equation: L-Aspartate [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate [dcamp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
-
-  EC: 6.3.4.4
-  GPR: ( (159) | (122622) )
-  Resolved genes: 159;122622
-
-r_Sf
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_in) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A (m_Sf) [dpcoa[c]] + Water [h2o[c]]
-
-  EC: 3.6.1.9
-  GPR: ( (5169) | (5167) )
-  Resolved genes: 5169;5167
-
-r_Sd
-  ID: DPCOAK
-  Name: Dephospho Coenzyme A Kinase
-  Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Dephospho Coenzyme A (m_Sf) [dpcoa[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Coenzyme A [coa[c]] + Proton [h[c]]
-
-  EC: 
-  GPR: (80347)
-  Resolved genes: 80347
-
 r_Sr
-  ID: PGK
-  Name: Phosphoglycerate Kinase
-  Direction: -1 relative to model.S
-  Equation: 3-Phospho-D-Glyceroyl Phosphate [13dpg[c]] + Adenosine Diphosphate (m_Sd) [adp[c]]  ->  3-Phospho-D-Glycerate [3pg[c]] + Adenosine Triphosphate [atp[c]]
+  ID: PYK
+  Name: Pyruvate Kinase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Diphosphate (m_Sd) [adp[c]] + Proton [h[c]] + Phosphoenolpyruvate [pep[c]]  ->  Adenosine Triphosphate [atp[c]] + Pyruvate [pyr[c]]
 
-  EC: 
-  GPR: ( (5230) | (375056) | (5232) )
-  Resolved genes: 5230;375056;5232
+  EC: 3.4.2.1
+  GPR: ( (5315) | (5313) )
+  Resolved genes: 5315;5313
 
 r_I
-  ID: NDPK1
-  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
-  Direction: -1 relative to model.S
-  Equation: Adenosine Diphosphate (m_Sd) [adp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
+  ID: RNDR1
+  Name: Ribonucleoside-Diphosphate Reductase (ADP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Diphosphate (m_Sd) [adp[c]] + Reduced Thioredoxin (m_Fd) [trdrd[c]]  ->  Deoxyadenosine Diphosphate [dadp[c]] + Water [h2o[c]] + Oxidized Thioredoxin (m_Ff) [trdox[c]]
 
-  EC: 3.4.13.3
-  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
-  Resolved genes: 4832;4831;4830;10201;29922
+  EC: 1.7.14.1
+  GPR: (( (6240) & (6241) ) | (50484) )
+  Resolved genes: 6240;6241;50484
 
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
@@ -492,41 +514,41 @@ r_Nd_1
   ID: GALT
   Name: Galactose-1-Phosphate Uridylyltransferase
   Direction: +1 relative to model.S
-  Equation: (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate (m_Nf_1) [gal1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]
+  Equation: (2R,3R,4S,5R,6R)-3,4,5-Trihydroxy-6-(Hydroxymethyl)Oxan-2-Yl Phosphate (m_Nf_1) [gal1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate (m_out) [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]
 
   EC: 2.7.7.12
 
 r_Nr_1
+  ID: RE2666C
+  Name: RE2666C
+  Direction: +1 relative to model.S
+  Equation: D-Galactosyl-N-Acylsphingosine [galside_hs[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Digalactosylceramide [digalside_hs[c]] + Proton [h[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]
+
+  EC: 
+
+r_Nf_2
   ID: HMR_0912
   Name: UDP-Alpha-D-Galactose:Sphingosine 1-Beta-Galactosyltransferase
   Direction: +1 relative to model.S
-  Equation: Sphingosine [sphings[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Psychosine [C01747[c]] + Proton [h[c]] + Uridine Diphosphate [udp[c]]
+  Equation: Sphingosine [sphings[c]] + Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Psychosine [C01747[c]] + Proton [h[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]
 
   EC: EC:2.4.1.23
 
-r_Nf_2
-  ID: UDPG4E
-  Name: UDPglucose 4-Epimerase
-  Direction: -1 relative to model.S
-  Equation: Uridine-5'-Diphosphate-D-Galactose (m_Nd_1) [udpgal[c]]  ->  Uridine-5'-Diphosphate-Glucose (m_Nf_2) [udpg[c]]
-
-  EC: 5.1.3.2
-
 r_Nd_2
-  ID: GALU
-  Name: UTP-Glucose-1-Phosphate Uridylyltransferase
-  Direction: -1 relative to model.S
-  Equation: Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-Glucose (m_Nf_2) [udpg[c]]  ->  D-Glucose 1-Phosphate (m_out) [g1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate [utp[c]]
+  ID: NDPK2
+  Name: Nucleoside-Diphosphate Kinase (ATP:UDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Uridine Diphosphate (m_Nf_2) [udp[c]]  ->  Adenosine Diphosphate (m_Sd) [adp[c]] + Uridine-5'-TrIphosphate (m_out) [utp[c]]
 
-  EC: 2.7.7.9
+  EC: 3.6.1.6
 
 r_Nr_2
-  ID: PGMT
-  Name: Phosphoglucomutase
+  ID: GALU
+  Name: UTP-Glucose-1-Phosphate Uridylyltransferase
   Direction: +1 relative to model.S
-  Equation: D-Glucose 1-Phosphate (m_out) [g1p[c]]  ->  D-Glucose 6-Phosphate [g6p[c]]
+  Equation: D-Glucose 1-Phosphate [g1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate (m_out) [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-Glucose [udpg[c]]
 
-  EC: 5.4.2.2
+  EC: 2.7.7.9
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
@@ -542,31 +564,16 @@ SIGNAL METABOLITE MAP
   m_Sd     : amp[c] | Adenosine Monophosphate
   m_c      : dhdascb[c] | Dehydroascorbide
   m_Nf_1   : ascb_L[c] | L-Ascorbate
-  m_Nd_1   : urate[c] | Urate
-  m_Nf_2   : h2o2[c] | Hydrogen Peroxide
-  m_out    : gthox[c] | Glutathione Disulfide (Oxidized Glutathione)
+  m_Nd_1   : h2o2[c] | Hydrogen Peroxide
+  m_Nf_2   : gthox[c] | Glutathione Disulfide (Oxidized Glutathione)
+  m_out    : gthrd[c] | Reduced Glutathione
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> asp_L[c] (2 reaction(s))
-r_CAMP_1
-  ID: PDE1
-  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
-  Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Sd) [amp[c]] + Proton [h[c]]
-
-  EC: 3.1.4.17
-r_CAMP_2
-  ID: ASPCTr
-  Name: Aspartate Carbamoyltransferase (Reversible)
-  Direction: -1 relative to model.S
-  Equation: N-Carbamoyl-L-Aspartate [cbasp[c]] + Proton [h[c]] + Orthophosphate [pi[c]]  ->  L-Aspartate (m_in) [asp_L[c]] + Carbamoyl Phosphate [cbp[c]]
-
-  EC: 2.1.3.2
-  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
+  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -582,20 +589,20 @@ r_Ff
   Resolved genes: 159;122622
 
 r_Fd
-  ID: CYTK3
-  Name: Cytidylate Kinase (CMP) (GTP)
-  Direction: -1 relative to model.S
-  Equation: Cytidine-5'-DIphosphate [cdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Cytidine 5'-Monophosphate [cmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
+  ID: NDPK1
+  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
 
-  EC: 
-  GPR: (26289)
-  Resolved genes: 26289
+  EC: 3.4.13.3
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
 
 r_Fr
-  ID: CYTK4
-  Name: Cytidylate Kinase (dCMP) (GTP)
+  ID: CYTK3
+  Name: Cytidylate Kinase (CMP) (GTP)
   Direction: +1 relative to model.S
-  Equation: Deoxycytidylic Acid [dcmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Deoxycytidine-5'-Diphosphate [dcdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
+  Equation: Cytidine 5'-Monophosphate [cmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Cytidine-5'-DIphosphate [cdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
 
   EC: 
   GPR: (26289)
@@ -622,14 +629,14 @@ r_Sd
   Resolved genes: 8833
 
 r_Sr
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Sd) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A [dpcoa[c]] + Water [h2o[c]]
+  ID: ADK1
+  Name: Adenylate Kinase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Monophosphate (m_Sd) [amp[c]] + Adenosine Triphosphate [atp[c]]  ->  2 Adenosine Diphosphate [adp[c]]
 
-  EC: 3.6.1.9
-  GPR: ( (5169) | (5167) )
-  Resolved genes: 5169;5167
+  EC: 
+  GPR: ( (122481) | (203) | (26289) | (204) )
+  Resolved genes: 122481;203;26289;204
 
 r_I
   ID: ADK3
@@ -672,44 +679,44 @@ r_Nf_1
   EC: 1.6.5.4
 
 r_Nd_1
-  ID: RE2605C
-  Name: RE2605C
+  ID: ASCBOX
+  Name: Ascorbic Acid Oxidase
   Direction: +1 relative to model.S
-  Equation: Urate Radical [CE6252[c]] + L-Ascorbate (m_Nf_1) [ascb_L[c]]  ->  Monodehydroascorbate [C01041[c]] + Urate (m_Nd_1) [urate[c]]
+  Equation: L-Ascorbate (m_Nf_1) [ascb_L[c]] + 3 Proton [h[c]] + 2 Superoxide [o2s[c]]  ->  Dehydroascorbide (m_c) [dhdascb[c]] + 2 Hydrogen Peroxide (m_Nd_1) [h2o2[c]]
 
-  EC: 3.4.15.1
+  EC: 
 
 r_Nr_1
-  ID: HMR_6607
-  Name: HMR_6607
-  Direction: -1 relative to model.S
-  Equation: Hydroxide Ion [oh1[c]] + Urate (m_Nd_1) [urate[c]]  ->  Urate Radical [CE6252[c]] + Water [h2o[c]]
+  ID: PRDX
+  Name: Peroxidase (Multiple Substrates)
+  Direction: +1 relative to model.S
+  Equation: Hydrogen Peroxide (m_Nd_1) [h2o2[c]] + Methanol [meoh[c]]  ->  Formaldehyde [fald[c]] + 2 Water [h2o[c]]
 
-  EC: EC:2.7.4.14
+  EC: 1.11.1.7
 
 r_Nf_2
-  ID: HMR_6611
-  Name: Urate:Oxygen Oxidoreductase
-  Direction: +1 relative to model.S
-  Equation: Water [h2o[c]] + Oxygen [o2[c]] + Urate (m_Nd_1) [urate[c]]  ->  5-Hydroxyisourate [C11821[c]] + Hydrogen Peroxide (m_Nf_2) [h2o2[c]]
-
-  EC: EC:1.7.3.3
-
-r_Nd_2
   ID: GTHP
   Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: 2 Reduced Glutathione [gthrd[c]] + Hydrogen Peroxide (m_Nf_2) [h2o2[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) (m_out) [gthox[c]] + 2 Water [h2o[c]]
+  Equation: 2 Reduced Glutathione (m_out) [gthrd[c]] + Hydrogen Peroxide (m_Nd_1) [h2o2[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + 2 Water [h2o[c]]
 
   EC: 1.11.1.9
 
-r_Nr_2
+r_Nd_2
   ID: GTHO
   Name: Glutathione Oxidoreductase
   Direction: +1 relative to model.S
-  Equation: Glutathione Disulfide (Oxidized Glutathione) (m_out) [gthox[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]  ->  2 Reduced Glutathione [gthrd[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+  Equation: Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]  ->  2 Reduced Glutathione (m_out) [gthrd[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
 
   EC: 1.8.1.7
+
+r_Nr_2
+  ID: HMR_0960
+  Name: Glutathione Peroxidase
+  Direction: +1 relative to model.S
+  Equation: 5(S)-Hydroperoxyeicosatetraenoic Acid [5HPET[c]] + 2 Reduced Glutathione (m_out) [gthrd[c]]  ->  5-Hydroxyeicosatetraenoate [C04805[c]] + Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + Water [h2o[c]]
+
+  EC: EC:1.11.1.9
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
@@ -725,31 +732,16 @@ SIGNAL METABOLITE MAP
   m_Sd     : amp[c] | Adenosine Monophosphate
   m_c      : dhdascb[c] | Dehydroascorbide
   m_Nf_1   : ascb_L[c] | L-Ascorbate
-  m_Nd_1   : urate[c] | Urate
-  m_Nf_2   : h2o2[c] | Hydrogen Peroxide
-  m_out    : gthox[c] | Glutathione Disulfide (Oxidized Glutathione)
+  m_Nd_1   : h2o2[c] | Hydrogen Peroxide
+  m_Nf_2   : gthox[c] | Glutathione Disulfide (Oxidized Glutathione)
+  m_out    : gthrd[c] | Reduced Glutathione
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> asp_L[c] (2 reaction(s))
-r_CAMP_1
-  ID: PDE1
-  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
-  Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Sd) [amp[c]] + Proton [h[c]]
-
-  EC: 3.1.4.17
-r_CAMP_2
-  ID: ASPCTr
-  Name: Aspartate Carbamoyltransferase (Reversible)
-  Direction: -1 relative to model.S
-  Equation: N-Carbamoyl-L-Aspartate [cbasp[c]] + Proton [h[c]] + Orthophosphate [pi[c]]  ->  L-Aspartate (m_in) [asp_L[c]] + Carbamoyl Phosphate [cbp[c]]
-
-  EC: 2.1.3.2
-  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
+  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -765,20 +757,20 @@ r_Ff
   Resolved genes: 159;122622
 
 r_Fd
-  ID: CYTK3
-  Name: Cytidylate Kinase (CMP) (GTP)
-  Direction: -1 relative to model.S
-  Equation: Cytidine-5'-DIphosphate [cdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Cytidine 5'-Monophosphate [cmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
+  ID: NDPK1
+  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
 
-  EC: 
-  GPR: (26289)
-  Resolved genes: 26289
+  EC: 3.4.13.3
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
 
 r_Fr
-  ID: CYTK4
-  Name: Cytidylate Kinase (dCMP) (GTP)
+  ID: CYTK3
+  Name: Cytidylate Kinase (CMP) (GTP)
   Direction: +1 relative to model.S
-  Equation: Deoxycytidylic Acid [dcmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Deoxycytidine-5'-Diphosphate [dcdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
+  Equation: Cytidine 5'-Monophosphate [cmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Cytidine-5'-DIphosphate [cdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
 
   EC: 
   GPR: (26289)
@@ -805,14 +797,14 @@ r_Sd
   Resolved genes: 8833
 
 r_Sr
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Sd) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A [dpcoa[c]] + Water [h2o[c]]
+  ID: ADK1
+  Name: Adenylate Kinase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Monophosphate (m_Sd) [amp[c]] + Adenosine Triphosphate [atp[c]]  ->  2 Adenosine Diphosphate [adp[c]]
 
-  EC: 3.6.1.9
-  GPR: ( (5169) | (5167) )
-  Resolved genes: 5169;5167
+  EC: 
+  GPR: ( (122481) | (203) | (26289) | (204) )
+  Resolved genes: 122481;203;26289;204
 
 r_I
   ID: ADK3
@@ -855,42 +847,42 @@ r_Nf_1
   EC: 1.6.5.4
 
 r_Nd_1
-  ID: RE2605C
-  Name: RE2605C
+  ID: ASCBOX
+  Name: Ascorbic Acid Oxidase
   Direction: +1 relative to model.S
-  Equation: Urate Radical [CE6252[c]] + L-Ascorbate (m_Nf_1) [ascb_L[c]]  ->  Monodehydroascorbate [C01041[c]] + Urate (m_Nd_1) [urate[c]]
+  Equation: L-Ascorbate (m_Nf_1) [ascb_L[c]] + 3 Proton [h[c]] + 2 Superoxide [o2s[c]]  ->  Dehydroascorbide (m_c) [dhdascb[c]] + 2 Hydrogen Peroxide (m_Nd_1) [h2o2[c]]
 
-  EC: 3.4.15.1
+  EC: 
 
 r_Nr_1
-  ID: HMR_6607
-  Name: HMR_6607
-  Direction: -1 relative to model.S
-  Equation: Hydroxide Ion [oh1[c]] + Urate (m_Nd_1) [urate[c]]  ->  Urate Radical [CE6252[c]] + Water [h2o[c]]
+  ID: PRDX
+  Name: Peroxidase (Multiple Substrates)
+  Direction: +1 relative to model.S
+  Equation: Hydrogen Peroxide (m_Nd_1) [h2o2[c]] + Methanol [meoh[c]]  ->  Formaldehyde [fald[c]] + 2 Water [h2o[c]]
 
-  EC: EC:2.7.4.14
+  EC: 1.11.1.7
 
 r_Nf_2
-  ID: HMR_6611
-  Name: Urate:Oxygen Oxidoreductase
-  Direction: +1 relative to model.S
-  Equation: Water [h2o[c]] + Oxygen [o2[c]] + Urate (m_Nd_1) [urate[c]]  ->  5-Hydroxyisourate [C11821[c]] + Hydrogen Peroxide (m_Nf_2) [h2o2[c]]
-
-  EC: EC:1.7.3.3
-
-r_Nd_2
   ID: GTHP
   Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: 2 Reduced Glutathione [gthrd[c]] + Hydrogen Peroxide (m_Nf_2) [h2o2[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) (m_out) [gthox[c]] + 2 Water [h2o[c]]
+  Equation: 2 Reduced Glutathione (m_out) [gthrd[c]] + Hydrogen Peroxide (m_Nd_1) [h2o2[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + 2 Water [h2o[c]]
 
   EC: 1.11.1.9
+
+r_Nd_2
+  ID: GTHO
+  Name: Glutathione Oxidoreductase
+  Direction: +1 relative to model.S
+  Equation: Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]  ->  2 Reduced Glutathione (m_out) [gthrd[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.8.1.7
 
 r_Nr_2
   ID: r0021
   Name: Glutathione:NAD+ Oxidoreductase
-  Direction: -1 relative to model.S
-  Equation: Glutathione Disulfide (Oxidized Glutathione) (m_out) [gthox[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide - Reduced [nadh[c]]  ->  2 Reduced Glutathione [gthrd[c]] + Nicotinamide Adenine Dinucleotide [nad[c]]
+  Direction: +1 relative to model.S
+  Equation: 2 Reduced Glutathione (m_out) [gthrd[c]] + Nicotinamide Adenine Dinucleotide [nad[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide - Reduced [nadh[c]]
 
   EC: 1.8.1.7
 
@@ -908,31 +900,16 @@ SIGNAL METABOLITE MAP
   m_Sd     : amp[c] | Adenosine Monophosphate
   m_c      : dhdascb[c] | Dehydroascorbide
   m_Nf_1   : ascb_L[c] | L-Ascorbate
-  m_Nd_1   : urate[c] | Urate
-  m_Nf_2   : h2o2[c] | Hydrogen Peroxide
-  m_out    : gthox[c] | Glutathione Disulfide (Oxidized Glutathione)
+  m_Nd_1   : h2o2[c] | Hydrogen Peroxide
+  m_Nf_2   : gthox[c] | Glutathione Disulfide (Oxidized Glutathione)
+  m_out    : gthrd[c] | Reduced Glutathione
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> asp_L[c] (2 reaction(s))
-r_CAMP_1
-  ID: PDE1
-  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
-  Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Sd) [amp[c]] + Proton [h[c]]
-
-  EC: 3.1.4.17
-r_CAMP_2
-  ID: ASPCTr
-  Name: Aspartate Carbamoyltransferase (Reversible)
-  Direction: -1 relative to model.S
-  Equation: N-Carbamoyl-L-Aspartate [cbasp[c]] + Proton [h[c]] + Orthophosphate [pi[c]]  ->  L-Aspartate (m_in) [asp_L[c]] + Carbamoyl Phosphate [cbp[c]]
-
-  EC: 2.1.3.2
-  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
+  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -948,20 +925,20 @@ r_Ff
   Resolved genes: 159;122622
 
 r_Fd
-  ID: CYTK3
-  Name: Cytidylate Kinase (CMP) (GTP)
-  Direction: -1 relative to model.S
-  Equation: Cytidine-5'-DIphosphate [cdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Cytidine 5'-Monophosphate [cmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
+  ID: NDPK1
+  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
 
-  EC: 
-  GPR: (26289)
-  Resolved genes: 26289
+  EC: 3.4.13.3
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
 
 r_Fr
-  ID: CYTK4
-  Name: Cytidylate Kinase (dCMP) (GTP)
+  ID: CYTK3
+  Name: Cytidylate Kinase (CMP) (GTP)
   Direction: +1 relative to model.S
-  Equation: Deoxycytidylic Acid [dcmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Deoxycytidine-5'-Diphosphate [dcdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
+  Equation: Cytidine 5'-Monophosphate [cmp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Cytidine-5'-DIphosphate [cdp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
 
   EC: 
   GPR: (26289)
@@ -988,14 +965,14 @@ r_Sd
   Resolved genes: 8833
 
 r_Sr
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Sd) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A [dpcoa[c]] + Water [h2o[c]]
+  ID: ADK1
+  Name: Adenylate Kinase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Monophosphate (m_Sd) [amp[c]] + Adenosine Triphosphate [atp[c]]  ->  2 Adenosine Diphosphate [adp[c]]
 
-  EC: 3.6.1.9
-  GPR: ( (5169) | (5167) )
-  Resolved genes: 5169;5167
+  EC: 
+  GPR: ( (122481) | (203) | (26289) | (204) )
+  Resolved genes: 122481;203;26289;204
 
 r_I
   ID: ADK3
@@ -1038,42 +1015,42 @@ r_Nf_1
   EC: 1.6.5.4
 
 r_Nd_1
-  ID: RE2605C
-  Name: RE2605C
+  ID: ASCBOX
+  Name: Ascorbic Acid Oxidase
   Direction: +1 relative to model.S
-  Equation: Urate Radical [CE6252[c]] + L-Ascorbate (m_Nf_1) [ascb_L[c]]  ->  Monodehydroascorbate [C01041[c]] + Urate (m_Nd_1) [urate[c]]
+  Equation: L-Ascorbate (m_Nf_1) [ascb_L[c]] + 3 Proton [h[c]] + 2 Superoxide [o2s[c]]  ->  Dehydroascorbide (m_c) [dhdascb[c]] + 2 Hydrogen Peroxide (m_Nd_1) [h2o2[c]]
 
-  EC: 3.4.15.1
+  EC: 
 
 r_Nr_1
-  ID: HMR_6607
-  Name: HMR_6607
-  Direction: -1 relative to model.S
-  Equation: Hydroxide Ion [oh1[c]] + Urate (m_Nd_1) [urate[c]]  ->  Urate Radical [CE6252[c]] + Water [h2o[c]]
+  ID: PRDX
+  Name: Peroxidase (Multiple Substrates)
+  Direction: +1 relative to model.S
+  Equation: Hydrogen Peroxide (m_Nd_1) [h2o2[c]] + Methanol [meoh[c]]  ->  Formaldehyde [fald[c]] + 2 Water [h2o[c]]
 
-  EC: EC:2.7.4.14
+  EC: 1.11.1.7
 
 r_Nf_2
-  ID: HMR_6611
-  Name: Urate:Oxygen Oxidoreductase
-  Direction: +1 relative to model.S
-  Equation: Water [h2o[c]] + Oxygen [o2[c]] + Urate (m_Nd_1) [urate[c]]  ->  5-Hydroxyisourate [C11821[c]] + Hydrogen Peroxide (m_Nf_2) [h2o2[c]]
-
-  EC: EC:1.7.3.3
-
-r_Nd_2
   ID: GTHP
   Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: 2 Reduced Glutathione [gthrd[c]] + Hydrogen Peroxide (m_Nf_2) [h2o2[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) (m_out) [gthox[c]] + 2 Water [h2o[c]]
+  Equation: 2 Reduced Glutathione (m_out) [gthrd[c]] + Hydrogen Peroxide (m_Nd_1) [h2o2[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + 2 Water [h2o[c]]
 
   EC: 1.11.1.9
+
+r_Nd_2
+  ID: GTHO
+  Name: Glutathione Oxidoreductase
+  Direction: +1 relative to model.S
+  Equation: Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]  ->  2 Reduced Glutathione (m_out) [gthrd[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.8.1.7
 
 r_Nr_2
   ID: CYSGLTH
   Name: Glutathione:Cystine Oxidoreductase
-  Direction: -1 relative to model.S
-  Equation: 2 L-Cysteine [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) (m_out) [gthox[c]]  ->  L-Cystine [Lcystin[c]] + 2 Reduced Glutathione [gthrd[c]]
+  Direction: +1 relative to model.S
+  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_out) [gthrd[c]]  ->  2 L-Cysteine [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]]
 
   EC: 1.8.4.4
 
@@ -1084,104 +1061,82 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 CANDIDATE 7
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : dopa[c] | Dopamine
-  m_Ff     : udp[c] | Uridine Diphosphate
+  m_in     : asp_L[c] | L-Aspartate
+  m_Ff     : gdp[c] | Guanosine-5'-Diphosphate
   m_Fd     : gtp[c] | Guanosine-5'-Triphosphate
-  m_Sf     : ahcys[c] | S-Adenosyl-L-Homocysteine
+  m_Sf     : amp[c] | Adenosine Monophosphate
   m_Sd     : adn[c] | Adenosine
-  m_c      : C01601[c] | Nonanoic Acid
-  m_Nf_1   : amp[c] | Adenosine Monophosphate
-  m_Nd_1   : imp[c] | Inosine-5'-Monophosphate
-  m_Nf_2   : dcamp[c] | N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate
-  m_out    : fum[c] | Fumarate
+  m_c      : h[c] | Proton
+  m_Nf_1   : C05298[c] | 2-Hydroxyestrone
+  m_Nd_1   : ahcys[c] | S-Adenosyl-L-Homocysteine
+  m_Nf_2   : amet[c] | S-Adenosyl-L-Methionine
+  m_out    : ametam[c] | S-Adenosylmethioninamine
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> dopa[c] (3 reaction(s))
-r_CAMP_1
-  ID: PDE1
-  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
-  Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Proton [h[c]]
-
-  EC: 3.1.4.17
-r_CAMP_2
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A [dpcoa[c]] + Water [h2o[c]]
-
-  EC: 3.6.1.9
-r_CAMP_3
-  ID: RE1918C
-  Name: RE1918C
-  Direction: -1 relative to model.S
-  Equation: (-)-Salsolinol [C09642[c]] + Water [h2o[c]]  ->  Acetaldehyde [acald[c]] + Dopamine (m_in) [dopa[c]]
-
-  EC: 
-  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
+  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: UDPG3DOPA
-  Name: Dopamine 3-O-Glucuronidation
+  ID: ADSS
+  Name: Adenylosuccinate Synthase
   Direction: +1 relative to model.S
-  Equation: Dopamine (m_in) [dopa[c]] + Uridine-5'-Diphosphate-Glucuronate [udpglcur[c]]  ->  Dopamine-3-O-Glucuronide [dopa3glcur[c]] + Proton [h[c]] + Uridine Diphosphate (m_Ff) [udp[c]]
+  Equation: L-Aspartate (m_in) [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate [dcamp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]] + 2 Proton (m_c) [h[c]] + Orthophosphate [pi[c]]
 
-  EC: 2.4.1.17
-  GPR: (( (79586) & (22856) ) | (337876) | (55454) | (55790) )
-  Resolved genes: 79586;22856;337876;55454;55790
+  EC: 6.3.4.4
+  GPR: ( (159) | (122622) )
+  Resolved genes: 159;122622
 
 r_Fd
-  ID: UMPK4
-  Name: UMP Kinase (GTP)
-  Direction: -1 relative to model.S
-  Equation: Guanosine-5'-Diphosphate [gdp[c]] + Uridine Diphosphate (m_Ff) [udp[c]]  ->  Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Uridine-5'-Monophosphate [ump[c]]
+  ID: NDPK1
+  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
 
-  EC: 2.7.4.14
-  GPR: (51727)
-  Resolved genes: 51727
+  EC: 3.4.13.3
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
 
 r_Fr
   ID: ADK3
   Name: Adentylate Kinase (GTP)
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Diphosphate [gdp[c]]
+  Equation: Adenosine Monophosphate (m_Sf) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
 
   EC: 2.7.4.3
   GPR: (26289)
   Resolved genes: 26289
 
 r_Sf
-  ID: DOPAMT
-  Name: Dopamine:Amet O-Methyltransferase
+  ID: ASNS1
+  Name: Asparagine Synthase (Glutamine-Hydrolysing)
   Direction: +1 relative to model.S
-  Equation: S-Adenosyl-L-Methionine [amet[c]] + Dopamine (m_in) [dopa[c]]  ->  3-Methoxytyramine [3moxtyr[c]] + S-Adenosyl-L-Homocysteine (m_Sf) [ahcys[c]] + Proton [h[c]]
+  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Sf) [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate [glu_L[c]] + Proton (m_c) [h[c]] + Diphosphate [ppi[c]]
 
-  EC: 2.1.1.6
-  GPR: (1312)
-  Resolved genes: 1312
+  EC: 6.3.5.4
+  GPR: (440)
+  Resolved genes: 440
 
 r_Sd
-  ID: AHC
-  Name: Adenosylhomocysteinase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Equation: S-Adenosyl-L-Homocysteine (m_Sf) [ahcys[c]] + Water [h2o[c]]  ->  Adenosine (m_Sd) [adn[c]] + L-Homocysteine [hcys_L[c]]
+  Equation: Adenosine Monophosphate (m_Sf) [amp[c]] + Water [h2o[c]]  ->  Adenosine (m_Sd) [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.3.1.1
-  GPR: ( (191) | (10768) )
-  Resolved genes: 191;10768
+  EC: 3.1.3.5
+  GPR: ( (22978) | (93034) | (30833) | (84618) | (51251) )
+  Resolved genes: 22978;93034;30833;84618;51251
 
 r_Sr
   ID: ADNK1
   Name: Adenosine Kinase
   Direction: +1 relative to model.S
-  Equation: Adenosine (m_Sd) [adn[c]] + Adenosine Triphosphate [atp[c]]  ->  Adenosine Diphosphate [adp[c]] + Adenosine Monophosphate (m_Nf_1) [amp[c]] + Proton [h[c]]
+  Equation: Adenosine (m_Sd) [adn[c]] + Adenosine Triphosphate [atp[c]]  ->  Adenosine Diphosphate [adp[c]] + Adenosine Monophosphate (m_Sf) [amp[c]] + Proton (m_c) [h[c]]
 
   EC: 4.6.1.1
   GPR: (132)
@@ -1191,7 +1146,7 @@ r_I
   ID: ADNK3
   Name: Adenosine Kinase
   Direction: +1 relative to model.S
-  Equation: Adenosine (m_Sd) [adn[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Guanosine-5'-Diphosphate [gdp[c]] + Proton [h[c]]
+  Equation: Adenosine (m_Sd) [adn[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Monophosphate (m_Sf) [amp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]] + Proton (m_c) [h[c]]
 
   EC: 
   GPR: 
@@ -1200,72 +1155,72 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 REGULATORY CONNECTION (UNVERIFIED EC-LEVEL HYPOTHESIS)
-  Protein path: P05771>Q07869>P05413
+  Protein path: P17252>P06241>P35613
   m_Sd is the regulatory input; it is NOT a canceler product.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: HMR_0176
-  Name: HMR_0176
+  ID: L_LACt2r
+  Name: L-Lactate Reversible Transport via Proton Symport
   Direction: +1 relative to model.S
-  Equation: Nonanoic Acid [C01601[e]]  ->  Nonanoic Acid (m_c) [C01601[c]]
+  Equation: Proton [h[e]] + (S)-Lactate [lac_L[e]]  ->  Proton (m_c) [h[c]] + (S)-Lactate [lac_L[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: RE3411C
-  Name: RE3411C
-  Direction: -1 relative to model.S
-  Equation: Nonanoic Acid (m_c) [C01601[c]] + 4-Hydroperoxy-2-Nonenal [CE2576[c]]  ->  13-L-Hydroperoxylinoleic Acid [C04717[c]] + Water [h2o[c]] + Proton [h[c]]
+  ID: UAGALDP
+  Name: UDP-N-Acetylgalactosamine Diphosphorylase
+  Direction: +1 relative to model.S
+  Equation: N-Acetyl-D-Galactosamine 1-Phosphate [acgal1p[c]] + Proton (m_c) [h[c]] + Uridine-5'-TrIphosphate [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-N-Acetyl-D-Galactosamine [udpacgal[c]]
 
-  EC: 6.2.1.3
+  EC: 
 
 r_Nf_1
-  ID: HMR_0177
-  Name: Butyrate Coenzyme A Ligase
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
   Direction: +1 relative to model.S
-  Equation: Nonanoic Acid (m_c) [C01601[c]] + Adenosine Triphosphate [atp[c]] + Coenzyme A [coa[c]]  ->  Nonanoyl Coenzyme A [M02616[c]] + Adenosine Monophosphate (m_Nf_1) [amp[c]] + Diphosphate [ppi[c]]
+  Equation: Estrone [estrone[c]] + Proton (m_c) [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone (m_Nf_1) [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
 
-  EC: EC:6.2.1.2
+  EC: 1.14.13.67
 
 r_Nd_1
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: RE1630C
+  Name: Catechol O-Methyltransferase
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate (m_Nd_1) [imp[c]] + Ammonium [nh4[c]]
+  Equation: 2-Hydroxyestrone (m_Nf_1) [C05298[c]] + S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]]  ->  2-Methoxyestrone [C05299[c]] + S-Adenosyl-L-Homocysteine (m_Nd_1) [ahcys[c]] + Proton (m_c) [h[c]]
 
-  EC: 3.5.4.6
+  EC: 2.1.1.6
 
 r_Nr_1
-  ID: IMPD
-  Name: IMP Dehydrogenase
+  ID: AM1C4N9CShc
+  Name: demethylation of AM1c9 to AM1c4N9 in hepatocytes (alternative mechanism)
   Direction: +1 relative to model.S
-  Equation: Water [h2o[c]] + Inosine-5'-Monophosphate (m_Nd_1) [imp[c]] + Nicotinamide Adenine Dinucleotide [nad[c]]  ->  Proton [h[c]] + Nicotinamide Adenine Dinucleotide - Reduced [nadh[c]] + Xanthylic Acid [xmp[c]]
+  Equation: S-Adenosyl-L-Homocysteine (m_Nd_1) [ahcys[c]] + AM1c9 (cyclosporine) [am1c9cs[c]] + Proton (m_c) [h[c]]  ->  AM1c4N9 (cyclosporine) [am1c4n9cs[c]] + S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]]
 
-  EC: 1.1.1.205
+  EC: 
 
 r_Nf_2
-  ID: ADSS
-  Name: Adenylosuccinate Synthase
+  ID: AM1A4NCShc
+  Name: demethylation of AM1A to AM1A4N in hepatocytes
   Direction: +1 relative to model.S
-  Equation: L-Aspartate [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate (m_Nd_1) [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate (m_Nf_2) [dcamp[c]] + Guanosine-5'-Diphosphate [gdp[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: S-Adenosyl-L-Homocysteine (m_Nd_1) [ahcys[c]] + AM1A (cyclosporine) [am1acs[c]] + Proton (m_c) [h[c]]  ->  AM1A4N (cyclosporine) [am1a4ncs[c]] + S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]]
 
-  EC: 6.3.4.4
+  EC: 
 
 r_Nd_2
-  ID: ADSL1
-  Name: Adenylosuccinate Lyase
+  ID: ADMDC
+  Name: Adenosylmethionine Decarboxylase
   Direction: +1 relative to model.S
-  Equation: N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate (m_Nf_2) [dcamp[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Fumarate (m_out) [fum[c]]
+  Equation: S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]] + Proton (m_c) [h[c]]  ->  S-Adenosylmethioninamine (m_out) [ametam[c]] + Carbon Dioxide [co2[c]]
 
-  EC: 4.3.2.2
+  EC: 4.1.1.50
 
 r_Nr_2
-  ID: ARGSL
-  Name: Argininosuccinate Lyase
-  Direction: -1 relative to model.S
-  Equation: L-Arginine [arg_L[c]] + Fumarate (m_out) [fum[c]]  ->  L-Arginosuccinic Acid [argsuc[c]]
+  ID: SPMS
+  Name: Spermidine Synthase
+  Direction: +1 relative to model.S
+  Equation: S-Adenosylmethioninamine (m_out) [ametam[c]] + Putrescine [ptrc[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton (m_c) [h[c]] + Spermidine [spmd[c]]
 
-  EC: 4.3.2.1
+  EC: 2.5.1.16
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
@@ -1274,104 +1229,82 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 CANDIDATE 8
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : dopa[c] | Dopamine
-  m_Ff     : udp[c] | Uridine Diphosphate
+  m_in     : asp_L[c] | L-Aspartate
+  m_Ff     : gdp[c] | Guanosine-5'-Diphosphate
   m_Fd     : gtp[c] | Guanosine-5'-Triphosphate
-  m_Sf     : ahcys[c] | S-Adenosyl-L-Homocysteine
+  m_Sf     : amp[c] | Adenosine Monophosphate
   m_Sd     : adn[c] | Adenosine
-  m_c      : C01601[c] | Nonanoic Acid
-  m_Nf_1   : amp[c] | Adenosine Monophosphate
-  m_Nd_1   : imp[c] | Inosine-5'-Monophosphate
-  m_Nf_2   : dcamp[c] | N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate
-  m_out    : fum[c] | Fumarate
+  m_c      : h[c] | Proton
+  m_Nf_1   : C05298[c] | 2-Hydroxyestrone
+  m_Nd_1   : ahcys[c] | S-Adenosyl-L-Homocysteine
+  m_Nf_2   : amet[c] | S-Adenosyl-L-Methionine
+  m_out    : ametam[c] | S-Adenosylmethioninamine
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> dopa[c] (3 reaction(s))
-r_CAMP_1
-  ID: PDE1
-  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
-  Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Proton [h[c]]
-
-  EC: 3.1.4.17
-r_CAMP_2
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A [dpcoa[c]] + Water [h2o[c]]
-
-  EC: 3.6.1.9
-r_CAMP_3
-  ID: RE1918C
-  Name: RE1918C
-  Direction: -1 relative to model.S
-  Equation: (-)-Salsolinol [C09642[c]] + Water [h2o[c]]  ->  Acetaldehyde [acald[c]] + Dopamine (m_in) [dopa[c]]
-
-  EC: 
-  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
+  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: UDPG3DOPA
-  Name: Dopamine 3-O-Glucuronidation
+  ID: ADSS
+  Name: Adenylosuccinate Synthase
   Direction: +1 relative to model.S
-  Equation: Dopamine (m_in) [dopa[c]] + Uridine-5'-Diphosphate-Glucuronate [udpglcur[c]]  ->  Dopamine-3-O-Glucuronide [dopa3glcur[c]] + Proton [h[c]] + Uridine Diphosphate (m_Ff) [udp[c]]
+  Equation: L-Aspartate (m_in) [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate [dcamp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]] + 2 Proton (m_c) [h[c]] + Orthophosphate [pi[c]]
 
-  EC: 2.4.1.17
-  GPR: (( (79586) & (22856) ) | (337876) | (55454) | (55790) )
-  Resolved genes: 79586;22856;337876;55454;55790
+  EC: 6.3.4.4
+  GPR: ( (159) | (122622) )
+  Resolved genes: 159;122622
 
 r_Fd
-  ID: UMPK4
-  Name: UMP Kinase (GTP)
-  Direction: -1 relative to model.S
-  Equation: Guanosine-5'-Diphosphate [gdp[c]] + Uridine Diphosphate (m_Ff) [udp[c]]  ->  Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Uridine-5'-Monophosphate [ump[c]]
+  ID: NDPK1
+  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
 
-  EC: 2.7.4.14
-  GPR: (51727)
-  Resolved genes: 51727
+  EC: 3.4.13.3
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
 
 r_Fr
   ID: ADK3
   Name: Adentylate Kinase (GTP)
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Diphosphate [gdp[c]]
+  Equation: Adenosine Monophosphate (m_Sf) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
 
   EC: 2.7.4.3
   GPR: (26289)
   Resolved genes: 26289
 
 r_Sf
-  ID: DOPAMT
-  Name: Dopamine:Amet O-Methyltransferase
+  ID: ASNS1
+  Name: Asparagine Synthase (Glutamine-Hydrolysing)
   Direction: +1 relative to model.S
-  Equation: S-Adenosyl-L-Methionine [amet[c]] + Dopamine (m_in) [dopa[c]]  ->  3-Methoxytyramine [3moxtyr[c]] + S-Adenosyl-L-Homocysteine (m_Sf) [ahcys[c]] + Proton [h[c]]
+  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Sf) [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate [glu_L[c]] + Proton (m_c) [h[c]] + Diphosphate [ppi[c]]
 
-  EC: 2.1.1.6
-  GPR: (1312)
-  Resolved genes: 1312
+  EC: 6.3.5.4
+  GPR: (440)
+  Resolved genes: 440
 
 r_Sd
-  ID: AHC
-  Name: Adenosylhomocysteinase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Equation: S-Adenosyl-L-Homocysteine (m_Sf) [ahcys[c]] + Water [h2o[c]]  ->  Adenosine (m_Sd) [adn[c]] + L-Homocysteine [hcys_L[c]]
+  Equation: Adenosine Monophosphate (m_Sf) [amp[c]] + Water [h2o[c]]  ->  Adenosine (m_Sd) [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.3.1.1
-  GPR: ( (191) | (10768) )
-  Resolved genes: 191;10768
+  EC: 3.1.3.5
+  GPR: ( (22978) | (93034) | (30833) | (84618) | (51251) )
+  Resolved genes: 22978;93034;30833;84618;51251
 
 r_Sr
   ID: ADNK1
   Name: Adenosine Kinase
   Direction: +1 relative to model.S
-  Equation: Adenosine (m_Sd) [adn[c]] + Adenosine Triphosphate [atp[c]]  ->  Adenosine Diphosphate [adp[c]] + Adenosine Monophosphate (m_Nf_1) [amp[c]] + Proton [h[c]]
+  Equation: Adenosine (m_Sd) [adn[c]] + Adenosine Triphosphate [atp[c]]  ->  Adenosine Diphosphate [adp[c]] + Adenosine Monophosphate (m_Sf) [amp[c]] + Proton (m_c) [h[c]]
 
   EC: 4.6.1.1
   GPR: (132)
@@ -1381,7 +1314,7 @@ r_I
   ID: ADNK3
   Name: Adenosine Kinase
   Direction: +1 relative to model.S
-  Equation: Adenosine (m_Sd) [adn[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Guanosine-5'-Diphosphate [gdp[c]] + Proton [h[c]]
+  Equation: Adenosine (m_Sd) [adn[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Monophosphate (m_Sf) [amp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]] + Proton (m_c) [h[c]]
 
   EC: 
   GPR: 
@@ -1390,72 +1323,72 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 REGULATORY CONNECTION (UNVERIFIED EC-LEVEL HYPOTHESIS)
-  Protein path: P05771>Q07869>P05413
+  Protein path: P17252>P06241>P35613
   m_Sd is the regulatory input; it is NOT a canceler product.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: HMR_0176
-  Name: HMR_0176
+  ID: L_LACt2r
+  Name: L-Lactate Reversible Transport via Proton Symport
   Direction: +1 relative to model.S
-  Equation: Nonanoic Acid [C01601[e]]  ->  Nonanoic Acid (m_c) [C01601[c]]
+  Equation: Proton [h[e]] + (S)-Lactate [lac_L[e]]  ->  Proton (m_c) [h[c]] + (S)-Lactate [lac_L[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: RE3411C
-  Name: RE3411C
-  Direction: -1 relative to model.S
-  Equation: Nonanoic Acid (m_c) [C01601[c]] + 4-Hydroperoxy-2-Nonenal [CE2576[c]]  ->  13-L-Hydroperoxylinoleic Acid [C04717[c]] + Water [h2o[c]] + Proton [h[c]]
+  ID: UAGALDP
+  Name: UDP-N-Acetylgalactosamine Diphosphorylase
+  Direction: +1 relative to model.S
+  Equation: N-Acetyl-D-Galactosamine 1-Phosphate [acgal1p[c]] + Proton (m_c) [h[c]] + Uridine-5'-TrIphosphate [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-N-Acetyl-D-Galactosamine [udpacgal[c]]
 
-  EC: 6.2.1.3
+  EC: 
 
 r_Nf_1
-  ID: HMR_0177
-  Name: Butyrate Coenzyme A Ligase
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
   Direction: +1 relative to model.S
-  Equation: Nonanoic Acid (m_c) [C01601[c]] + Adenosine Triphosphate [atp[c]] + Coenzyme A [coa[c]]  ->  Nonanoyl Coenzyme A [M02616[c]] + Adenosine Monophosphate (m_Nf_1) [amp[c]] + Diphosphate [ppi[c]]
+  Equation: Estrone [estrone[c]] + Proton (m_c) [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone (m_Nf_1) [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
 
-  EC: EC:6.2.1.2
+  EC: 1.14.13.67
 
 r_Nd_1
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: RE1630C
+  Name: Catechol O-Methyltransferase
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate (m_Nd_1) [imp[c]] + Ammonium [nh4[c]]
+  Equation: 2-Hydroxyestrone (m_Nf_1) [C05298[c]] + S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]]  ->  2-Methoxyestrone [C05299[c]] + S-Adenosyl-L-Homocysteine (m_Nd_1) [ahcys[c]] + Proton (m_c) [h[c]]
 
-  EC: 3.5.4.6
+  EC: 2.1.1.6
 
 r_Nr_1
-  ID: IMPD
-  Name: IMP Dehydrogenase
+  ID: AM1C4N9CShc
+  Name: demethylation of AM1c9 to AM1c4N9 in hepatocytes (alternative mechanism)
   Direction: +1 relative to model.S
-  Equation: Water [h2o[c]] + Inosine-5'-Monophosphate (m_Nd_1) [imp[c]] + Nicotinamide Adenine Dinucleotide [nad[c]]  ->  Proton [h[c]] + Nicotinamide Adenine Dinucleotide - Reduced [nadh[c]] + Xanthylic Acid [xmp[c]]
+  Equation: S-Adenosyl-L-Homocysteine (m_Nd_1) [ahcys[c]] + AM1c9 (cyclosporine) [am1c9cs[c]] + Proton (m_c) [h[c]]  ->  AM1c4N9 (cyclosporine) [am1c4n9cs[c]] + S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]]
 
-  EC: 1.1.1.205
+  EC: 
 
 r_Nf_2
-  ID: ADSS
-  Name: Adenylosuccinate Synthase
+  ID: AM1A4NCShc
+  Name: demethylation of AM1A to AM1A4N in hepatocytes
   Direction: +1 relative to model.S
-  Equation: L-Aspartate [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate (m_Nd_1) [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate (m_Nf_2) [dcamp[c]] + Guanosine-5'-Diphosphate [gdp[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: S-Adenosyl-L-Homocysteine (m_Nd_1) [ahcys[c]] + AM1A (cyclosporine) [am1acs[c]] + Proton (m_c) [h[c]]  ->  AM1A4N (cyclosporine) [am1a4ncs[c]] + S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]]
 
-  EC: 6.3.4.4
+  EC: 
 
 r_Nd_2
-  ID: ADSL1
-  Name: Adenylosuccinate Lyase
+  ID: ADMDC
+  Name: Adenosylmethionine Decarboxylase
   Direction: +1 relative to model.S
-  Equation: N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate (m_Nf_2) [dcamp[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Fumarate (m_out) [fum[c]]
+  Equation: S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]] + Proton (m_c) [h[c]]  ->  S-Adenosylmethioninamine (m_out) [ametam[c]] + Carbon Dioxide [co2[c]]
 
-  EC: 4.3.2.2
+  EC: 4.1.1.50
 
 r_Nr_2
-  ID: FUM
-  Name: Fumarase
+  ID: SPRMS
+  Name: Spermine Synthase
   Direction: +1 relative to model.S
-  Equation: Fumarate (m_out) [fum[c]] + Water [h2o[c]]  ->  (S)-Malate [mal_L[c]]
+  Equation: S-Adenosylmethioninamine (m_out) [ametam[c]] + Spermidine [spmd[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton (m_c) [h[c]] + Spermine [sprm[c]]
 
-  EC: 4.2.1.2
+  EC: 2.5.1.22
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
@@ -1464,104 +1397,82 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 CANDIDATE 9
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : dopa[c] | Dopamine
-  m_Ff     : udp[c] | Uridine Diphosphate
+  m_in     : asp_L[c] | L-Aspartate
+  m_Ff     : gdp[c] | Guanosine-5'-Diphosphate
   m_Fd     : gtp[c] | Guanosine-5'-Triphosphate
-  m_Sf     : ahcys[c] | S-Adenosyl-L-Homocysteine
+  m_Sf     : amp[c] | Adenosine Monophosphate
   m_Sd     : adn[c] | Adenosine
-  m_c      : C01601[c] | Nonanoic Acid
-  m_Nf_1   : amp[c] | Adenosine Monophosphate
-  m_Nd_1   : imp[c] | Inosine-5'-Monophosphate
-  m_Nf_2   : dcamp[c] | N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate
-  m_out    : fum[c] | Fumarate
+  m_c      : h[c] | Proton
+  m_Nf_1   : C05298[c] | 2-Hydroxyestrone
+  m_Nd_1   : ahcys[c] | S-Adenosyl-L-Homocysteine
+  m_Nf_2   : amet[c] | S-Adenosyl-L-Methionine
+  m_out    : ametam[c] | S-Adenosylmethioninamine
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> dopa[c] (3 reaction(s))
-r_CAMP_1
-  ID: PDE1
-  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
-  Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Proton [h[c]]
-
-  EC: 3.1.4.17
-r_CAMP_2
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A [dpcoa[c]] + Water [h2o[c]]
-
-  EC: 3.6.1.9
-r_CAMP_3
-  ID: RE1918C
-  Name: RE1918C
-  Direction: -1 relative to model.S
-  Equation: (-)-Salsolinol [C09642[c]] + Water [h2o[c]]  ->  Acetaldehyde [acald[c]] + Dopamine (m_in) [dopa[c]]
-
-  EC: 
-  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
+  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: UDPG3DOPA
-  Name: Dopamine 3-O-Glucuronidation
+  ID: ADSS
+  Name: Adenylosuccinate Synthase
   Direction: +1 relative to model.S
-  Equation: Dopamine (m_in) [dopa[c]] + Uridine-5'-Diphosphate-Glucuronate [udpglcur[c]]  ->  Dopamine-3-O-Glucuronide [dopa3glcur[c]] + Proton [h[c]] + Uridine Diphosphate (m_Ff) [udp[c]]
+  Equation: L-Aspartate (m_in) [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate [dcamp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]] + 2 Proton (m_c) [h[c]] + Orthophosphate [pi[c]]
 
-  EC: 2.4.1.17
-  GPR: (( (79586) & (22856) ) | (337876) | (55454) | (55790) )
-  Resolved genes: 79586;22856;337876;55454;55790
+  EC: 6.3.4.4
+  GPR: ( (159) | (122622) )
+  Resolved genes: 159;122622
 
 r_Fd
-  ID: UMPK4
-  Name: UMP Kinase (GTP)
-  Direction: -1 relative to model.S
-  Equation: Guanosine-5'-Diphosphate [gdp[c]] + Uridine Diphosphate (m_Ff) [udp[c]]  ->  Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Uridine-5'-Monophosphate [ump[c]]
+  ID: NDPK1
+  Name: Nucleoside-Diphosphate Kinase (ATP:GDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]
 
-  EC: 2.7.4.14
-  GPR: (51727)
-  Resolved genes: 51727
+  EC: 3.4.13.3
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
 
 r_Fr
   ID: ADK3
   Name: Adentylate Kinase (GTP)
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Diphosphate [gdp[c]]
+  Equation: Adenosine Monophosphate (m_Sf) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]]
 
   EC: 2.7.4.3
   GPR: (26289)
   Resolved genes: 26289
 
 r_Sf
-  ID: DOPAMT
-  Name: Dopamine:Amet O-Methyltransferase
+  ID: ASNS1
+  Name: Asparagine Synthase (Glutamine-Hydrolysing)
   Direction: +1 relative to model.S
-  Equation: S-Adenosyl-L-Methionine [amet[c]] + Dopamine (m_in) [dopa[c]]  ->  3-Methoxytyramine [3moxtyr[c]] + S-Adenosyl-L-Homocysteine (m_Sf) [ahcys[c]] + Proton [h[c]]
+  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Sf) [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate [glu_L[c]] + Proton (m_c) [h[c]] + Diphosphate [ppi[c]]
 
-  EC: 2.1.1.6
-  GPR: (1312)
-  Resolved genes: 1312
+  EC: 6.3.5.4
+  GPR: (440)
+  Resolved genes: 440
 
 r_Sd
-  ID: AHC
-  Name: Adenosylhomocysteinase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Equation: S-Adenosyl-L-Homocysteine (m_Sf) [ahcys[c]] + Water [h2o[c]]  ->  Adenosine (m_Sd) [adn[c]] + L-Homocysteine [hcys_L[c]]
+  Equation: Adenosine Monophosphate (m_Sf) [amp[c]] + Water [h2o[c]]  ->  Adenosine (m_Sd) [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.3.1.1
-  GPR: ( (191) | (10768) )
-  Resolved genes: 191;10768
+  EC: 3.1.3.5
+  GPR: ( (22978) | (93034) | (30833) | (84618) | (51251) )
+  Resolved genes: 22978;93034;30833;84618;51251
 
 r_Sr
   ID: ADNK1
   Name: Adenosine Kinase
   Direction: +1 relative to model.S
-  Equation: Adenosine (m_Sd) [adn[c]] + Adenosine Triphosphate [atp[c]]  ->  Adenosine Diphosphate [adp[c]] + Adenosine Monophosphate (m_Nf_1) [amp[c]] + Proton [h[c]]
+  Equation: Adenosine (m_Sd) [adn[c]] + Adenosine Triphosphate [atp[c]]  ->  Adenosine Diphosphate [adp[c]] + Adenosine Monophosphate (m_Sf) [amp[c]] + Proton (m_c) [h[c]]
 
   EC: 4.6.1.1
   GPR: (132)
@@ -1571,7 +1482,7 @@ r_I
   ID: ADNK3
   Name: Adenosine Kinase
   Direction: +1 relative to model.S
-  Equation: Adenosine (m_Sd) [adn[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Guanosine-5'-Diphosphate [gdp[c]] + Proton [h[c]]
+  Equation: Adenosine (m_Sd) [adn[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Monophosphate (m_Sf) [amp[c]] + Guanosine-5'-Diphosphate (m_Ff) [gdp[c]] + Proton (m_c) [h[c]]
 
   EC: 
   GPR: 
@@ -1580,72 +1491,72 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 REGULATORY CONNECTION (UNVERIFIED EC-LEVEL HYPOTHESIS)
-  Protein path: P05771>Q07869>P05413
+  Protein path: P17252>P06241>P35613
   m_Sd is the regulatory input; it is NOT a canceler product.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: HMR_0176
-  Name: HMR_0176
+  ID: L_LACt2r
+  Name: L-Lactate Reversible Transport via Proton Symport
   Direction: +1 relative to model.S
-  Equation: Nonanoic Acid [C01601[e]]  ->  Nonanoic Acid (m_c) [C01601[c]]
+  Equation: Proton [h[e]] + (S)-Lactate [lac_L[e]]  ->  Proton (m_c) [h[c]] + (S)-Lactate [lac_L[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: RE3411C
-  Name: RE3411C
-  Direction: -1 relative to model.S
-  Equation: Nonanoic Acid (m_c) [C01601[c]] + 4-Hydroperoxy-2-Nonenal [CE2576[c]]  ->  13-L-Hydroperoxylinoleic Acid [C04717[c]] + Water [h2o[c]] + Proton [h[c]]
+  ID: UAGALDP
+  Name: UDP-N-Acetylgalactosamine Diphosphorylase
+  Direction: +1 relative to model.S
+  Equation: N-Acetyl-D-Galactosamine 1-Phosphate [acgal1p[c]] + Proton (m_c) [h[c]] + Uridine-5'-TrIphosphate [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-N-Acetyl-D-Galactosamine [udpacgal[c]]
 
-  EC: 6.2.1.3
+  EC: 
 
 r_Nf_1
-  ID: HMR_0177
-  Name: Butyrate Coenzyme A Ligase
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
   Direction: +1 relative to model.S
-  Equation: Nonanoic Acid (m_c) [C01601[c]] + Adenosine Triphosphate [atp[c]] + Coenzyme A [coa[c]]  ->  Nonanoyl Coenzyme A [M02616[c]] + Adenosine Monophosphate (m_Nf_1) [amp[c]] + Diphosphate [ppi[c]]
+  Equation: Estrone [estrone[c]] + Proton (m_c) [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone (m_Nf_1) [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
 
-  EC: EC:6.2.1.2
+  EC: 1.14.13.67
 
 r_Nd_1
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: RE1630C
+  Name: Catechol O-Methyltransferase
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate (m_Nd_1) [imp[c]] + Ammonium [nh4[c]]
+  Equation: 2-Hydroxyestrone (m_Nf_1) [C05298[c]] + S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]]  ->  2-Methoxyestrone [C05299[c]] + S-Adenosyl-L-Homocysteine (m_Nd_1) [ahcys[c]] + Proton (m_c) [h[c]]
 
-  EC: 3.5.4.6
+  EC: 2.1.1.6
 
 r_Nr_1
-  ID: NTD11
-  Name: 5'-Nucleotidase (IMP)
+  ID: AM4N9CShc
+  Name: demethylation of AM9 to AM4N9 in hepatocytes
   Direction: +1 relative to model.S
-  Equation: Water [h2o[c]] + Inosine-5'-Monophosphate (m_Nd_1) [imp[c]]  ->  Inosine [ins[c]] + Orthophosphate [pi[c]]
+  Equation: S-Adenosyl-L-Homocysteine (m_Nd_1) [ahcys[c]] + AM9 (cyclosporine) [am9csa[c]] + Proton (m_c) [h[c]]  ->  AM4N9 (cyclosporine) [am4n9cs[c]] + S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]]
 
-  EC: 3.1.3.5
+  EC: 
 
 r_Nf_2
-  ID: ADSS
-  Name: Adenylosuccinate Synthase
+  ID: AM1A4NCShc
+  Name: demethylation of AM1A to AM1A4N in hepatocytes
   Direction: +1 relative to model.S
-  Equation: L-Aspartate [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate (m_Nd_1) [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate (m_Nf_2) [dcamp[c]] + Guanosine-5'-Diphosphate [gdp[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: S-Adenosyl-L-Homocysteine (m_Nd_1) [ahcys[c]] + AM1A (cyclosporine) [am1acs[c]] + Proton (m_c) [h[c]]  ->  AM1A4N (cyclosporine) [am1a4ncs[c]] + S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]]
 
-  EC: 6.3.4.4
+  EC: 
 
 r_Nd_2
-  ID: ADSL1
-  Name: Adenylosuccinate Lyase
+  ID: ADMDC
+  Name: Adenosylmethionine Decarboxylase
   Direction: +1 relative to model.S
-  Equation: N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate (m_Nf_2) [dcamp[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Fumarate (m_out) [fum[c]]
+  Equation: S-Adenosyl-L-Methionine (m_Nf_2) [amet[c]] + Proton (m_c) [h[c]]  ->  S-Adenosylmethioninamine (m_out) [ametam[c]] + Carbon Dioxide [co2[c]]
 
-  EC: 4.3.2.2
+  EC: 4.1.1.50
 
 r_Nr_2
-  ID: ARGSL
-  Name: Argininosuccinate Lyase
-  Direction: -1 relative to model.S
-  Equation: L-Arginine [arg_L[c]] + Fumarate (m_out) [fum[c]]  ->  L-Arginosuccinic Acid [argsuc[c]]
+  ID: SPMS
+  Name: Spermidine Synthase
+  Direction: +1 relative to model.S
+  Equation: S-Adenosylmethioninamine (m_out) [ametam[c]] + Putrescine [ptrc[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton (m_c) [h[c]] + Spermidine [spmd[c]]
 
-  EC: 4.3.2.1
+  EC: 2.5.1.16
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
@@ -1654,188 +1565,188 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 CANDIDATE 10
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : dopa[c] | Dopamine
+  m_in     : datp[c] | Deoxyadenosine Triphosphate
   m_Ff     : udp[c] | Uridine Diphosphate
-  m_Fd     : gtp[c] | Guanosine-5'-Triphosphate
-  m_Sf     : ahcys[c] | S-Adenosyl-L-Homocysteine
-  m_Sd     : adn[c] | Adenosine
-  m_c      : C01601[c] | Nonanoic Acid
-  m_Nf_1   : amp[c] | Adenosine Monophosphate
-  m_Nd_1   : imp[c] | Inosine-5'-Monophosphate
-  m_Nf_2   : dcamp[c] | N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate
-  m_out    : fum[c] | Fumarate
+  m_Fd     : utp[c] | Uridine-5'-TrIphosphate
+  m_Sf     : gam6p[c] | D-Glucosamine-6-Phosphate
+  m_Sd     : f6p[c] | D-Fructose 6-Phosphate
+  m_c      : dhdascb[c] | Dehydroascorbide
+  m_Nf_1   : ascb_L[c] | L-Ascorbate
+  m_Nd_1   : h2o2[c] | Hydrogen Peroxide
+  m_Nf_2   : gthox[c] | Glutathione Disulfide (Oxidized Glutathione)
+  m_out    : gthrd[c] | Reduced Glutathione
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  Path: camp[c] -> dopa[c] (3 reaction(s))
+  Path: camp[c] -> datp[c] (3 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
   Direction: +1 relative to model.S
-  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Proton [h[c]]
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: r0591
-  Name: Dephospho Coenzyme A Nucleotidohydrolase
-  Direction: -1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + 2 Proton [h[c]] + Pantetheine 4-Phosphate [pan4p[c]]  ->  Dephospho Coenzyme A [dpcoa[c]] + Water [h2o[c]]
+  ID: PYK
+  Name: Pyruvate Kinase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Diphosphate [adp[c]] + Proton [h[c]] + Phosphoenolpyruvate [pep[c]]  ->  Adenosine Triphosphate [atp[c]] + Pyruvate [pyr[c]]
 
-  EC: 3.6.1.9
+  EC: 3.4.2.1
 r_CAMP_3
-  ID: RE1918C
-  Name: RE1918C
-  Direction: -1 relative to model.S
-  Equation: (-)-Salsolinol [C09642[c]] + Water [h2o[c]]  ->  Acetaldehyde [acald[c]] + Dopamine (m_in) [dopa[c]]
+  ID: NDPK8
+  Name: Nucleoside-Diphosphate Kinase (ATP:dADP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Deoxyadenosine Diphosphate [dadp[c]]  ->  Adenosine Diphosphate [adp[c]] + Deoxyadenosine Triphosphate (m_in) [datp[c]]
 
-  EC: 
+  EC: 2.7.4.6
   WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: UDPG3DOPA
-  Name: Dopamine 3-O-Glucuronidation
+  ID: UMPK5
+  Name: UMP Kinase (dATP)
   Direction: +1 relative to model.S
-  Equation: Dopamine (m_in) [dopa[c]] + Uridine-5'-Diphosphate-Glucuronate [udpglcur[c]]  ->  Dopamine-3-O-Glucuronide [dopa3glcur[c]] + Proton [h[c]] + Uridine Diphosphate (m_Ff) [udp[c]]
-
-  EC: 2.4.1.17
-  GPR: (( (79586) & (22856) ) | (337876) | (55454) | (55790) )
-  Resolved genes: 79586;22856;337876;55454;55790
-
-r_Fd
-  ID: UMPK4
-  Name: UMP Kinase (GTP)
-  Direction: -1 relative to model.S
-  Equation: Guanosine-5'-Diphosphate [gdp[c]] + Uridine Diphosphate (m_Ff) [udp[c]]  ->  Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Uridine-5'-Monophosphate [ump[c]]
+  Equation: Deoxyadenosine Triphosphate (m_in) [datp[c]] + Uridine-5'-Monophosphate [ump[c]]  ->  Deoxyadenosine Diphosphate [dadp[c]] + Uridine Diphosphate (m_Ff) [udp[c]]
 
   EC: 2.7.4.14
   GPR: (51727)
   Resolved genes: 51727
 
+r_Fd
+  ID: NDPK2
+  Name: Nucleoside-Diphosphate Kinase (ATP:UDP)
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + Uridine Diphosphate (m_Ff) [udp[c]]  ->  Adenosine Diphosphate [adp[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]
+
+  EC: 3.6.1.6
+  GPR: ( (4832) | ( (4831) & (4830) ) | (10201) | (29922) )
+  Resolved genes: 4832;4831;4830;10201;29922
+
 r_Fr
-  ID: ADK3
-  Name: Adentylate Kinase (GTP)
+  ID: UAGALDP
+  Name: UDP-N-Acetylgalactosamine Diphosphorylase
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Diphosphate [adp[c]] + Guanosine-5'-Diphosphate [gdp[c]]
-
-  EC: 2.7.4.3
-  GPR: (26289)
-  Resolved genes: 26289
-
-r_Sf
-  ID: DOPAMT
-  Name: Dopamine:Amet O-Methyltransferase
-  Direction: +1 relative to model.S
-  Equation: S-Adenosyl-L-Methionine [amet[c]] + Dopamine (m_in) [dopa[c]]  ->  3-Methoxytyramine [3moxtyr[c]] + S-Adenosyl-L-Homocysteine (m_Sf) [ahcys[c]] + Proton [h[c]]
-
-  EC: 2.1.1.6
-  GPR: (1312)
-  Resolved genes: 1312
-
-r_Sd
-  ID: AHC
-  Name: Adenosylhomocysteinase
-  Direction: +1 relative to model.S
-  Equation: S-Adenosyl-L-Homocysteine (m_Sf) [ahcys[c]] + Water [h2o[c]]  ->  Adenosine (m_Sd) [adn[c]] + L-Homocysteine [hcys_L[c]]
-
-  EC: 3.3.1.1
-  GPR: ( (191) | (10768) )
-  Resolved genes: 191;10768
-
-r_Sr
-  ID: ADNK1
-  Name: Adenosine Kinase
-  Direction: +1 relative to model.S
-  Equation: Adenosine (m_Sd) [adn[c]] + Adenosine Triphosphate [atp[c]]  ->  Adenosine Diphosphate [adp[c]] + Adenosine Monophosphate (m_Nf_1) [amp[c]] + Proton [h[c]]
-
-  EC: 4.6.1.1
-  GPR: (132)
-  Resolved genes: 132
-
-r_I
-  ID: ADNK3
-  Name: Adenosine Kinase
-  Direction: +1 relative to model.S
-  Equation: Adenosine (m_Sd) [adn[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Guanosine-5'-Diphosphate [gdp[c]] + Proton [h[c]]
+  Equation: N-Acetyl-D-Galactosamine 1-Phosphate [acgal1p[c]] + Proton [h[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Diphosphate [ppi[c]] + Uridine-5'-Diphosphate-N-Acetyl-D-Galactosamine [udpacgal[c]]
 
   EC: 
   GPR: 
   Resolved genes: 
 
+r_Sf
+  ID: r0364
+  Name: Hexokinase
+  Direction: +1 relative to model.S
+  Equation: Deoxyadenosine Triphosphate (m_in) [datp[c]] + D-Glucosamine [gam[c]]  ->  Deoxyadenosine Diphosphate [dadp[c]] + D-Glucosamine-6-Phosphate (m_Sf) [gam6p[c]] + Proton [h[c]]
+
+  EC: 2.7.1.1
+  GPR: ( (3098) | (3099) | (3101) )
+  Resolved genes: 3098;3099;3101
+
+r_Sd
+  ID: G6PDA
+  Name: Glucosamine-6-Phosphate Deaminase
+  Direction: +1 relative to model.S
+  Equation: D-Glucosamine-6-Phosphate (m_Sf) [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_Sd) [f6p[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.99.6
+  GPR: ( (132789) | (10007) )
+  Resolved genes: 132789;10007
+
+r_Sr
+  ID: GF6PTA
+  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  Direction: +1 relative to model.S
+  Equation: D-Fructose 6-Phosphate (m_Sd) [f6p[c]] + L-Glutamine [gln_L[c]]  ->  D-Glucosamine-6-Phosphate (m_Sf) [gam6p[c]] + L-Glutamate [glu_L[c]]
+
+  EC: 2.6.1.16
+  GPR: ( (2673) | (9945) )
+  Resolved genes: 2673;9945
+
+r_I
+  ID: r0191
+  Name: UTP:D-Fructose-6-Phosphate 1-Phosphotransferase
+  Direction: +1 relative to model.S
+  Equation: D-Fructose 6-Phosphate (m_Sd) [f6p[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  D-Fructose 1,6-Bisphosphate [fdp[c]] + Proton [h[c]] + Uridine Diphosphate (m_Ff) [udp[c]]
+
+  EC: 2.7.1.11
+  GPR: (5211)
+  Resolved genes: 5211
+
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 REGULATORY CONNECTION (UNVERIFIED EC-LEVEL HYPOTHESIS)
-  Protein path: P05771>Q07869>P15090
+  Protein path: P14618>COMPLEX:P27540_Q16665>P11169
   m_Sd is the regulatory input; it is NOT a canceler product.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: HMR_0176
-  Name: HMR_0176
+  ID: DHAAt1r
+  Name: Dehydroascorbate Transport (Uniport)
   Direction: +1 relative to model.S
-  Equation: Nonanoic Acid [C01601[e]]  ->  Nonanoic Acid (m_c) [C01601[c]]
+  Equation: Dehydroascorbide [dhdascb[e]]  ->  Dehydroascorbide (m_c) [dhdascb[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: RE3411C
-  Name: RE3411C
-  Direction: -1 relative to model.S
-  Equation: Nonanoic Acid (m_c) [C01601[c]] + 4-Hydroperoxy-2-Nonenal [CE2576[c]]  ->  13-L-Hydroperoxylinoleic Acid [C04717[c]] + Water [h2o[c]] + Proton [h[c]]
+  ID: DASCBH
+  Name: L-Dehydroascorbate Lactonohydrolase
+  Direction: +1 relative to model.S
+  Equation: Dehydroascorbide (m_c) [dhdascb[c]] + Water [h2o[c]]  ->  (4R,5S)-4,5,6-Trihydroxy-2,3-Dioxohexanoate [23doguln[c]] + Proton [h[c]]
 
-  EC: 6.2.1.3
+  EC: 3.1.1.17
 
 r_Nf_1
-  ID: HMR_0177
-  Name: Butyrate Coenzyme A Ligase
+  ID: DASCBR
+  Name: Dehydroascorbate Reductase
   Direction: +1 relative to model.S
-  Equation: Nonanoic Acid (m_c) [C01601[c]] + Adenosine Triphosphate [atp[c]] + Coenzyme A [coa[c]]  ->  Nonanoyl Coenzyme A [M02616[c]] + Adenosine Monophosphate (m_Nf_1) [amp[c]] + Diphosphate [ppi[c]]
+  Equation: Dehydroascorbide (m_c) [dhdascb[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]  ->  L-Ascorbate (m_Nf_1) [ascb_L[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
 
-  EC: EC:6.2.1.2
+  EC: 1.6.5.4
 
 r_Nd_1
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: ASCBOX
+  Name: Ascorbic Acid Oxidase
   Direction: +1 relative to model.S
-  Equation: Adenosine Monophosphate (m_Nf_1) [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate (m_Nd_1) [imp[c]] + Ammonium [nh4[c]]
+  Equation: L-Ascorbate (m_Nf_1) [ascb_L[c]] + 3 Proton [h[c]] + 2 Superoxide [o2s[c]]  ->  Dehydroascorbide (m_c) [dhdascb[c]] + 2 Hydrogen Peroxide (m_Nd_1) [h2o2[c]]
 
-  EC: 3.5.4.6
+  EC: 
 
 r_Nr_1
-  ID: IMPD
-  Name: IMP Dehydrogenase
+  ID: PRDX
+  Name: Peroxidase (Multiple Substrates)
   Direction: +1 relative to model.S
-  Equation: Water [h2o[c]] + Inosine-5'-Monophosphate (m_Nd_1) [imp[c]] + Nicotinamide Adenine Dinucleotide [nad[c]]  ->  Proton [h[c]] + Nicotinamide Adenine Dinucleotide - Reduced [nadh[c]] + Xanthylic Acid [xmp[c]]
+  Equation: Hydrogen Peroxide (m_Nd_1) [h2o2[c]] + Methanol [meoh[c]]  ->  Formaldehyde [fald[c]] + 2 Water [h2o[c]]
 
-  EC: 1.1.1.205
+  EC: 1.11.1.7
 
 r_Nf_2
-  ID: ADSS
-  Name: Adenylosuccinate Synthase
+  ID: GTHP
+  Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate [asp_L[c]] + Guanosine-5'-Triphosphate (m_Fd) [gtp[c]] + Inosine-5'-Monophosphate (m_Nd_1) [imp[c]]  ->  N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate (m_Nf_2) [dcamp[c]] + Guanosine-5'-Diphosphate [gdp[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: 2 Reduced Glutathione (m_out) [gthrd[c]] + Hydrogen Peroxide (m_Nd_1) [h2o2[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + 2 Water [h2o[c]]
 
-  EC: 6.3.4.4
+  EC: 1.11.1.9
 
 r_Nd_2
-  ID: ADSL1
-  Name: Adenylosuccinate Lyase
+  ID: GTHO
+  Name: Glutathione Oxidoreductase
   Direction: +1 relative to model.S
-  Equation: N6-(1,2-Dicarboxyethyl)-Adenosine Monophosphate (m_Nf_2) [dcamp[c]]  ->  Adenosine Monophosphate (m_Nf_1) [amp[c]] + Fumarate (m_out) [fum[c]]
+  Equation: Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]  ->  2 Reduced Glutathione (m_out) [gthrd[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
 
-  EC: 4.3.2.2
+  EC: 1.8.1.7
 
 r_Nr_2
-  ID: ARGSL
-  Name: Argininosuccinate Lyase
-  Direction: -1 relative to model.S
-  Equation: L-Arginine [arg_L[c]] + Fumarate (m_out) [fum[c]]  ->  L-Arginosuccinic Acid [argsuc[c]]
+  ID: HMR_0960
+  Name: Glutathione Peroxidase
+  Direction: +1 relative to model.S
+  Equation: 5(S)-Hydroperoxyeicosatetraenoic Acid [5HPET[c]] + 2 Reduced Glutathione (m_out) [gthrd[c]]  ->  5-Hydroxyeicosatetraenoate [C04805[c]] + Glutathione Disulfide (Oxidized Glutathione) (m_Nf_2) [gthox[c]] + Water [h2o[c]]
 
-  EC: 4.3.2.1
+  EC: EC:1.11.1.9
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.

@@ -1,17 +1,18 @@
-%% A_Master.m - Backward transport and Stage 5 metabolic endpoint search
+%% A_Master.m - Strict +1 transport, differentiator, counter and two neurons
 % ONE FILE: discover transport -> GPR -> regulatory proteins -> metabolite regulators.
 % Requires COBRA Toolbox readCbModel, MATLAB with webread (online enrichment optional).
 % Run: matlab -batch "A_Master"
 % No checkpoints or network-cache directories are generated.
 clearvars; clc;
 MODEL_NAME = 'Puniya2021_TNM1055.xml';
-OUT_NAME = 'Transport_Stages1to5_BRENDA_Results';
+OUT_NAME = 'Transport_Stages1to5_BRENDA_Results_ForwardOnly';
 STAGE5_MAX_HOPS = 2; % reaction steps backward; structural only
 STAGE5_MAX_MATCH_ROWS = 250000; % output safety limit
 STAGE5_MAX_PATH_ROWS = 100000;
 MAX_HOPS = 3;
 ONLINE = true;             % false for offline run (local TSV and EC overrides only)
-ALLOW_REVERSE = true;      % reverse allowed ONLY when lower bound < 0
+% Strict policy: all searches use +1 relative to the original model.S.
+% Backward traversal in Stage 5 traces precursors; it does not reverse chemistry.
 TIMEOUT = 30;
 MAX_RETRIES = 4;
 RETRY_PAUSE = 2; % seconds, exponential backoff
@@ -37,6 +38,7 @@ logGuard=onCleanup(@() fclose(logID));
 report(logID,'Backward membrane transport search: stages 1-4');
 report(logID,['Started: ' datestr(now,31)]);
 report(logID,['MATLAB version: ' version]);
+report(logID,'Direction policy: STRICT +1 relative to original model.S in every stage.');
 
 % Locate model, including the known Puniya folder structure.
 modelPath=which(MODEL_NAME);
@@ -75,13 +77,6 @@ for k=1:numel(external)
             rows(end+1,:)={char(rxnIDs(j)),char(rxnNames(j)),char(baseMet(e)), ...
                 char(metIDs(e)),char(metIDs(cc)),'forward',lb(j),ub(j),j}; %#ok<SAGROW>
         end
-        if ALLOW_REVERSE
-            jj=find(se>0 & sc<0 & lb'<0);
-            for j=reshape(jj,1,[])
-                rows(end+1,:)={char(rxnIDs(j)),char(rxnNames(j)),char(baseMet(e)), ...
-                    char(metIDs(e)),char(metIDs(cc)),'reverse',lb(j),ub(j),j}; %#ok<SAGROW>
-            end
-        end
     end
 end
 if isempty(rows)
@@ -95,6 +90,8 @@ else
 end
 % Remove repeated rows, preserve one per cargo/direction/reaction.
 if ~isempty(T), T=unique(T,'rows','stable');end
+assert(all(string(T.direction)=="forward"), ...
+    'ForwardOnly:TransportPool','Transporter pool contains a non-forward direction.');
 writetable(T,fullfile(outDir,'01_transport_reactions.csv'));
 report(logID,sprintf('Stage 1: %d transport rows; %d unique reactions',height(T),numel(unique(string(T.reaction)))));
 
@@ -610,8 +607,6 @@ if ~isempty(RANK)
                 coeff=full(model.S(curr,r));
                 if coeff>0 && ub(r)>0
                     orient=1; label="forward";
-                elseif coeff<0 && lb(r)<0
-                    orient=-1;label="reverse";
                 else
                     continue;
                 end
@@ -679,7 +674,7 @@ close6=onCleanup(@()fclose(fid6));
 fprintf(fid6,'SELECTED CANDIDATE METABOLIC CONNECTIONS\n');
 fprintf(fid6,'D1 ENDPOINT -> REGULATORY PROTEIN(S) -> MEMBRANE TRANSPORT\n');
 fprintf(fid6,'IMPORTANT: D1 motif and downstream counter are NOT yet reconstructed.\n');
-fprintf(fid6,'All chemical reaction directions are relative to model.S.\n');
+fprintf(fid6,'All chemical reaction directions are +1 relative to original model.S.\n');
 fprintf(fid6,'BRENDA enzyme activity evidence is EC-level and NOT transporter-specific proof.\n\n');
 nPrinted=0;
 seenConnections=strings(0,1);
@@ -736,14 +731,18 @@ if ~isempty(RANK) && ~isempty(C) && ~isempty(T)
             for kk=1:numel(rp)
                 ri=find(rxnIDs==rp(kk),1,'first');
                 if isempty(ri),continue;end
-                orient=1;if kk<=numel(rd) && rd(kk)=="reverse",orient=-1;end
+                assert(kk<=numel(rd) && rd(kk)=="forward", ...
+                    'ForwardOnly:PathDirection','A metabolic path contains a non-forward or missing direction.');
+                orient=1;
                 printModelReaction(fid6,model,ri,orient,metIDs,metNames,rec.model_metabolite_id,'m_Sd_1');
             end
             fprintf(fid6,'  Feasibility: structural only; cofactors and flux not verified.\n');
         end
         fprintf(fid6,'\nMEMBRANE TRANSPORT REACTION\n');
         ri=double(T.modelIndex(chosenT));
-        orient=1;if string(T.direction(chosenT))=="reverse",orient=-1;end
+        assert(string(T.direction(chosenT))=="forward", ...
+            'ForwardOnly:TransportDirection','A transporter has non-forward direction.');
+        orient=1;
         printModelReaction(fid6,model,ri,orient,metIDs,metNames,T.cytosolic(chosenT),'m_c');
         fprintf(fid6,'  GPR: %s\n',char(C.full_GPR(chosen)));
         fprintf(fid6,'  Gene association is NOT proof of direct transport protein identity.\n\n');
@@ -775,11 +774,14 @@ fid7=fopen(outD1,'w');assert(fid7>0,'Cannot create D1 text report');
 close7=onCleanup(@()fclose(fid7));
 fprintf(fid7,'SELECTED STRUCTURAL D1 -> REGULATION -> TRANSPORT CONNECTIONS\n');
 fprintf(fid7,'SEVEN D1 REACTIONS: r_Ff_1, r_Fd_1, r_Fr_1, r_Sf_1, r_Sd_1, r_Sr_1, r_I_1\n');
+fprintf(fid7,'Direction policy: STRICT +1 relative to original model.S.\n');
 fprintf(fid7,'REGULATORY SIGNAL: m_Sd_1 is produced by r_Sd_1, NOT by r_I_1.\n');
 fprintf(fid7,'WARNING: topology only; no kinetic differentiation or flux feasibility verified.\n');
 fprintf(fid7,'WARNING: BRENDA EC-level effects do not prove transport regulation.\n\n');
 % Precompute allowable oriented intracellular conversions once.
 [di,dm,do,ds]=d1BuildOriented(model,comp,lb,ub,D1_SKIP_TRANSPORT);
+assert(all(dm==1),'ForwardOnly:OrientedPool', ...
+    'Intracellular reaction pool contains a non-forward orientation.');
 % di = reaction indices; dm = orientations; do = product lists; ds = substrate lists.
 % Exclude ubiquitous currency metabolites from the SIGNAL intermediates.
 currency=lower(["h2o","h","atp","adp","pi","ppi","nad","nadh", ...
@@ -859,7 +861,9 @@ if ~isempty(RANK) && ~isempty(C) && ~isempty(T)
             fprintf(fid7,'  Protein pathway: %s\n  Sign: %s\n',char(rec.protein_path),char(rec.overall_effect));
             fprintf(fid7,'  Status: EC-level hypothesis, not verified for this human protein/cargo.\n\n');
             fprintf(fid7,'MEMBRANE TRANSPORT REACTION\n');
-            orient=1;if string(T.direction(chosenT))=="reverse",orient=-1;end
+            assert(string(T.direction(chosenT))=="forward", ...
+            'ForwardOnly:TransportDirection','A transporter has non-forward direction.');
+        orient=1;
             printModelReaction(fid7,model,double(T.modelIndex(chosenT)),orient,metIDs,metNames,T.cytosolic(chosenT),'m_c');
             fprintf(fid7,'  GPR: %s\n\n',char(C.full_GPR(chosenC)));
             fprintf(fid7,'COUNTER REACTIONS\n');
@@ -892,6 +896,7 @@ outN8=fullfile(outDir,'19_Selected_D1_Counter_Two_Neurons.txt');
 fid8=fopen(outN8,'w');assert(fid8>0,'Cannot create Stage 8 TXT');
 close8=onCleanup(@()fclose(fid8));
 fprintf(fid8,'SELECTED BLOCK 0 -> D1 -> TRANSPORT -> COUNTER -> TWO CONSUMING NEURONS\n');
+fprintf(fid8,'Direction policy: STRICT +1 relative to original model.S.\n');
 fprintf(fid8,'r_Nf CONSUMES m_c; r_Nf_2 CONSUMES m_Nd.\n');
 fprintf(fid8,'m_Sd_1 is PRODUCED by r_Sd_1 and regulates r_T (not consumed in r_T).\n');
 fprintf(fid8,'Stoichiometric topology only; regulatory evidence and flux/kinetics unverified.\n\n');
@@ -998,7 +1003,9 @@ for ii=1:numel(selectedD1)
                                                 end
                                                 fprintf(fid8,'  m_Sd is the regulatory input; it is NOT a canceler product.\n');
                                                 fprintf(fid8,'\nMEMBRANE TRANSPORT: r_T (production of m_c)\n');
-                                                ot=1;if string(T.direction(tr))=="reverse",ot=-1;end
+                                                assert(string(T.direction(tr))=="forward", ...
+                                                    'ForwardOnly:TransportDirection','A transporter has non-forward direction.');
+                                                ot=1;
                                                 printModelReaction(fid8,model,double(T.modelIndex(tr)),ot,metIDs,metNames,"","",signalIDs,signalNames);
                                                 fprintf(fid8,'\nCOUNTER LOSS AND TWO CONSUMING NEURONS\n');
                                                 labels8=["r_cr","r_Nf_1","r_Nd_1","r_Nr_1","r_Nf_2","r_Nd_2","r_Nr_2"];
@@ -1185,7 +1192,6 @@ function printBlock0(fid,model,metIDs,metNames,comp,lb,ub,target,signalIDs,signa
             sj=full(model.S(current,j));
             orientations=zeros(0,1);
             if sj<0 && ub(j)>0,orientations(end+1)=1;end %#ok<AGROW>
-            if sj>0 && lb(j)<0,orientations(end+1)=-1;end %#ok<AGROW>
             for ori=reshape(orientations,1,[])
                 coeff=full(model.S(:,j))*ori;
                 reactants=find(coeff<-1e-12);products=find(coeff>1e-12);
@@ -1222,7 +1228,16 @@ function printBlock0(fid,model,metIDs,metNames,comp,lb,ub,target,signalIDs,signa
 end
 
 function printModelReaction(fid,model,idx,orient,metIDs,metNames,markedID,markedLabel,varargin)
-% Print exact stoichiometry, including cofactors, in the chosen orientation.
+% Print original stoichiometry; never relabel or reverse a stored reaction.
+    assert(isscalar(orient) && orient==1, ...
+        'ForwardOnly:PrintedDirection', ...
+        'Refusing to print reaction %s with direction other than +1.', ...
+        char(string(model.rxns(idx))));
+    if isfield(model,'ub')
+        assert(model.ub(idx)>0,'ForwardOnly:ReactionBound', ...
+            'Reaction %s does not permit positive flux.', ...
+            char(string(model.rxns(idx))));
+    end
     rxn=string(model.rxns(idx));
     rxnName=rxn;
     if isfield(model,'rxnNames') && numel(model.rxnNames)>=idx
@@ -1273,14 +1288,6 @@ function [rx,sgn,products,substrates]=d1BuildOriented(model,comp,lb,ub,skipTrans
             a=ids(coef<0);b=ids(coef>0);
             if ~isempty(a) && ~isempty(b)
                 rx(end+1,1)=j;sgn(end+1,1)=1; %#ok<AGROW>
-                products{end+1,1}=b;substrates{end+1,1}=a; %#ok<AGROW>
-            end
-        end
-        if lb(j)<0
-            coef=full(model.S(ids,j));
-            a=ids(coef>0);b=ids(coef<0);
-            if ~isempty(a) && ~isempty(b)
-                rx(end+1,1)=j;sgn(end+1,1)=-1; %#ok<AGROW>
                 products{end+1,1}=b;substrates{end+1,1}=a; %#ok<AGROW>
             end
         end
