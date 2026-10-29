@@ -19,3 +19,6 @@ code/database/brenda_2026_1.txt/dataset_cell2cell/Dataset_cell2cell.mat
 code/NN_chemical_CAR_T/Step_3_Programming/~$kinetics_BRENDA.xlsx
 code/NN_chemical_CAR_T/Step_1_Abstract_Chemical_Reactions/bigg_ec_cache.mat
 code/NN_chemical_CAR_T/Step_1_Abstract_Chemical_Reactions/brenda_ec_index.mat
+code/NN_chemical_CAR_T/Step_3_Programming/~$kinetics_BRENDA_curated.xlsx
+code/NN_chemical_CAR_T/Step_3_Programming/bigg_ec_cache.mat
+code/NN_chemical_CAR_T/Step_3_Programming/brenda_ec_index.mat

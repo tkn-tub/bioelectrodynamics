@@ -1,7 +1,7 @@
-%% A_Master.m - Strict +1 transport, differentiator, counter and two neurons
-% ONE FILE: discover transport -> GPR -> regulatory proteins -> metabolite regulators.
+%% A_Master_ExchangeSearch.m - Strict +1 transport, differentiator, counter and two neurons
+% ONE FILE: discover import/exchange transport -> GPR -> regulatory and D1 candidates.
 % Requires COBRA Toolbox readCbModel, MATLAB with webread (online enrichment optional).
-% Run: matlab -batch "A_Master"
+% Run: matlab -batch "A_Master_ExchangeSearch"
 % No checkpoints or network-cache directories are generated.
 clearvars; clc;
 MODEL_NAME = 'Puniya2021_TNM1055.xml';
@@ -35,7 +35,7 @@ if ~exist(outDir,'dir'), mkdir(outDir); end
 logPath=fullfile(outDir,'stage1to4_report.txt');
 logID=fopen(logPath,'w'); assert(logID>0,'Cannot write report');
 logGuard=onCleanup(@() fclose(logID));
-report(logID,'Backward membrane transport search: stages 1-4');
+report(logID,'Cell-network search: import transport, stoichiometric exchange, and regulatory candidates.');
 report(logID,['Started: ' datestr(now,31)]);
 report(logID,['MATLAB version: ' version]);
 report(logID,'Direction policy: STRICT +1 relative to original model.S in every stage.');
@@ -95,6 +95,62 @@ assert(all(string(T.direction)=="forward"), ...
 writetable(T,fullfile(outDir,'01_transport_reactions.csv'));
 report(logID,sprintf('Stage 1: %d transport rows; %d unique reactions',height(T),numel(unique(string(T.reaction)))));
 
+%% STAGE 1B: identify stoichiometric extracellular/cytosolic exchange candidates.
+% An exchange candidate imports one extracellular metabolite while exporting
+% a different cytosolic metabolite in the SAME forward reaction. The latter
+% can serve as m_Sd_1 if a D1 motif produces it. This is a stoichiometric
+% counter-substrate mechanism; it does not add a transcriptional regulation step.
+exchangeRows=cell(0,12);
+for ti=1:height(T)
+    j=double(T.modelIndex(ti));
+    col=full(model.S(:,j));
+    eCargo=find(metIDs==string(T.extracellular(ti)),1,'first');
+    cCargo=find(metIDs==string(T.cytosolic(ti)),1,'first');
+    if isempty(eCargo) || isempty(cCargo),continue;end
+    importE=-col(eCargo);importC=col(cCargo);
+    if importE<=0 || importC<=0 || ...
+            abs(importE-importC)>1e-9*max([1,importE,importC])
+        continue;
+    end
+    cargoBase=baseMet(eCargo);
+    counterC=find(comp=="c" & col<0);
+    counterE=find(comp=="e" & col>0);
+    for ci=reshape(counterC,1,[])
+        if baseMet(ci)==cargoBase,continue;end
+        matchingE=counterE(baseMet(counterE)==baseMet(ci));
+        for ei=reshape(matchingE,1,[])
+            counterCStoich=-col(ci);counterEStoich=col(ei);
+            if counterCStoich<=0 || counterEStoich<=0 || ...
+                    abs(counterCStoich-counterEStoich)> ...
+                    1e-9*max([1,counterCStoich,counterEStoich])
+                continue;
+            end
+            exchangeRows(end+1,:)={char(rxnIDs(j)),char(rxnNames(j)), ...
+                char(T.cargo(ti)),char(T.extracellular(ti)),char(T.cytosolic(ti)), ...
+                char(metIDs(ci)),char(metIDs(ei)),'forward',importC, ...
+                counterCStoich,ti,j}; %#ok<SAGROW>
+        end
+    end
+end
+if isempty(exchangeRows)
+    X=table('Size',[0 12],'VariableTypes', ...
+        {'string','string','string','string','string','string','string','string', ...
+         'double','double','double','double'}, ...
+        'VariableNames',{'reaction','reactionName','importedCargo','extracellularCargo', ...
+        'cytosolicCargo','counterSubstrate','counterProduct','direction','importStoich', ...
+        'counterStoich','transportRow','modelIndex'});
+else
+    X=cell2table(exchangeRows,'VariableNames',{'reaction','reactionName','importedCargo', ...
+        'extracellularCargo','cytosolicCargo','counterSubstrate','counterProduct', ...
+        'direction','importStoich','counterStoich','transportRow','modelIndex'});
+    X=unique(X,'rows','stable');
+end
+assert(all(string(X.direction)=="forward"), ...
+    'ForwardOnly:ExchangePool','Exchange pool contains a non-forward direction.');
+writetable(X,fullfile(outDir,'01b_exchange_transport_candidates.csv'));
+report(logID,sprintf('Stage 1B: %d stoichiometric exchange rows; %d distinct reactions', ...
+    height(X),numel(unique(string(X.reaction)))));
+
 %% STAGE 2: recover GPR from grRules or rules -> model.genes.
 if isfield(model,'genes'),genes=string(model.genes(:));else,genes=strings(0,1);end
 if isfield(model,'grRules'),gr=string(model.grRules(:));else,gr=strings(numel(rxnIDs),1);end
@@ -122,6 +178,16 @@ writetable(C,fullfile(outDir,'03_transporter_gene_candidates.csv'));
 ids=unique(C.transporter_gene,'stable');
 report(logID,sprintf('Stage 2: %d transport rows with GPR; %d candidate gene rows; %d unique gene IDs', ...
     sum(gprStatus=="recovered_rules" | gprStatus=="grRules"),height(C),numel(ids)));
+X.full_GPR=strings(height(X),1);X.transporter_genes=strings(height(X),1);
+X.gpr_status=strings(height(X),1);
+for xi=1:height(X)
+    j=double(X.modelIndex(xi));
+    [gpr,glist,status]=decodeGPR(gr(j),rr(j),genes);
+    X.full_GPR(xi)=gpr;X.transporter_genes(xi)=glist;X.gpr_status(xi)=status;
+end
+writetable(X,fullfile(outDir,'02_exchange_transport_candidates_GPR.csv'));
+report(logID,sprintf('Stage 2: %d exchange rows have a recovered transporter gene rule', ...
+    nnz(X.gpr_status=="recovered_rules" | X.gpr_status=="grRules")));
 
 %% STAGE 3A: reviewed human UniProt mapping (scalar-safe).
 % Query MyGene for human gene symbols, then UniProt REST for reviewed proteins.
@@ -789,7 +855,7 @@ currency=lower(["h2o","h","atp","adp","pi","ppi","nad","nadh", ...
 % AMP and NH4 remain eligible as possible signals. Edit currency exclusions as needed.
 % WARNING: no candidate is accepted without a real stoichiometric canceler.
 foundD1=0; inspected=0; testedTotal=0; seenD1=strings(0,1);
-selectedD1=struct('d',{},'target',{},'transportRow',{},'regulatorRow',{});
+selectedD1=struct('d',{},'target',{},'transportRow',{},'regulatorRow',{},'exchangeRow',{});
 if ~isempty(RANK) && ~isempty(C) && ~isempty(T)
     for si=1:height(RANK)
         if foundD1>=D1_MAX_MOTIFS || inspected>=D1_MAX_TARGETS,break;end
@@ -817,7 +883,8 @@ if ~isempty(RANK) && ~isempty(C) && ~isempty(T)
         for mi=1:numel(motifs)
             if foundD1>=D1_MAX_MOTIFS,break;end
             d=motifs(mi);foundD1=foundD1+1;
-            selectedD1(end+1)=struct('d',d,'target',target,'transportRow',chosenT,'regulatorRow',si); %#ok<SAGROW>
+            selectedD1(end+1)=struct('d',d,'target',target,'transportRow',chosenT, ...
+                'regulatorRow',si,'exchangeRow',0); %#ok<SAGROW>
             fprintf(fid7,'============================================================\n');
             fprintf(fid7,'STRUCTURAL D1 CANDIDATE %d\n',foundD1);
             fprintf(fid7,'============================================================\n');
@@ -884,9 +951,117 @@ clear close7;
 report(logID,sprintf('Stage 7: inspected %d endpoints; tested %d partial motifs; printed %d seven-reaction motifs', ...
     inspected,testedTotal,foundD1));
 report(logID,['Stage 7 file: ' outD1]);
+
+%% STAGE 7B: search exchange transporters as a stoichiometric m_Sd_1 route.
+% Here m_Sd_1 is the cytosolic counter-substrate exported by the transporter.
+% The search is independent of Stage 3 protein-regulation paths and does not
+% infer a transcriptional change. A matched transporter is assumed to exist
+% at the membrane; gene expression and flux feasibility are not simulated.
+EXCHANGE_D1_MAX_TARGETS=200;
+EXCHANGE_D1_MAX_CONNECTIONS=40;
+EXCHANGE_D1_MAX_TESTS_PER_TARGET=D1_MAX_TESTS_PER_TARGET;
+EXCHANGE_D1_MAX_BRANCH=D1_MAX_BRANCH;
+EXCHANGE_D1_MAX_RXN_CAND=D1_MAX_RXN_CAND;
+outExchangeD1=fullfile(outDir,'18b_Exchange_D1_Connections.txt');
+fid7x=fopen(outExchangeD1,'w');assert(fid7x>0,'Cannot create exchange D1 report');
+close7x=onCleanup(@()fclose(fid7x));
+fprintf(fid7x,'STOICHIOMETRIC EXCHANGE-TRANSPORT D1 CANDIDATES\n');
+fprintf(fid7x,'Search: D1-produced m_Sd_1 matches a cytosolic counter-substrate exported by r_T.\n');
+fprintf(fid7x,'No protein-transcription regulation step is inserted in this route.\n');
+fprintf(fid7x,'Direction policy: STRICT +1 relative to original model.S.\n');
+fprintf(fid7x,'Transporter presence, exchange kinetics, and flux feasibility require validation.\n\n');
+exchangeMatchRows=cell(0,11);
+exchangeFound=0;exchangeInspected=0;exchangeTests=0;
+if height(X)>0
+    exchangeTargets=unique(string(X.counterSubstrate),'stable');
+    for xt=1:min(numel(exchangeTargets),EXCHANGE_D1_MAX_TARGETS)
+        targetID=exchangeTargets(xt);
+        target=find(metIDs==targetID,1,'first');
+        if isempty(target) || comp(target)~="c",continue;end
+        targetBase=regexprep(char(targetID),'\[c\]$','');
+        if ismember(lower(string(targetBase)),currency),continue;end
+        exchangeInspected=exchangeInspected+1;
+        [motifs,nTests]=d1FindMotifs(target,di,dm,do,ds,metIDs,comp,currency, ...
+            EXCHANGE_D1_MAX_BRANCH,EXCHANGE_D1_MAX_RXN_CAND, ...
+            EXCHANGE_D1_MAX_TESTS_PER_TARGET,1,model.S,D1_REQUIRE_CANCELLER_PRODUCTS);
+        exchangeTests=exchangeTests+nTests;
+        if isempty(motifs),continue;end
+        matchedX=find(string(X.counterSubstrate)==targetID);
+        for xi=reshape(matchedX,1,[])
+            if exchangeFound>=EXCHANGE_D1_MAX_CONNECTIONS,break;end
+            d=motifs(1);exchangeFound=exchangeFound+1;
+            tr=double(X.transportRow(xi));
+            selectedD1(end+1)=struct('d',d,'target',target,'transportRow',tr, ...
+                'regulatorRow',0,'exchangeRow',xi); %#ok<SAGROW>
+            exchangeMatchRows(end+1,:)={exchangeFound,targetID,string(T.cytosolic(tr)), ...
+                string(X.counterProduct(xi)),string(X.reaction(xi)), ...
+                double(X.importStoich(xi)),double(X.counterStoich(xi)), ...
+                string(rxnIDs(d.rsd)),string(rxnIDs(d.ri)),string(rxnIDs(d.rsr)), ...
+                string(X.full_GPR(xi))}; %#ok<SAGROW>
+
+            fprintf(fid7x,'============================================================\n');
+            fprintf(fid7x,'EXCHANGE D1 CANDIDATE %d\n',exchangeFound);
+            fprintf(fid7x,'============================================================\n');
+            fprintf(fid7x,'m_Sd_1 counter-substrate: %s | %s\n', ...
+                char(targetID),char(metNames(target)));
+            fprintf(fid7x,'m_c imported cargo: %s | %s\n', ...
+                char(T.cytosolic(tr)),char(T.cargo(tr)));
+            fprintf(fid7x,'r_T: %s | %s\n',char(X.reaction(xi)),char(X.reactionName(xi)));
+            fprintf(fid7x,'Exchange: %s out; %s in\n', ...
+                char(X.counterProduct(xi)),char(T.extracellular(tr)));
+            fprintf(fid7x,'Stoichiometry: counter %.8g; imported cargo %.8g\n', ...
+                double(X.counterStoich(xi)),double(X.importStoich(xi)));
+            fprintf(fid7x,'Transporter GPR: %s\n',char(X.full_GPR(xi)));
+            fprintf(fid7x,'Resolved transporter genes: %s\n',char(X.transporter_genes(xi)));
+            fprintf(fid7x,'GPR status: %s\n',char(X.gpr_status(xi)));
+            fprintf(fid7x,'m_Sd_1 is physically exported as the exchange counter-substrate.\n');
+            fprintf(fid7x,'The transporter abundance is held fixed; no expression response is modeled.\n\n');
+            fprintf(fid7x,'D1 motif reactions: r_Ff=%s, r_Fd=%s, r_Fr=%s, r_Sf=%s, r_Sd=%s, r_Sr=%s, r_I=%s\n', ...
+                char(rxnIDs(d.rff)),char(rxnIDs(d.rfd)),char(rxnIDs(d.rfr)), ...
+                char(rxnIDs(d.rsf)),char(rxnIDs(d.rsd)),char(rxnIDs(d.rsr)),char(rxnIDs(d.ri)));
+            fprintf(fid7x,'m_in: %s | %s\n',char(metIDs(d.min)),char(metNames(d.min)));
+            fprintf(fid7x,'m_Ff: %s | %s\n',char(metIDs(d.mff)),char(metNames(d.mff)));
+            fprintf(fid7x,'m_Fd: %s | %s\n',char(metIDs(d.mfd)),char(metNames(d.mfd)));
+            fprintf(fid7x,'m_Sf: %s | %s\n',char(metIDs(d.msf)),char(metNames(d.msf)));
+            fprintf(fid7x,'m_Sd: %s | %s\n',char(targetID),char(metNames(target)));
+            fprintf(fid7x,'Equal-stoichiometry canceler coefficient: %.8g\n',d.cancelCoeff);
+            fprintf(fid7x,'Status: structural match only; no flux or kinetic validation.\n\n');
+        end
+        if exchangeFound>=EXCHANGE_D1_MAX_CONNECTIONS,break;end
+    end
+end
+if exchangeFound==0
+    fprintf(fid7x,'No D1-produced metabolite matched an intracellular counter-substrate in the exchange pool.\n');
+    fprintf(fid7x,'The exchange search was stoichiometric and bounded; this is not proof of biological absence.\n');
+end
+clear close7x;
+% Give exchange-coupled D1 candidates priority in Stage 8 so the original
+% protein-regulation candidates cannot fill its output cap first.
+if ~isempty(selectedD1)
+    isExchange=[selectedD1.exchangeRow]>0;
+    selectedD1=[selectedD1(isExchange),selectedD1(~isExchange)];
+end
+if isempty(exchangeMatchRows)
+    exchangeMatches=table('Size',[0 11],'VariableTypes', ...
+        {'double','string','string','string','string','double','double', ...
+         'string','string','string','string'}, ...
+        'VariableNames',{'candidate','m_Sd_counter_substrate','m_c_imported_cargo', ...
+        'counter_exported_metabolite','exchange_reaction','importStoich','counterStoich', ...
+        'r_Sd_reaction','r_I_reaction','r_Sr_reaction','transporter_GPR'});
+else
+    exchangeMatches=cell2table(exchangeMatchRows,'VariableNames', ...
+        {'candidate','m_Sd_counter_substrate','m_c_imported_cargo', ...
+        'counter_exported_metabolite','exchange_reaction','importStoich','counterStoich', ...
+        'r_Sd_reaction','r_I_reaction','r_Sr_reaction','transporter_GPR'});
+end
+writetable(exchangeMatches,fullfile(outDir,'18b_Exchange_D1_Connections.csv'));
+report(logID,sprintf('Stage 7B: inspected %d exchange counter-substrates; tested %d motif steps; found %d D1/exchange matches', ...
+    exchangeInspected,exchangeTests,exchangeFound));
+report(logID,['Stage 7B file: ' outExchangeD1]);
 %% STAGE 8: STOICHIOMETRIC counter loss and two consuming neurons.
 % Neuron 1 consumes m_c; neuron 2 consumes m_Nd. No catalytic input
-% is assumed. The transporter imports m_c and m_Sd_1 regulates it.
+% is assumed. Stage 8 may use either a protein-regulation candidate or a
+% stoichiometric exchange candidate from Stage 7B.
 report(logID,'Stage 8: searching CONSUMING counter -> neuron 1 -> neuron 2 chains.');
 N8_MAX_CIRCUITS=10;
 N8_MAX_BRANCH=25;
@@ -898,7 +1073,7 @@ close8=onCleanup(@()fclose(fid8));
 fprintf(fid8,'SELECTED BLOCK 0 -> D1 -> TRANSPORT -> COUNTER -> TWO CONSUMING NEURONS\n');
 fprintf(fid8,'Direction policy: STRICT +1 relative to original model.S.\n');
 fprintf(fid8,'r_Nf CONSUMES m_c; r_Nf_2 CONSUMES m_Nd.\n');
-fprintf(fid8,'m_Sd_1 is PRODUCED by r_Sd_1 and regulates r_T (not consumed in r_T).\n');
+fprintf(fid8,'m_Sd_1 is produced by r_Sd_1; it may regulate transport or be the exchanged counter-substrate.\n');
 fprintf(fid8,'Stoichiometric topology only; regulatory evidence and flux/kinetics unverified.\n\n');
 % Preindex substrate and product incidence by metabolite to avoid repeated
 % full reaction scans and the former arbitrary first-80-reaction selection.
@@ -997,11 +1172,25 @@ for ii=1:numel(selectedD1)
                                                     fprintf(fid8,'  GPR: %s\n  Resolved genes: %s\n\n',char(ruleD),char(genesD));
                                                 end
                                                 fprintf(fid8,'  CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (%.8g each).\n',d.cancelCoeff);
-                                                fprintf(fid8,'\nREGULATORY CONNECTION (UNVERIFIED EC-LEVEL HYPOTHESIS)\n');
-                                                if isfield(sel,'regulatorRow') && sel.regulatorRow>0 && sel.regulatorRow<=height(RANK)
-                                                    fprintf(fid8,'  Protein path: %s\n',char(string(RANK.protein_path(sel.regulatorRow))));
+                                                if sel.exchangeRow>0
+                                                    ex=sel.exchangeRow;
+                                                    fprintf(fid8,'\nTRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE\n');
+                                                    fprintf(fid8,'  m_Sd is the intracellular counter-substrate and is exported by r_T.\n');
+                                                    fprintf(fid8,'  Imported cargo: %s -> %s\n', ...
+                                                        char(T.extracellular(tr)),char(T.cytosolic(tr)));
+                                                    fprintf(fid8,'  Counter-substrate: %s -> %s\n', ...
+                                                        char(X.counterSubstrate(ex)),char(X.counterProduct(ex)));
+                                                    fprintf(fid8,'  Stoichiometry: import %.8g; counter export %.8g\n', ...
+                                                        double(X.importStoich(ex)),double(X.counterStoich(ex)));
+                                                    fprintf(fid8,'  Transporter GPR: %s\n',char(X.full_GPR(ex)));
+                                                    fprintf(fid8,'  Transporter abundance is treated as pre-existing; no transcription step is modeled.\n');
+                                                else
+                                                    fprintf(fid8,'\nREGULATORY CONNECTION (UNVERIFIED EC-LEVEL HYPOTHESIS)\n');
+                                                    if isfield(sel,'regulatorRow') && sel.regulatorRow>0 && sel.regulatorRow<=height(RANK)
+                                                        fprintf(fid8,'  Protein path: %s\n',char(string(RANK.protein_path(sel.regulatorRow))));
+                                                    end
+                                                    fprintf(fid8,'  m_Sd is the regulatory input and is not a canceler product.\n');
                                                 end
-                                                fprintf(fid8,'  m_Sd is the regulatory input; it is NOT a canceler product.\n');
                                                 fprintf(fid8,'\nMEMBRANE TRANSPORT: r_T (production of m_c)\n');
                                                 assert(string(T.direction(tr))=="forward", ...
                                                     'ForwardOnly:TransportDirection','A transporter has non-forward direction.');
