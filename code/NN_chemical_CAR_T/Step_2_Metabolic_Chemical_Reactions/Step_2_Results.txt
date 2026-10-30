@@ -1,15 +1,47 @@
 SELECTED BLOCK 0 -> D1 -> TRANSPORT -> COUNTER -> TWO CONSUMING NEURONS
 Direction policy: STRICT +1 relative to original model.S.
+Selection: up to 10 complete motifs, ranked by shortest m_Sd-to-counter path, then cAMP-to-m_in path.
+Transport mechanism filter: stoichiometric exchange only; protein-path regulation is excluded.
+Excluded reaction ECs: 2.4.1.23
+Scope: retained D1 parents and configured branch/trial limits; global optimality is not assumed.
+Equal-distance motifs may share m_in. Ties retain discovery order after both path distances.
+Block 0 depth cap=Inf; expansion cap=Inf; expansion limit reached=0.
+Upstream caps: protein hops=3; metabolite-match rows=250000; backward metabolic steps=2; backward path rows=100000.
+D1 caps: targets=Inf; motifs=Inf; retained/target=100; branch=14; reaction candidates=60; tests/target=40000.
+Exchange caps: pairs=Inf; connections=Inf. Neuron caps: branch=25; total tests=250000.
+m_Sd-to-counter path caps: depth=1 reactions; precursors/exchange pair=Inf.
+D1 calls reaching trial/branch/retention limits: 0 / 5 / 2.
 r_Nf CONSUMES m_c; r_Nf_2 CONSUMES m_Nd.
-m_Sd_1 is produced by r_Sd_1; it may regulate transport or be the exchanged counter-substrate.
-Stoichiometric topology only; regulatory evidence and flux/kinetics unverified.
+m_Sd_1 must be produced by r_Sd_1 and lie on a shortest configured forward path to the exported counter-substrate.
+Stoichiometric exchange topology only; transporter abundance, flux, and kinetics are unverified.
+
+
+============================================================
+SEARCH COUNTS: FOUND VERSUS PRINTED
+============================================================
+Distinct D1 motifs discovered in bounded searches: 1579
+Distinct D1 motifs retained for downstream search: 368
+D1/transporter parent connections retained: 12196
+Distinct counter cores (r_T, m_c, r_cr): 167
+Distinct D1-counter solutions in retained parent pool: 17448
+D1-counter solutions extended to both neurons: 134
+Distinct complete motifs found: 136212
+  Exchange mode: 136212; regulatory-hypothesis mode: 0
+Complete motifs printed: 10 (requested maximum 10)
+Count definitions: chemical structures are deduplicated; alternate protein annotations do not add motifs.
+One shortest Block 0 path is used per m_in; alternate connectors do not multiply motif counts.
+Counter total includes counters with no two-neuron solution; complete count requires both neurons.
+D1 parents examined for neurons: 160/12196; trials=250000; neuron trial cap reached=1.
+Counts describe the configured search only; finite branch/trial/retention caps can hide additional solutions.
+Selecting ten for printing does NOT stop discovery/counting at ten.
 
 ============================================================
 CANDIDATE 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
@@ -24,28 +56,52 @@ SIGNAL METABOLITE MAP
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -60,20 +116,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -102,12 +158,14 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
   Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
   ID: r1796
@@ -121,7 +179,7 @@ r_cr
   ID: CYSTA
   Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
 
   EC: 2.6.1.3
 
@@ -178,10 +236,11 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 2
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
@@ -196,28 +255,52 @@ SIGNAL METABOLITE MAP
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -232,20 +315,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -274,12 +357,14 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
   Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
   ID: r1796
@@ -293,7 +378,7 @@ r_cr
   ID: CYSTA
   Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
 
   EC: 2.6.1.3
 
@@ -350,10 +435,11 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 3
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
@@ -368,28 +454,52 @@ SIGNAL METABOLITE MAP
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -404,20 +514,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -446,12 +556,14 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
   Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
   ID: r1796
@@ -465,7 +577,7 @@ r_cr
   ID: CYSTA
   Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
 
   EC: 2.6.1.3
 
@@ -522,46 +634,71 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 4
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
-  m_c      : gln_L[c] | L-Glutamine
-  m_Nf_1   : gam6p[c] | D-Glucosamine-6-Phosphate
-  m_Nd_1   : f6p[c] | D-Fructose 6-Phosphate
-  m_Nf_2   : fdp[c] | D-Fructose 1,6-Bisphosphate
-  m_out    : dhap[c] | Dihydroxyacetone Phosphate
+  m_c      : cys_L[c] | L-Cysteine
+  m_Nf_1   : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nd_1   : gthrd[c] | Reduced Glutathione
+  m_Nf_2   : C04805[c] | 5-Hydroxyeicosatetraenoate
+  m_out    : CE2084[c] | 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -576,20 +713,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_c) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -618,122 +755,149 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
-  Imported cargo: gln_L[e] -> gln_L[c]
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
+  Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: r1705
+  ID: r1796
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
-  Equation: L-Glutamine [gln_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Glutamine (m_c) [gln_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
+  Equation: L-Cysteine [cys_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Cysteine (m_c) [cys_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: NADS2
-  Name: NAD Synthase (Glutamine-Hydrolysing)
+  ID: CYSTA
+  Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Deamino-Nad+ [dnad[c]] + L-Glutamine (m_c) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide [nad[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+
+  EC: 2.6.1.3
+
+r_Nf_1
+  ID: GLUCYS
+  Name: Gamma-Glutamylcysteine Synthetase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_c) [cys_L[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 
 
-r_Nf_1
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
-  Direction: +1 relative to model.S
-  Equation: D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]] + L-Glutamine (m_c) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate (m_Nf_1) [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
-
-  EC: 2.6.1.16
-
 r_Nd_1
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: GTHS
+  Name: Glutathione Synthetase
   Direction: +1 relative to model.S
-  Equation: D-Glucosamine-6-Phosphate (m_Nf_1) [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]] + Ammonium [nh4[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Glycine [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.99.6
+  EC: 
 
 r_Nr_1
-  ID: PFK26
-  Name: 6-Phosphofructo-2-Kinase
+  ID: LHCYSTIN
+  Name: Formation of Homocystine
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]]  ->  Adenosine Diphosphate [adp[c]] + Beta-D-Fructofuranose 2,6-Bisphosphate [f26bp[c]] + Proton [h[c]]
+  Equation: L-Homocystine [Lhcystin[c]] + 2 Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) [gthox[c]] + 2 L-Homocysteine [hcys_L[c]]
 
-  EC: 2.7.1.105
+  EC: 
 
 r_Nf_2
-  ID: r0191
-  Name: UTP:D-Fructose-6-Phosphate 1-Phosphotransferase
+  ID: HMR_0960
+  Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]] + Uridine-5'-TrIphosphate [utp[c]]  ->  D-Fructose 1,6-Bisphosphate (m_Nf_2) [fdp[c]] + Proton [h[c]] + Uridine Diphosphate [udp[c]]
+  Equation: 5(S)-Hydroperoxyeicosatetraenoic Acid [5HPET[c]] + 2 Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]] + Water [h2o[c]]
 
-  EC: 2.7.1.11
+  EC: EC:1.11.1.9
 
 r_Nd_2
-  ID: FBA
-  Name: Fructose-Bisphosphate Aldolase
+  ID: RE3476C
+  Name: Carbonyl Reductase (NADPH)
   Direction: +1 relative to model.S
-  Equation: D-Fructose 1,6-Bisphosphate (m_Nf_2) [fdp[c]]  ->  Dihydroxyacetone Phosphate (m_out) [dhap[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+  Equation: 5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
 
-  EC: 4.1.2.13
+  EC: 1.1.1.184
 
 r_Nr_2
-  ID: TPI
-  Name: Triose-Phosphate Isomerase
+  ID: HMR_0979
+  Name: HMR_0979
   Direction: +1 relative to model.S
-  Equation: Dihydroxyacetone Phosphate (m_out) [dhap[c]]  ->  Glyceraldehyde 3-Phosphate [g3p[c]]
+  Equation: 2 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Oxygen [o2[c]]  ->  2 5-Oxo-6-Trans-Leukotriene B4 [CE5178[c]]
 
-  EC: 5.3.1.1
+  EC: EC:1.14.14.1
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 5
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
-  m_c      : gln_L[c] | L-Glutamine
-  m_Nf_1   : gam6p[c] | D-Glucosamine-6-Phosphate
-  m_Nd_1   : f6p[c] | D-Fructose 6-Phosphate
-  m_Nf_2   : fdp[c] | D-Fructose 1,6-Bisphosphate
-  m_out    : dhap[c] | Dihydroxyacetone Phosphate
+  m_c      : cys_L[c] | L-Cysteine
+  m_Nf_1   : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nd_1   : gthrd[c] | Reduced Glutathione
+  m_Nf_2   : C04805[c] | 5-Hydroxyeicosatetraenoate
+  m_out    : CE2084[c] | 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -748,20 +912,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_c) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -790,122 +954,149 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
-  Imported cargo: gln_L[e] -> gln_L[c]
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
+  Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: r1705
+  ID: r1796
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
-  Equation: L-Glutamine [gln_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Glutamine (m_c) [gln_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
+  Equation: L-Cysteine [cys_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Cysteine (m_c) [cys_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: NADS2
-  Name: NAD Synthase (Glutamine-Hydrolysing)
+  ID: CYSTA
+  Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Deamino-Nad+ [dnad[c]] + L-Glutamine (m_c) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide [nad[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+
+  EC: 2.6.1.3
+
+r_Nf_1
+  ID: GLUCYS
+  Name: Gamma-Glutamylcysteine Synthetase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_c) [cys_L[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 
 
-r_Nf_1
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
-  Direction: +1 relative to model.S
-  Equation: D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]] + L-Glutamine (m_c) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate (m_Nf_1) [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
-
-  EC: 2.6.1.16
-
 r_Nd_1
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: GTHS
+  Name: Glutathione Synthetase
   Direction: +1 relative to model.S
-  Equation: D-Glucosamine-6-Phosphate (m_Nf_1) [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]] + Ammonium [nh4[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Glycine [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.99.6
+  EC: 
 
 r_Nr_1
-  ID: PFK26
-  Name: 6-Phosphofructo-2-Kinase
+  ID: r1377
+  Name: S- (Hydroxymethyl)Glutathione Synthase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]]  ->  Adenosine Diphosphate [adp[c]] + Beta-D-Fructofuranose 2,6-Bisphosphate [f26bp[c]] + Proton [h[c]]
+  Equation: Formaldehyde [fald[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  Hydroxymethylglutathione [HC02121[c]]
 
-  EC: 2.7.1.105
+  EC: 4.4.1.22
 
 r_Nf_2
-  ID: r0191
-  Name: UTP:D-Fructose-6-Phosphate 1-Phosphotransferase
+  ID: HMR_0960
+  Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]] + Uridine-5'-TrIphosphate [utp[c]]  ->  D-Fructose 1,6-Bisphosphate (m_Nf_2) [fdp[c]] + Proton [h[c]] + Uridine Diphosphate [udp[c]]
+  Equation: 5(S)-Hydroperoxyeicosatetraenoic Acid [5HPET[c]] + 2 Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]] + Water [h2o[c]]
 
-  EC: 2.7.1.11
+  EC: EC:1.11.1.9
 
 r_Nd_2
-  ID: FBA
-  Name: Fructose-Bisphosphate Aldolase
+  ID: RE3476C
+  Name: Carbonyl Reductase (NADPH)
   Direction: +1 relative to model.S
-  Equation: D-Fructose 1,6-Bisphosphate (m_Nf_2) [fdp[c]]  ->  Dihydroxyacetone Phosphate (m_out) [dhap[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+  Equation: 5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
 
-  EC: 4.1.2.13
+  EC: 1.1.1.184
 
 r_Nr_2
-  ID: MGSA
-  Name: Methylglyoxal Synthase
+  ID: HMR_0979
+  Name: HMR_0979
   Direction: +1 relative to model.S
-  Equation: Dihydroxyacetone Phosphate (m_out) [dhap[c]]  ->  Methylglyoxal [mthgxl[c]] + Orthophosphate [pi[c]]
+  Equation: 2 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Oxygen [o2[c]]  ->  2 5-Oxo-6-Trans-Leukotriene B4 [CE5178[c]]
 
-  EC: 4.2.3.3
+  EC: EC:1.14.14.1
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 6
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
-  m_c      : gln_L[c] | L-Glutamine
-  m_Nf_1   : gam6p[c] | D-Glucosamine-6-Phosphate
-  m_Nd_1   : f6p[c] | D-Fructose 6-Phosphate
-  m_Nf_2   : fdp[c] | D-Fructose 1,6-Bisphosphate
-  m_out    : dhap[c] | Dihydroxyacetone Phosphate
+  m_c      : cys_L[c] | L-Cysteine
+  m_Nf_1   : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nd_1   : gthrd[c] | Reduced Glutathione
+  m_Nf_2   : C04805[c] | 5-Hydroxyeicosatetraenoate
+  m_out    : CE2084[c] | 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -920,20 +1111,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_c) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -962,122 +1153,149 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
-  Imported cargo: gln_L[e] -> gln_L[c]
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
+  Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: r1705
+  ID: r1796
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
-  Equation: L-Glutamine [gln_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Glutamine (m_c) [gln_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
+  Equation: L-Cysteine [cys_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Cysteine (m_c) [cys_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: NADS2
-  Name: NAD Synthase (Glutamine-Hydrolysing)
+  ID: CYSTA
+  Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Deamino-Nad+ [dnad[c]] + L-Glutamine (m_c) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide [nad[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
 
-  EC: 
+  EC: 2.6.1.3
 
 r_Nf_1
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: GLUCYS
+  Name: Gamma-Glutamylcysteine Synthetase
   Direction: +1 relative to model.S
-  Equation: D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]] + L-Glutamine (m_c) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate (m_Nf_1) [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
-
-  EC: 2.6.1.16
-
-r_Nd_1
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
-  Direction: +1 relative to model.S
-  Equation: D-Glucosamine-6-Phosphate (m_Nf_1) [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]] + Ammonium [nh4[c]]
-
-  EC: 3.5.99.6
-
-r_Nr_1
-  ID: PFK
-  Name: Phosphofructokinase
-  Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]]  ->  Adenosine Diphosphate [adp[c]] + D-Fructose 1,6-Bisphosphate (m_Nf_2) [fdp[c]] + Proton [h[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_c) [cys_L[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 
 
-r_Nf_2
-  ID: r0191
-  Name: UTP:D-Fructose-6-Phosphate 1-Phosphotransferase
+r_Nd_1
+  ID: GTHS
+  Name: Glutathione Synthetase
   Direction: +1 relative to model.S
-  Equation: D-Fructose 6-Phosphate (m_Nd_1) [f6p[c]] + Uridine-5'-TrIphosphate [utp[c]]  ->  D-Fructose 1,6-Bisphosphate (m_Nf_2) [fdp[c]] + Proton [h[c]] + Uridine Diphosphate [udp[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Glycine [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
-  EC: 2.7.1.11
+  EC: 
+
+r_Nr_1
+  ID: LALDO
+  Name: D-Lactaldehyde:NAD+ Oxidoreductase (Glutathione-Formylating)
+  Direction: +1 relative to model.S
+  Equation: Reduced Glutathione (m_Nd_1) [gthrd[c]] + (R)-Lactaldehyde [lald_D[c]] + Nicotinamide Adenine Dinucleotide [nad[c]]  ->  Proton [h[c]] + (R)-S-Lactoylglutathionate [lgt_S[c]] + Nicotinamide Adenine Dinucleotide - Reduced [nadh[c]]
+
+  EC: 1.1.1.1
+
+r_Nf_2
+  ID: HMR_0960
+  Name: Glutathione Peroxidase
+  Direction: +1 relative to model.S
+  Equation: 5(S)-Hydroperoxyeicosatetraenoic Acid [5HPET[c]] + 2 Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]] + Water [h2o[c]]
+
+  EC: EC:1.11.1.9
 
 r_Nd_2
-  ID: FBA
-  Name: Fructose-Bisphosphate Aldolase
+  ID: RE3476C
+  Name: Carbonyl Reductase (NADPH)
   Direction: +1 relative to model.S
-  Equation: D-Fructose 1,6-Bisphosphate (m_Nf_2) [fdp[c]]  ->  Dihydroxyacetone Phosphate (m_out) [dhap[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+  Equation: 5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
 
-  EC: 4.1.2.13
+  EC: 1.1.1.184
 
 r_Nr_2
-  ID: TPI
-  Name: Triose-Phosphate Isomerase
+  ID: HMR_0979
+  Name: HMR_0979
   Direction: +1 relative to model.S
-  Equation: Dihydroxyacetone Phosphate (m_out) [dhap[c]]  ->  Glyceraldehyde 3-Phosphate [g3p[c]]
+  Equation: 2 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Oxygen [o2[c]]  ->  2 5-Oxo-6-Trans-Leukotriene B4 [CE5178[c]]
 
-  EC: 5.3.1.1
+  EC: EC:1.14.14.1
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 7
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
-  m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : gln_L[c] | L-Glutamine
+  m_c      : cys_L[c] | L-Cysteine
+  m_Nf_1   : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nd_1   : gthrd[c] | Reduced Glutathione
+  m_Nf_2   : C04805[c] | 5-Hydroxyeicosatetraenoate
+  m_out    : CE2084[c] | 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -1092,20 +1310,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_out) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -1134,122 +1352,149 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
-  Imported cargo: gly[e] -> gly[c]
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
+  Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: r1675
+  ID: r1796
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
-  Equation: Glycine [gly[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  Glycine (m_c) [gly[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
+  Equation: L-Cysteine [cys_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Cysteine (m_c) [cys_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: HMR_1834
-  Name: Glycodeoxycholate Amidohydrolase
+  ID: CYSTA
+  Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: Deoxycholate [dchac[c]] + Glycine (m_c) [gly[c]] + Proton [h[c]]  ->  Glycodeoxycholic Acid [M01989[c]] + Water [h2o[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
 
-  EC: EC:3.5.1.24
+  EC: 2.6.1.3
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: GLUCYS
+  Name: Gamma-Glutamylcysteine Synthetase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_c) [cys_L[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: GTHS
+  Name: Glutathione Synthetase
   Direction: +1 relative to model.S
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Glycine [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
-  EC: 1.8.4.4
+  EC: 
 
 r_Nr_1
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: LGTHL
+  Name: Lactoylglutathione Lyase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Reduced Glutathione (m_Nd_1) [gthrd[c]] + Methylglyoxal [mthgxl[c]]  ->  (R)-S-Lactoylglutathionate [lgt_S[c]]
 
-  EC: 
+  EC: 4.4.1.5
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: HMR_0960
+  Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  Equation: 5(S)-Hydroperoxyeicosatetraenoic Acid [5HPET[c]] + 2 Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]] + Water [h2o[c]]
 
-  EC: 2.6.1.3
+  EC: EC:1.11.1.9
 
 r_Nd_2
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: RE3476C
+  Name: Carbonyl Reductase (NADPH)
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_out) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: 5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
 
-  EC: 
+  EC: 1.1.1.184
 
 r_Nr_2
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: HMR_0979
+  Name: HMR_0979
   Direction: +1 relative to model.S
-  Equation: D-Fructose 6-Phosphate [f6p[c]] + L-Glutamine (m_out) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: 2 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Oxygen [o2[c]]  ->  2 5-Oxo-6-Trans-Leukotriene B4 [CE5178[c]]
 
-  EC: 2.6.1.16
+  EC: EC:1.14.14.1
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 8
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
-  m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : gln_L[c] | L-Glutamine
+  m_c      : cys_L[c] | L-Cysteine
+  m_Nf_1   : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nd_1   : gthrd[c] | Reduced Glutathione
+  m_Nf_2   : C04805[c] | 5-Hydroxyeicosatetraenoate
+  m_out    : CE2084[c] | 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -1264,20 +1509,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_out) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -1306,122 +1551,149 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
-  Imported cargo: gly[e] -> gly[c]
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
+  Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: r1675
+  ID: r1796
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
-  Equation: Glycine [gly[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  Glycine (m_c) [gly[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
+  Equation: L-Cysteine [cys_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Cysteine (m_c) [cys_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: HMR_1834
-  Name: Glycodeoxycholate Amidohydrolase
+  ID: CYSTA
+  Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: Deoxycholate [dchac[c]] + Glycine (m_c) [gly[c]] + Proton [h[c]]  ->  Glycodeoxycholic Acid [M01989[c]] + Water [h2o[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
 
-  EC: EC:3.5.1.24
+  EC: 2.6.1.3
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: GLUCYS
+  Name: Gamma-Glutamylcysteine Synthetase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_c) [cys_L[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: GTHS
+  Name: Glutathione Synthetase
   Direction: +1 relative to model.S
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Glycine [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
-  EC: 1.8.4.4
+  EC: 
 
 r_Nr_1
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: DACGST
+  Name: 2, 3-Dihydro-1H-Indole-5, 6-Dione Glutathione Conjugation
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: 2,3-Dihydro-1H-Indole-5,6-Dione [23dh1i56dio[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  4-S-Glutathionyl-5,6-Dihydroxyindoline [4glu56dihdind[c]]
 
-  EC: 
+  EC: 2.5.1.18
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: HMR_0960
+  Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  Equation: 5(S)-Hydroperoxyeicosatetraenoic Acid [5HPET[c]] + 2 Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]] + Water [h2o[c]]
 
-  EC: 2.6.1.3
+  EC: EC:1.11.1.9
 
 r_Nd_2
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: RE3476C
+  Name: Carbonyl Reductase (NADPH)
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_out) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: 5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
 
-  EC: 
+  EC: 1.1.1.184
 
 r_Nr_2
-  ID: NADS2
-  Name: NAD Synthase (Glutamine-Hydrolysing)
+  ID: HMR_0979
+  Name: HMR_0979
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Deamino-Nad+ [dnad[c]] + L-Glutamine (m_out) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide [nad[c]] + Diphosphate [ppi[c]]
+  Equation: 2 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Oxygen [o2[c]]  ->  2 5-Oxo-6-Trans-Leukotriene B4 [CE5178[c]]
 
-  EC: 
+  EC: EC:1.14.14.1
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 9
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
-  m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : gln_L[c] | L-Glutamine
+  m_c      : cys_L[c] | L-Cysteine
+  m_Nf_1   : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nd_1   : gthrd[c] | Reduced Glutathione
+  m_Nf_2   : C04805[c] | 5-Hydroxyeicosatetraenoate
+  m_out    : CE2084[c] | 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -1436,20 +1708,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_out) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -1478,122 +1750,149 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
-  Imported cargo: gly[e] -> gly[c]
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
+  Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: r1675
+  ID: r1796
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
-  Equation: Glycine [gly[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  Glycine (m_c) [gly[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
+  Equation: L-Cysteine [cys_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Cysteine (m_c) [cys_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: HMR_1834
-  Name: Glycodeoxycholate Amidohydrolase
+  ID: CYSTA
+  Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: Deoxycholate [dchac[c]] + Glycine (m_c) [gly[c]] + Proton [h[c]]  ->  Glycodeoxycholic Acid [M01989[c]] + Water [h2o[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
 
-  EC: EC:3.5.1.24
+  EC: 2.6.1.3
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: GLUCYS
+  Name: Gamma-Glutamylcysteine Synthetase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_c) [cys_L[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: GTHS
+  Name: Glutathione Synthetase
   Direction: +1 relative to model.S
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Glycine [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
-  EC: 1.8.4.4
+  EC: 
 
 r_Nr_1
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: FALDH
+  Name: Formaldehyde Dehydrogenase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Formaldehyde [fald[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]] + Nicotinamide Adenine Dinucleotide [nad[c]]  ->  S-Formylglutathionate [Sfglutth[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide - Reduced [nadh[c]]
 
-  EC: 
+  EC: 1.2.1.1
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: HMR_0960
+  Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  Equation: 5(S)-Hydroperoxyeicosatetraenoic Acid [5HPET[c]] + 2 Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]] + Water [h2o[c]]
 
-  EC: 2.6.1.3
+  EC: EC:1.11.1.9
 
 r_Nd_2
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: RE3476C
+  Name: Carbonyl Reductase (NADPH)
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_out) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: 5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
 
-  EC: 
+  EC: 1.1.1.184
 
 r_Nr_2
-  ID: GMPS2
-  Name: GMP Synthase
+  ID: HMR_0979
+  Name: HMR_0979
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_out) [gln_L[c]] + Water [h2o[c]] + Xanthylic Acid [xmp[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Guanosine-5'-Monophosphate [gmp[c]] + 2 Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Oxygen [o2[c]]  ->  2 5-Oxo-6-Trans-Leukotriene B4 [CE5178[c]]
 
-  EC: 
+  EC: EC:1.14.14.1
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 10
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 3 reaction(s) | D1 parent rank: 145
 ============================================================
 SIGNAL METABOLITE MAP
-  m_in     : asp_L[c] | L-Aspartate
-  m_Ff     : oaa[c] | Oxaloacetate
+  m_in     : akg[c] | 2-Oxoglutarate
+  m_Ff     : 3snpyr[c] | 3-Sulfinopyruvate
   m_Fd     : pyr[c] | Pyruvate
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : met_L[c] | L-Methionine
-  m_c      : phe_L[c] | L-Phenylalanine
-  m_Nf_1   : glu_L[c] | L-Glutamate
-  m_Nd_1   : gln_L[c] | L-Glutamine
-  m_Nf_2   : gam6p[c] | D-Glucosamine-6-Phosphate
-  m_out    : f6p[c] | D-Fructose 6-Phosphate
+  m_c      : cys_L[c] | L-Cysteine
+  m_Nf_1   : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nd_1   : gthrd[c] | Reduced Glutathione
+  m_Nf_2   : C04805[c] | 5-Hydroxyeicosatetraenoate
+  m_out    : CE2084[c] | 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
-  No cytosolic cAMP -> m_in path found (depth <= 4, expansions <= 60000).
+  Connection status: CONNECTED (+1 only)
+  Search depth limit: Inf; expansion cap reached: 0
+  Path: camp[c] -> h[c] -> h2o[c] -> akg[c] (3 reaction(s))
+r_CAMP_1
+  ID: PDE1
+  Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
+  Direction: +1 relative to model.S
+  Equation: 3,5-Cyclic Adenosine Monophosphate [camp[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + Proton [h[c]]
+
+  EC: 3.1.4.17
+r_CAMP_2
+  ID: RE1587C
+  Name: Quinine 3-Monooxygenase
+  Direction: +1 relative to model.S
+  Equation: Estrone [estrone[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  2-Hydroxyestrone [C05298[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
+
+  EC: 1.14.13.67
+r_CAMP_3
+  ID: r0085
+  Name: 2-Oxoglutaramate Amidohydrolase
+  Direction: +1 relative to model.S
+  Equation: 2-Oxoglutaramate [HC00591[c]] + Water [h2o[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + Ammonium [nh4[c]]
+
+  EC: 3.5.1.3
+  WARNING: shortest structural path; additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
 ============================================================
 r_Ff
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: 3SALATAi
+  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
   Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Aspartate (m_in) [asp_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_1) [glu_L[c]] + Oxaloacetate (m_Ff) [oaa[c]]
+  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_in) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.1
   GPR: (2805)
   Resolved genes: 2805
 
 r_Fd
-  ID: OAADC
-  Name: Oxaloacetate Decarboxylase
+  ID: 3SPYRSP
+  Name: 3-Sulfinopyruvate Hydrolase (Spotaneous Reaction)
   Direction: +1 relative to model.S
-  Equation: Proton [h[c]] + Oxaloacetate (m_Ff) [oaa[c]]  ->  Carbon Dioxide [co2[c]] + Pyruvate (m_Fd) [pyr[c]]
+  Equation: 3-Sulfinopyruvate (m_Ff) [3snpyr[c]] + Water [h2o[c]]  ->  Proton [h[c]] + Pyruvate (m_Fd) [pyr[c]] + Sulfite [so3[c]]
 
-  EC: 
+  EC: 2.6.1.1
   GPR: 
   Resolved genes: 
 
@@ -1608,20 +1907,20 @@ r_Fr
   Resolved genes: 3945;3939;160287;3948;55293;92483
 
 r_Sf
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: ASPTA
+  Name: Aspartate Transaminase
   Direction: +1 relative to model.S
-  Equation: L-Aspartate (m_in) [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Nd_1) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_1) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + Oxaloacetate [oaa[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.6.1.1
+  GPR: (2805)
+  Resolved genes: 2805
 
 r_Sd
   ID: UNK3r
   Name: 2-Keto-4-Methylthiobutyrate Transamination, Reversible
   Direction: +1 relative to model.S
-  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf, m_Nf_1) [glu_L[c]]  ->  2-Oxoglutarate [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
+  Equation: 2-Keto-4-Methylthiobutyrate [2kmb[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  2-Oxoglutarate (m_in) [akg[c]] + L-Methionine (m_Sd) [met_L[c]]
 
   EC: 
   GPR: 
@@ -1650,76 +1949,78 @@ r_I
   CHECK: r_Sd produces m_Sd; r_I consumes m_Fd and m_Sd equally (1 each).
 
 TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
-  m_Sd is the intracellular counter-substrate and is exported by r_T.
-  Imported cargo: phe_L[e] -> phe_L[c]
+  m_Sd is the source metabolite for the intracellular path to the exported counter-substrate.
+  m_Sd-to-counter path: met_L[c]
+  Path length: zero; m_Sd is itself the exchanged counter-substrate.
+  Imported cargo: cys_L[e] -> cys_L[c]
   Counter-substrate: met_L[c] -> met_L[e]
   Stoichiometry: import 1; counter export 1
   Transporter GPR: (9057)
-  Transporter abundance is treated as pre-existing; no transcription step is modeled.
+  Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
 MEMBRANE TRANSPORT: r_T (production of m_c)
-  ID: r1766
+  ID: r1796
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
-  Equation: L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]] + L-Phenylalanine [phe_L[e]]  ->  L-Methionine [met_L[e]] + Sodium [na1[c]] + L-Phenylalanine (m_c) [phe_L[c]]
+  Equation: L-Cysteine [cys_L[e]] + L-Methionine (m_Sd) [met_L[c]] + Sodium [na1[e]]  ->  L-Cysteine (m_c) [cys_L[c]] + L-Methionine [met_L[e]] + Sodium [na1[c]]
 
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: PROTEIN_BS
-  Name: PROTEIN_BS
+  ID: CYSTA
+  Name: Cysteine Transaminase
   Direction: +1 relative to model.S
-  Equation: 0.6 L-Alanine [ala_L[c]] + 0.377 L-Arginine [arg_L[c]] + 0.2881 L-Asparagine [asn_L[c]] + 0.359 L-Aspartate (m_in) [asp_L[c]] + 0.145 L-Cysteine [cys_L[c]] + 0.322 L-Glutamine (m_Nd_1) [gln_L[c]] + 0.386 L-Glutamate (m_Sf, m_Nf_1) [glu_L[c]] + 0.538 Glycine [gly[c]] + 0.143 L-Histidine [his_L[c]] + 0.324 L-Isoleucine [ile_L[c]] + 0.564 L-Leucine [leu_L[c]] + 0.57 L-Lysine [lys_L[c]] + 0.138 L-Methionine (m_Sd) [met_L[c]] + 0.219 L-Phenylalanine (m_c) [phe_L[c]] + 0.313 L-Proline [pro_L[c]] + 0.43 L-Serine [ser_L[c]] + 0.386 L-Threonine [thr_L[c]] + 0.044 L-Tryptophan [trp_L[c]] + 0.182 L-Tyrosine [tyr_L[c]] + 0.416 L-Valine [val_L[c]]  ->  Torasemide-M3 [protein[c]]
+  Equation: 2-Oxoglutarate (m_in) [akg[c]] + L-Cysteine (m_c) [cys_L[c]]  ->  L-Glutamate (m_Sf) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+
+  EC: 2.6.1.3
+
+r_Nf_1
+  ID: GLUCYS
+  Name: Gamma-Glutamylcysteine Synthetase
+  Direction: +1 relative to model.S
+  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_c) [cys_L[c]] + L-Glutamate (m_Sf) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 
 
-r_Nf_1
-  ID: PHETA1
-  Name: Phenylalanine Transaminase
-  Direction: +1 relative to model.S
-  Equation: 2-Oxoglutarate [akg[c]] + L-Phenylalanine (m_c) [phe_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_1) [glu_L[c]] + Keto-Phenylpyruvate [phpyr[c]]
-
-  EC: 2.6.1.58
-
 r_Nd_1
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: GTHS
+  Name: Glutathione Synthetase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_1) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Nd_1) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_Nf_1) [glucys[c]] + Glycine [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 
 
 r_Nr_1
-  ID: NADS2
-  Name: NAD Synthase (Glutamine-Hydrolysing)
+  ID: RE1916C
+  Name: Glutathione Transferase
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + Deamino-Nad+ [dnad[c]] + L-Glutamine (m_Nd_1) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Glutamate (m_Sf, m_Nf_1) [glu_L[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide [nad[c]] + Diphosphate [ppi[c]]
+  Equation: L-Dopaquinone [dopaqn[c]] + Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  5-S-Glutathionyl-L-Dopa [CE5026[c]]
 
-  EC: 
+  EC: 2.5.1.18
 
 r_Nf_2
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: HMR_0960
+  Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Equation: D-Fructose 6-Phosphate (m_out) [f6p[c]] + L-Glutamine (m_Nd_1) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate (m_Nf_2) [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_1) [glu_L[c]]
+  Equation: 5(S)-Hydroperoxyeicosatetraenoic Acid [5HPET[c]] + 2 Reduced Glutathione (m_Nd_1) [gthrd[c]]  ->  5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]] + Water [h2o[c]]
 
-  EC: 2.6.1.16
+  EC: EC:1.11.1.9
 
 r_Nd_2
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RE3476C
+  Name: Carbonyl Reductase (NADPH)
   Direction: +1 relative to model.S
-  Equation: D-Glucosamine-6-Phosphate (m_Nf_2) [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_out) [f6p[c]] + Ammonium [nh4[c]]
+  Equation: 5-Hydroxyeicosatetraenoate (m_Nf_2) [C04805[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
 
-  EC: 3.5.99.6
+  EC: 1.1.1.184
 
 r_Nr_2
-  ID: PFK26
-  Name: 6-Phosphofructo-2-Kinase
+  ID: HMR_0979
+  Name: HMR_0979
   Direction: +1 relative to model.S
-  Equation: Adenosine Triphosphate [atp[c]] + D-Fructose 6-Phosphate (m_out) [f6p[c]]  ->  Adenosine Diphosphate [adp[c]] + Beta-D-Fructofuranose 2,6-Bisphosphate [f26bp[c]] + Proton [h[c]]
+  Equation: 2 5-Oxo-(6E,8Z,11Z,14Z)-Eicosatetraenoic Acid (m_out) [CE2084[c]] + Oxygen [o2[c]]  ->  2 5-Oxo-6-Trans-Leukotriene B4 [CE5178[c]]
 
-  EC: 2.7.1.105
+  EC: EC:1.14.14.1
 
 MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
