@@ -13,12 +13,21 @@ PRINT_TOP_MOTIFS = 10;
 % Exclude complete motifs containing reactions annotated with these EC numbers.
 % EC annotations are read from the model reaction fields (rxnECNumbers/rxnEC).
 EXCLUDED_MOTIF_ECS = ["2.4.1.23"];
+REQUIRE_UNIQUE_COMPLETE_ECS = true; % Each fully specified EC can be assigned to at most one reaction in a complete motif.
 BLOCK0_SOURCE_MET_ID = 'camp[c]';
 BLOCK0_MAX_DEPTH = Inf;
 BLOCK0_MAX_EXPANSIONS = Inf;
 BLOCK0_ALLOW_ZERO_STEP = false;
 BLOCK0_DIAGNOSTICS_ONLY = false;
 RUN_RANKING_SELF_TESTS = true;
+% r_I kinetic ranking: structural counter distance ALWAYS remains first.
+RI_KCAT_RANKING = true;
+RI_KCAT_ORGANISM = 'Homo sapiens';
+RI_KCAT_BRENDA_FILE = 'brenda_2026_1.txt'; % located with findNamed(codeRoot,...)
+RI_KCAT_CACHE_FILE = ''; % empty -> output directory/rI_brenda_ec_index.mat
+RI_KCAT_ALLOW_ANY_ORGANISM = true;
+RI_KCAT_ALLOW_ANY_SUBSTRATE = true;
+RI_KCAT_ALLOW_SA_MW_ESTIMATE = true;
 % All regulator/exchange targets are considered. Reaction branching and trial
 % caps still bound the combinatorial search; use Inf to remove an individual cap.
 D1_MAX_TARGETS = Inf;
@@ -36,7 +45,10 @@ EXCHANGE_REQUIRE_GPR = true;               % Keep only transport reactions with 
 % Regulatory protein-path candidates are not passed into the final motif search.
 EXCHANGE_ONLY = true;
 N8_MAX_BRANCH = 25;
-N8_MAX_TESTS = 250000;
+N8_MAX_TESTS = Inf; % Legacy global cap disabled; Stage 8 now uses a fair per-parent budget.
+N8_MAX_TESTS_PER_PARENT = 5000; % Deterministic budget for every retained D1 parent.
+N8_USE_PARALLEL = true;         % Use parfor when Parallel Computing Toolbox is available.
+N8_PARALLEL_WORKERS = 0;        % 0 = scheduler/default pool size; otherwise requested worker count.
 % Discovery continues after ten matches to count distinct solutions within
 % these limits. Only PRINT_TOP_MOTIFS records are retained for detailed printing.
 % Equal-distance motifs may share m_in. The TXT reports found/printed separately.
@@ -60,7 +72,7 @@ assert(isscalar(PRINT_TOP_MOTIFS) && isfinite(PRINT_TOP_MOTIFS) && ...
     'Ranking:OutputCount','PRINT_TOP_MOTIFS must be a positive integer.');
 for capName={'D1_MAX_TARGETS','D1_MAX_MOTIFS','D1_MAX_PER_TARGET', ...
         'D1_MAX_BRANCH','D1_MAX_RXN_CAND','D1_MAX_TESTS_PER_TARGET', ...
-        'EXCHANGE_D1_MAX_TARGETS','EXCHANGE_D1_MAX_CONNECTIONS','N8_MAX_BRANCH','N8_MAX_TESTS'}
+        'EXCHANGE_D1_MAX_TARGETS','EXCHANGE_D1_MAX_CONNECTIONS','N8_MAX_BRANCH','N8_MAX_TESTS_PER_PARENT'}
     capValue=eval(capName{1});
     assert(isnumeric(capValue) && isscalar(capValue) && ~isnan(capValue) && ...
         capValue>=1 && (isinf(capValue) || capValue==floor(capValue)), ...
@@ -1267,6 +1279,33 @@ if exchangeFound==0
 end
 clear close7x;
 % EXCHANGE_ONLY keeps regulatory protein-path candidates out of final motifs.
+% Enrich each retained D1 parent with canceller (r_I) kcat BEFORE ranking.
+% The lookup uses the local BRENDA flat file and caches only ECs actually needed.
+% Ranking remains lexicographic: counter distance first, then r_I evidence/kcat,
+% then cAMP-to-m_in distance. Missing kinetics never invalidate a motif.
+for riq=1:numel(selectedD1)
+    selectedD1(riq).rIKcat=NaN;
+    selectedD1(riq).rIKcatEvidence=0;
+    selectedD1(riq).rIKcatSource="not queried";
+end
+if RI_KCAT_RANKING && ~isempty(selectedD1)
+    riBrenda=findNamed(codeRoot,RI_KCAT_BRENDA_FILE);
+    if isempty(riBrenda)
+        report(logID,['r_I kinetics: local BRENDA file not found: ' RI_KCAT_BRENDA_FILE '. Ranking falls back to distances.']);
+    else
+        if isempty(RI_KCAT_CACHE_FILE)
+            riCache=fullfile(outDir,'rI_brenda_ec_index.mat');
+        else
+            riCache=RI_KCAT_CACHE_FILE;
+        end
+        [selectedD1,RIKinetics]=attachRIKcat(selectedD1,model,metIDs,metNames, ...
+            RI_KCAT_ORGANISM,RI_KCAT_ALLOW_ANY_ORGANISM,RI_KCAT_ALLOW_ANY_SUBSTRATE, ...
+            RI_KCAT_ALLOW_SA_MW_ESTIMATE,riBrenda,riCache);
+        writetable(RIKinetics,fullfile(outDir,'18a_rI_Kinetics.csv'));
+        report(logID,sprintf('r_I kinetics: %d/%d parents received a positive kcat; details: 18a_rI_Kinetics.csv', ...
+            nnz(isfinite([selectedD1.rIKcat]) & [selectedD1.rIKcat]>0),numel(selectedD1)));
+    end
+end
 [selectedD1,parentDistances]=rankD1Parents(selectedD1,block0Cache.depth);
 assert(all([selectedD1.exchangeRow]>0),'ExchangeOnly:ParentMode', ...
     'Only stoichiometric exchange parents may enter the complete-motif search.');
@@ -1286,16 +1325,22 @@ parentInputIDs=strings(numel(selectedD1),1);
 parentTransportIDs=strings(numel(selectedD1),1);
 parentCounterDistances=zeros(numel(selectedD1),1);
 parentMode=strings(numel(selectedD1),1);
+parentRIReaction=strings(numel(selectedD1),1); parentRIKcat=nan(numel(selectedD1),1);
+parentRIEvidence=zeros(numel(selectedD1),1); parentRISource=strings(numel(selectedD1),1);
 for pr=1:numel(selectedD1)
     parentInputIDs(pr)=metIDs(selectedD1(pr).d.min);
     parentTransportIDs(pr)=string(T.reaction(selectedD1(pr).transportRow));
     parentCounterDistances(pr)=numel(selectedD1(pr).exchangePathRxns);
     parentMode(pr)="stoichiometric_exchange";
+    parentRIReaction(pr)=rxnIDs(selectedD1(pr).d.ri);
+    if isfield(selectedD1,'rIKcat'), parentRIKcat(pr)=selectedD1(pr).rIKcat; end
+    if isfield(selectedD1,'rIKcatEvidence'), parentRIEvidence(pr)=selectedD1(pr).rIKcatEvidence; end
+    if isfield(selectedD1,'rIKcatSource'), parentRISource(pr)=selectedD1(pr).rIKcatSource; end
 end
-ParentRanking=table(parentRank,parentCounterDistances,parentDistances,parentInputIDs, ...
-    parentTransportIDs,parentMode,'VariableNames', ...
-    {'ParentRank','m_SdToCounterReactionDistance','CAMPReactionDistance', ...
-    'm_in_ID','TransportReactionID','TransportMode'});
+ParentRanking=table(parentRank,parentCounterDistances,parentRIEvidence,parentRIKcat,parentRIReaction, ...
+    parentRISource,parentDistances,parentInputIDs,parentTransportIDs,parentMode,'VariableNames', ...
+    {'ParentRank','m_SdToCounterReactionDistance','r_I_KcatEvidenceRank','r_I_kcat_s', ...
+    'r_I_ReactionID','r_I_KcatSource','CAMPReactionDistance','m_in_ID','TransportReactionID','TransportMode'});
 writetable(ParentRanking,fullfile(outDir,'18c_D1_Parents_Ranked_By_Counter_Distance.csv'));
 if isempty(exchangeMatchRows)
     exchangeMatches=table('Size',[0 15],'VariableTypes', ...
@@ -1342,8 +1387,8 @@ fprintf(fid8,'Upstream caps: protein hops=%g; metabolite-match rows=%g; backward
     MAX_HOPS,STAGE5_MAX_MATCH_ROWS,STAGE5_MAX_HOPS,STAGE5_MAX_PATH_ROWS);
 fprintf(fid8,'D1 caps: targets=%g; motifs=%g; retained/target=%g; branch=%g; reaction candidates=%g; tests/target=%g.\n', ...
     D1_MAX_TARGETS,D1_MAX_MOTIFS,D1_MAX_PER_TARGET,D1_MAX_BRANCH,D1_MAX_RXN_CAND,D1_MAX_TESTS_PER_TARGET);
-fprintf(fid8,'Exchange caps: pairs=%g; connections=%g. Neuron caps: branch=%g; total tests=%g.\n', ...
-    EXCHANGE_D1_MAX_TARGETS,EXCHANGE_D1_MAX_CONNECTIONS,N8_MAX_BRANCH,N8_MAX_TESTS);
+fprintf(fid8,'Exchange caps: pairs=%g; connections=%g. Neuron caps: branch=%g; tests/parent=%g; parallel=%d.\n', ...
+    EXCHANGE_D1_MAX_TARGETS,EXCHANGE_D1_MAX_CONNECTIONS,N8_MAX_BRANCH,N8_MAX_TESTS_PER_PARENT,N8_USE_PARALLEL);
 fprintf(fid8,'m_Sd-to-counter path caps: depth=%g reactions; precursors/exchange pair=%g.\n', ...
     EXCHANGE_METABOLIC_MAX_DEPTH,EXCHANGE_MAX_SIGNAL_PRECURSORS);
 fprintf(fid8,'D1 calls reaching trial/branch/retention limits: %d / %d / %d.\n', ...
@@ -1401,113 +1446,87 @@ seen8=containers.Map('KeyType','char','ValueType','logical');
 countersWithComplete=containers.Map('KeyType','char','ValueType','logical');
 completeExchange8=0;completeRegulatory8=0;
 best8=struct('parentIndex',{},'mc',{},'nf',{},'nd',{},'nf2',{}, ...
-    'mout',{},'chosen',{},'counterDistance',{},'distance',{},'discoveryIndex',{});
+    'mout',{},'chosen',{},'counterDistance',{},'distance',{},'rIKcat',{},'rIKcatEvidence',{},'discoveryIndex',{});
 rankingRows8=cell(0,12);
-for ii=1:numel(selectedD1)
-    if tests8>=N8_MAX_TESTS,break;end
-    sel=selectedD1(ii);tr=sel.transportRow;
-    mc=find(metIDs==string(T.cytosolic(tr)),1);
-    if isempty(mc) || comp(mc)~="c",continue;end
-    examined8=examined8+1;
-    % r_cr and r_Nf are distinct reactions consuming m_c.
-    inputRx=cons8{mc};
-    if numel(inputRx)<2,continue;end
-    inputRx=inputRx(1:min(end,N8_MAX_BRANCH));
-    for i1=reshape(inputRx,1,[])
-        if tests8>=N8_MAX_TESTS,break;end
-        nfCandidates=do{i1};
-        nfCandidates=nfCandidates(arrayfun(@(v)d1SignalOK(v,mc,metIDs,comp,currency),nfCandidates));
-        nfCandidates=nfCandidates(1:min(end,N8_MAX_BRANCH));
-        for nf=reshape(nfCandidates,1,[])
-            secondRx=cons8{nf};secondRx=secondRx(1:min(end,N8_MAX_BRANCH));
-            for i2=reshape(secondRx,1,[])
-                if di(i2)==di(i1),continue;end
-                ndCandidates=do{i2};
-                ndCandidates=ndCandidates(arrayfun(@(v)d1SignalOK(v,nf,metIDs,comp,currency) && v~=mc,ndCandidates));
-                ndCandidates=ndCandidates(1:min(end,N8_MAX_BRANCH));
-                for nd=reshape(ndCandidates,1,[])
-                    % r_Nr and r_Nf_2 are distinct reactions consuming m_Nd.
-                    ndRx=cons8{nd};ndRx=ndRx(1:min(end,N8_MAX_BRANCH));
-                    if numel(ndRx)<2,continue;end
-                    for i4=reshape(ndRx,1,[])
-                        if ismember(di(i4),di([i1,i2])),continue;end
-                        nf2Candidates=do{i4};
-                        nf2Candidates=nf2Candidates(arrayfun(@(v)d1SignalOK(v,nd,metIDs,comp,currency) && ~ismember(v,[mc,nf]),nf2Candidates));
-                        nf2Candidates=nf2Candidates(1:min(end,N8_MAX_BRANCH));
-                        for nf2=reshape(nf2Candidates,1,[])
-                            fifthRx=cons8{nf2};fifthRx=fifthRx(1:min(end,N8_MAX_BRANCH));
-                            for i5=reshape(fifthRx,1,[])
-                                if ismember(di(i5),di([i1,i2,i4])),continue;end
-                                outCandidates=do{i5};
-                                outCandidates=outCandidates(arrayfun(@(v)d1SignalOK(v,nf2,metIDs,comp,currency) && ~ismember(v,[mc,nf,nd]),outCandidates));
-                                outCandidates=outCandidates(1:min(end,N8_MAX_BRANCH));
-                                for mout=reshape(outCandidates,1,[])
-                                    endRx=cons8{mout};endRx=endRx(1:min(end,N8_MAX_BRANCH));
-                                    if isempty(endRx),continue;end
-                                    % Find independent loss reactions for m_c and m_Nd.
-                                    for irc=reshape(inputRx,1,[])
-                                        if di(irc)==di(i1),continue;end
-                                        for inr=reshape(ndRx,1,[])
-                                            if di(inr)==di(i4),continue;end
-                                            for inr2=reshape(endRx,1,[])
-                                                if tests8>=N8_MAX_TESTS,break;end
-                                                tests8=tests8+1;
-                                                chosen=[irc,i1,i2,inr,i4,i5,inr2];
-                                                if numel(unique(di(chosen)))~=7,continue;end
-                                                % Do not use D1 reactions as downstream neuron reactions.
-                                                d=sel.d;
-                                                d1ids=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri];
-                                                if any(ismember(di(chosen),d1ids)),continue;end
-                                                [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
-                                                allMotifReactions=[block0Reactions,d1ids,sel.exchangePathRxns, ...
-                                                    double(T.modelIndex(tr)),reshape(di(chosen),1,[])];
-                                                if reactionHasExcludedEC(model,allMotifReactions,EXCLUDED_MOTIF_ECS)
-                                                    continue;
-                                                end
-                                                assert(block0InputAllowed(d.min),'Ranking:UnconnectedCircuit', ...
-                                                    'Cannot accept a complete motif without a Block 0 path.');
-                                                chemicalKey=sprintf('%d,', ...
-                                                    [d.min,d.mff,d.mfd,d.msf,sel.target,mc,nf,nd,nf2,mout, ...
-                                                     d1ids,sel.exchangePathRxns,double(T.modelIndex(tr)),reshape(di(chosen),1,[])]);
-                                                if isKey(seen8,chemicalKey),continue;end
-                                                seen8(chemicalKey)=true;
-                                                found8=found8+1;
-                                                distance=block0Cache.depth(d.min);
-                                                counterKey=counterChemicalKey(sel,double(T.modelIndex(tr)),di(irc),mc);
-                                                countersWithComplete(counterKey)=true;
-                                                if sel.exchangeRow>0
-                                                    completeExchange8=completeExchange8+1;
-                                                else
-                                                    completeRegulatory8=completeRegulatory8+1;
-                                                end
-                                                item8=struct('parentIndex',ii,'mc',mc,'nf',nf,'nd',nd, ...
-                                                    'nf2',nf2,'mout',mout,'chosen',chosen, ...
-                                                    'counterDistance',numel(sel.exchangePathRxns), ...
-                                                    'distance',distance,'discoveryIndex',found8);
-                                                best8(end+1)=item8; %#ok<SAGROW>
-                                                best8=keepTopCompleteMotifs(best8,PRINT_TOP_MOTIFS);
-                                            end
-                                            if tests8>=N8_MAX_TESTS,break;end
-                                        end
-                                        if tests8>=N8_MAX_TESTS,break;end
-                                    end
-                                    if tests8>=N8_MAX_TESTS,break;end
-                                end
-                                if tests8>=N8_MAX_TESTS,break;end
-                            end
-                            if tests8>=N8_MAX_TESTS,break;end
-                        end
-                        if tests8>=N8_MAX_TESTS,break;end
-                    end
-                    if tests8>=N8_MAX_TESTS,break;end
-                end
-                if tests8>=N8_MAX_TESTS,break;end
+
+% Stage 8 is embarrassingly parallel by retained D1 parent. Each worker gets
+% the SAME deterministic per-parent trial budget. No worker writes files or
+% mutates shared maps; all deduplication/counting is done serially below.
+nParents8=numel(selectedD1);
+parentResults8=cell(nParents8,1);
+useParallel8=false;
+if N8_USE_PARALLEL && nParents8>1 && license('test','Distrib_Computing_Toolbox')
+    try
+        pool8=gcp('nocreate');
+        if isempty(pool8)
+            if N8_PARALLEL_WORKERS>0
+                pool8=parpool(N8_PARALLEL_WORKERS);
+            else
+                pool8=parpool;
             end
-            if tests8>=N8_MAX_TESTS,break;end
+        end
+        useParallel8=~isempty(pool8);
+        report(logID,sprintf('Stage 8 HPC: parallel=%d; workers=%d; per-parent trial cap=%d; parents=%d.', ...
+            useParallel8,pool8.NumWorkers,N8_MAX_TESTS_PER_PARENT,nParents8));
+    catch ME
+        report(logID,['Stage 8 HPC: parallel pool unavailable; serial fallback. ' ME.message]);
+        useParallel8=false;
+    end
+else
+    report(logID,sprintf('Stage 8 HPC: parallel=0; per-parent trial cap=%d; parents=%d.', ...
+        N8_MAX_TESTS_PER_PARENT,nParents8));
+end
+
+if useParallel8
+    parfor ii=1:nParents8
+        parentResults8{ii}=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency, ...
+            cons8,di,do,model,block0Cache,EXCLUDED_MOTIF_ECS, ...
+            REQUIRE_UNIQUE_COMPLETE_ECS,N8_MAX_BRANCH,N8_MAX_TESTS_PER_PARENT);
+    end
+else
+    for ii=1:nParents8
+        parentResults8{ii}=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency, ...
+            cons8,di,do,model,block0Cache,EXCLUDED_MOTIF_ECS, ...
+            REQUIRE_UNIQUE_COMPLETE_ECS,N8_MAX_BRANCH,N8_MAX_TESTS_PER_PARENT);
+        if mod(ii,100)==0
+            report(logID,sprintf('Stage 8 serial progress: %d/%d parents.',ii,nParents8));
         end
     end
-    if mod(ii,10)==0
-        report(logID,sprintf('Stage 8 progress: %d D1 motifs; %d downstream candidates; %d trials',ii,found8,tests8));
+end
+
+% Serial deterministic merge. Parent order, then each parent's discovery
+% order, defines the stable discoveryIndex independently of worker scheduling.
+reject8=struct('duplicateReaction',0,'d1Overlap',0,'excludedEC',0, ...
+    'repeatedEC',0,'duplicateChemistry',0,'accepted',0,'parentsCapped',0);
+for ii=1:nParents8
+    R8=parentResults8{ii};
+    if isempty(R8),continue;end
+    examined8=examined8+R8.examined;
+    tests8=tests8+R8.tests;
+    reject8.duplicateReaction=reject8.duplicateReaction+R8.rejectDuplicateReaction;
+    reject8.d1Overlap=reject8.d1Overlap+R8.rejectD1Overlap;
+    reject8.excludedEC=reject8.excludedEC+R8.rejectExcludedEC;
+    reject8.repeatedEC=reject8.repeatedEC+R8.rejectRepeatedEC;
+    reject8.parentsCapped=reject8.parentsCapped+R8.capReached;
+    for jj=1:numel(R8.candidates)
+        c8=R8.candidates(jj);
+        if isKey(seen8,c8.chemicalKey)
+            reject8.duplicateChemistry=reject8.duplicateChemistry+1;
+            continue;
+        end
+        seen8(c8.chemicalKey)=true;
+        found8=found8+1;reject8.accepted=reject8.accepted+1;
+        countersWithComplete(c8.counterKey)=true;
+        sel=selectedD1(ii);
+        if sel.exchangeRow>0,completeExchange8=completeExchange8+1;
+        else,completeRegulatory8=completeRegulatory8+1;end
+        item8=struct('parentIndex',ii,'mc',c8.mc,'nf',c8.nf,'nd',c8.nd, ...
+            'nf2',c8.nf2,'mout',c8.mout,'chosen',c8.chosen, ...
+            'counterDistance',numel(sel.exchangePathRxns), ...
+            'distance',block0Cache.depth(sel.d.min),'rIKcat',sel.rIKcat, ...
+            'rIKcatEvidence',sel.rIKcatEvidence,'discoveryIndex',found8);
+        best8(end+1)=item8; %#ok<SAGROW>
+        best8=keepTopCompleteMotifs(best8,PRINT_TOP_MOTIFS);
     end
 end
 printed8=numel(best8);
@@ -1537,8 +1556,11 @@ fprintf(fid8,'Complete motifs printed: %d (requested maximum %d)\n',printed8,PRI
 fprintf(fid8,'Count definitions: chemical structures are deduplicated; alternate protein annotations do not add motifs.\n');
 fprintf(fid8,'One shortest Block 0 path is used per m_in; alternate connectors do not multiply motif counts.\n');
 fprintf(fid8,'Counter total includes counters with no two-neuron solution; complete count requires both neurons.\n');
-fprintf(fid8,'D1 parents examined for neurons: %d/%d; trials=%d; neuron trial cap reached=%d.\n', ...
-    examined8,numel(selectedD1),tests8,tests8>=N8_MAX_TESTS);
+fprintf(fid8,'D1 parents examined for neurons: %d/%d; total trials=%d; parents reaching per-parent cap=%d.\n', ...
+    examined8,numel(selectedD1),tests8,reject8.parentsCapped);
+fprintf(fid8,'Stage 8 rejection diagnostics: duplicate reaction=%d; D1 overlap=%d; excluded EC=%d; repeated/unassignable EC=%d; duplicate chemistry=%d; accepted=%d.\n', ...
+    reject8.duplicateReaction,reject8.d1Overlap,reject8.excludedEC,reject8.repeatedEC, ...
+    reject8.duplicateChemistry,reject8.accepted);
 fprintf(fid8,'Counts describe the configured search only; finite branch/trial/retention caps can hide additional solutions.\n');
 fprintf(fid8,'Selecting ten for printing does NOT stop discovery/counting at ten.\n\n');
 
@@ -2167,29 +2189,30 @@ function motifs=keepClosestD1Motifs(motifs,depth,limit)
 end
 
 function [parents,distances]=rankD1Parents(parents,depth)
-% Prefer the shortest m_Sd-to-counter path, then the shortest cAMP-to-m_in path.
+% Rank: shortest m_Sd-to-counter path; best r_I evidence; largest r_I kcat; then cAMP distance.
     distances=zeros(numel(parents),1);
     if isempty(parents),return;end
-    for k=1:numel(parents)
-        distances(k)=depth(parents(k).d.min);
-    end
-    assert(all(isfinite(distances)),'Ranking:DisconnectedParent', ...
-        'Only parents with a cAMP path may enter the final ranking.');
+    for k=1:numel(parents), distances(k)=depth(parents(k).d.min); end
+    assert(all(isfinite(distances)),'Ranking:DisconnectedParent','Only cAMP-connected parents may be ranked.');
     counterDistances=reshape(arrayfun(@(p)numel(p.exchangePathRxns),parents),[],1);
-    nonExchange=reshape([parents.exchangeRow]==0,[],1);
+    evidence=zeros(numel(parents),1); kc=nan(numel(parents),1);
+    if isfield(parents,'rIKcatEvidence'), evidence=reshape([parents.rIKcatEvidence],[],1); end
+    if isfield(parents,'rIKcat'), kc=reshape([parents.rIKcat],[],1); end
+    known=isfinite(kc)&kc>0; ksort=kc; ksort(~known)=-Inf;
     serial=(1:numel(parents))';
-    [~,order]=sortrows([counterDistances,distances,double(nonExchange),serial],[1 2 3 4]);
+    [~,order]=sortrows([counterDistances,-evidence,-double(known),-ksort,distances,serial],[1 2 3 4 5 6]);
     parents=parents(order);distances=distances(order);
 end
 
 function motifs=keepTopCompleteMotifs(motifs,limit)
     if isempty(motifs),return;end
-    counterDistances=reshape([motifs.counterDistance],[],1);
-    distances=reshape([motifs.distance],[],1);
-    serial=reshape([motifs.discoveryIndex],[],1);
-    [~,order]=sortrows([counterDistances,distances,serial],[1 2 3]);
-    motifs=motifs(order);
-    if numel(motifs)>limit,motifs=motifs(1:limit);end
+    counterDistances=reshape([motifs.counterDistance],[],1); distances=reshape([motifs.distance],[],1);
+    evidence=zeros(numel(motifs),1); kc=nan(numel(motifs),1);
+    if isfield(motifs,'rIKcatEvidence'), evidence=reshape([motifs.rIKcatEvidence],[],1); end
+    if isfield(motifs,'rIKcat'), kc=reshape([motifs.rIKcat],[],1); end
+    known=isfinite(kc)&kc>0; ksort=kc; ksort(~known)=-Inf; serial=reshape([motifs.discoveryIndex],[],1);
+    [~,order]=sortrows([counterDistances,-evidence,-double(known),-ksort,distances,serial],[1 2 3 4 5 6]);
+    motifs=motifs(order); if numel(motifs)>limit,motifs=motifs(1:limit);end
 end
 
 
@@ -2271,6 +2294,94 @@ function tf=d1SignalOK(m,other,metIDs,comp,currency)
     base=regexprep(char(metIDs(m)),'\[c\]$','');
     tf=~ismember(lower(string(base)),currency);
 end
+function [parents,K]=attachRIKcat(parents,model,metIDs,metNames,organism,allowAnyOrg,allowAnySub,allowSAMW,flatFile,cacheFile)
+% Local BRENDA kinetics for r_I. Evidence rank: 3 substrate+organism matched;
+% 2 substrate matched with organism fallback / any-substrate same organism;
+% 1 EC-level turnover or SA*MW estimate; 0 unresolved.
+    n=numel(parents); rxn=strings(n,1); ec=strings(n,1); substrate=strings(n,1);
+    for i=1:n
+        j=parents(i).d.ri; rxn(i)=string(model.rxns{j}); ec(i)=d1EC(model,j);
+        subs=find(full(model.S(:,j))<0);
+        % r_I consumes m_Fd and m_Sd; use m_Sd as the primary tagged canceller substrate.
+        target=parents(i).target;
+        if any(subs==target), substrate(i)=metNames(target); elseif ~isempty(subs), substrate(i)=metNames(subs(1)); end
+    end
+    fullEC=strings(0,1);
+    for i=1:n, fullEC=[fullEC;string(regexp(char(ec(i)),'\d+\.\d+\.\d+\.\d+','match'))']; end %#ok<AGROW>
+    fullEC=unique(fullEC,'stable');
+    db=loadRIFlat(flatFile,fullEC,cacheFile);
+    kval=nan(n,1); evidence=zeros(n,1); source=strings(n,1); usedEC=strings(n,1); usedSub=strings(n,1); usedOrg=strings(n,1);
+    for i=1:n
+        codes=string(regexp(char(ec(i)),'\d+\.\d+\.\d+\.\d+','match'));
+        best=[-Inf -Inf]; bestVal=NaN; bestSource=""; bestEC=""; bestSub=""; bestOrg="";
+        for code=codes
+            if ~isKey(db,char(code)),continue;end
+            d=db(char(code)); tn=d.TN;
+            if ~isempty(tn)
+                vals=[tn.value]'; ok=isfinite(vals)&vals>0; tn=tn(ok);
+                if ~isempty(tn)
+                    org=string({tn.organism})'; sub=string({tn.substrate})';
+                    exactSub=normRI(sub)==normRI(substrate(i)); exactOrg=normRI(org)==normRI(string(organism));
+                    masks={exactSub&exactOrg, exactSub, exactOrg, true(size(exactSub))}; ranks=[3 2 2 1]; labels=["BRENDA turnover: substrate + organism matched","BRENDA turnover: substrate matched; organism fallback","BRENDA turnover: organism matched; substrate fallback","BRENDA turnover: EC-level any substrate/organism"];
+                    for q=1:4
+                        if q==2 && ~allowAnyOrg,continue;end
+                        if q>=3 && ~allowAnySub,continue;end
+                        m=masks{q}; if any(m)
+                            v=median([tn(m).value]); score=[ranks(q),v];
+                            if score(1)>best(1) || (score(1)==best(1)&&score(2)>best(2))
+                                best=score;bestVal=v;bestSource=labels(q);bestEC=code;bestSub=strjoin(unique(sub(m),'stable'),'; ');bestOrg=strjoin(unique(org(m),'stable'),'; ');
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+            if ~isfinite(bestVal) && allowSAMW
+                sa=[d.SA.value]; mw=[d.MW.value]; sa=sa(isfinite(sa)&sa>0); mw=mw(isfinite(mw)&mw>0);
+                if ~isempty(sa)&&~isempty(mw)
+                    v=median(sa)*median(mw)/60/1000; % SA umol/min/mg * MW Da -> s^-1
+                    best=[1 v];bestVal=v;bestSource="ESTIMATED SA*MW/60; EC-level, mass basis requires review";bestEC=code;
+                end
+            end
+        end
+        kval(i)=bestVal;evidence(i)=max(0,best(1));source(i)=bestSource;usedEC(i)=bestEC;usedSub(i)=bestSub;usedOrg(i)=bestOrg;
+        parents(i).rIKcat=kval(i);parents(i).rIKcatEvidence=evidence(i);parents(i).rIKcatSource=source(i);
+    end
+    K=table(rxn,ec,substrate,kval,evidence,source,usedEC,usedSub,usedOrg,'VariableNames', ...
+        {'r_I_ReactionID','ModelEC','PrimarySubstrate','kcat_s','EvidenceRank','Source','ECused','SubstrateUsed','OrganismUsed'});
+end
+
+function db=loadRIFlat(flatFile,wantedECs,cacheFile)
+% Small independent BRENDA flat-file index for the r_I ECs only.
+    wantedECs=unique(string(wantedECs)); wantedECs=wantedECs(wantedECs~="");
+    db=containers.Map('KeyType','char','ValueType','any'); sig=dir(flatFile); signature=[sig.bytes sig.datenum];
+    if isfile(cacheFile)
+        try, S=load(cacheFile,'dbCache','signatureCache'); if isequal(S.signatureCache,signature),db=S.dbCache;end, catch, end
+    end
+    missing=wantedECs(~cellfun(@(x)isKey(db,x),cellstr(wantedECs))); if isempty(missing),return;end
+    want=containers.Map(cellstr(missing),num2cell(true(size(missing))));
+    fid=fopen(flatFile,'r','n','UTF-8'); assert(fid>0,'Cannot open BRENDA flat file: %s',flatFile); c=onCleanup(@()fclose(fid));
+    current=""; keep=false; orgMap=containers.Map('KeyType','char','ValueType','char');
+    while true
+        line=fgetl(fid); if ~ischar(line),break;end
+        id=regexp(line,'^ID\s+([0-9]+\.[0-9]+\.[0-9]+\.[0-9-]+)','tokens','once');
+        if ~isempty(id), current=string(id{1});keep=isKey(want,char(current));orgMap=containers.Map('KeyType','char','ValueType','char'); if keep&&~isKey(db,char(current)),db(char(current))=struct('TN',emptyRIRec(),'SA',emptyRIRec(),'MW',emptyRIRec());end;continue;end
+        if ~keep,continue;end
+        pr=regexp(line,'^PR\s+#(\d+)#\s*([^<{#]*)','tokens','once'); if ~isempty(pr),orgMap(strtrim(pr{1}))=strtrim(pr{2});continue;end
+        hit=regexp(line,'^(TN|SA|MW)\s+(.+)$','tokens','once'); if isempty(hit),continue;end
+        tag=hit{1}; body=hit{2}; pm=regexp(body,'^#([\d,\s]*)#','tokens','once'); protein=''; if ~isempty(pm),pp=strsplit(strtrim(pm{1}),',');protein=strtrim(pp{1});end
+        rest=regexprep(body,'^#[^#]*#\s*',''); vm=regexp(rest,'^\s*(-?[\d.]+(?:[eE][+-]?\d+)?)','tokens','once'); if isempty(vm),continue;end
+        v=str2double(vm{1}); if ~isfinite(v)||v<=0,continue;end
+        sm=regexp(rest,'\{([^}]*)\}','tokens','once'); sub='';if ~isempty(sm),sub=strtrim(sm{1});end
+        org='';if ~isempty(protein)&&isKey(orgMap,protein),org=orgMap(protein);end
+        d=db(char(current)); rec=struct('value',v,'substrate',sub,'organism',org);d.(tag)(end+1)=rec;db(char(current))=d;
+    end
+    dbCache=db;signatureCache=signature; %#ok<NASGU>
+    try,save(cacheFile,'dbCache','signatureCache','-v7');catch,end
+end
+function s=emptyRIRec(),s=struct('value',{},'substrate',{},'organism',{});end
+function s=normRI(s),s=lower(strtrim(string(s)));s=regexprep(s,'\s+',' ');end
+
 function ec=d1EC(model,j)
     ec="";
     if isfield(model,'rxnECNumbers') && numel(model.rxnECNumbers)>=j
@@ -2279,6 +2390,147 @@ function ec=d1EC(model,j)
         ec=string(model.rxnEC(j));
     end
     if ismissing(ec) || lower(ec)=="nan",ec="";end
+end
+
+function tf=reactionsHaveUniqueECAssignment(model,reactionIDs)
+% True when all reactions carrying complete EC annotations can be assigned
+% distinct EC numbers. This is a bipartite matching problem because a model
+% reaction may carry several EC annotations. Repeated reaction indices are
+% collapsed: one chemical reaction appearing twice in the assembled list is
+% still one reaction, not two enzymes.
+    reactionIDs=unique(reshape(reactionIDs,1,[]),'stable');
+    ecSets=cell(numel(reactionIDs),1);
+    constrained=false(numel(reactionIDs),1);
+    for k=1:numel(reactionIDs)
+        raw=d1EC(model,reactionIDs(k));
+        if raw=="",continue;end
+        % Only complete four-field ECs participate. Partial codes such as
+        % 2.6.1.- and blank annotations do not prove enzyme identity.
+        ecs=string(regexp(char(raw),'(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','match'));
+        ecs=unique(ecs,'stable');
+        if isempty(ecs),continue;end
+        ecSets{k}=ecs(:)';constrained(k)=true;
+    end
+    ecSets=ecSets(constrained);
+    if numel(ecSets)<=1,tf=true;return;end
+    % Fail fast when there are fewer distinct EC labels than constrained reactions.
+    allEC=unique([ecSets{:}]);
+    if numel(allEC)<numel(ecSets),tf=false;return;end
+    % Hardest reactions first improves the small backtracking search.
+    [~,ord]=sort(cellfun(@numel,ecSets));ecSets=ecSets(ord);
+    tf=assignDistinctEC(ecSets,1,strings(0,1));
+end
+
+function tf=assignDistinctEC(ecSets,k,used)
+% Depth-first exact matching; motif reaction counts are small, so this is
+% deterministic and cheaper than introducing graph-toolbox dependencies.
+    if k>numel(ecSets),tf=true;return;end
+    choices=ecSets{k};
+    choices=choices(~ismember(choices,used));
+    tf=false;
+    for q=1:numel(choices)
+        if assignDistinctEC(ecSets,k+1,[used;choices(q)])
+            tf=true;return;
+        end
+    end
+end
+
+function R=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency,cons8,di,do, ...
+        model,block0Cache,excludedECs,requireUniqueEC,maxBranch,maxTests)
+% Pure per-parent Stage 8 search. Safe for parfor: no file I/O, no shared maps.
+    R=struct('examined',0,'tests',0,'capReached',0, ...
+        'rejectDuplicateReaction',0,'rejectD1Overlap',0,'rejectExcludedEC',0, ...
+        'rejectRepeatedEC',0,'candidates',struct('mc',{},'nf',{},'nd',{}, ...
+        'nf2',{},'mout',{},'chosen',{},'chemicalKey',{},'counterKey',{}));
+    sel=selectedD1(ii);tr=sel.transportRow;
+    mc=find(metIDs==string(T.cytosolic(tr)),1);
+    if isempty(mc) || comp(mc)~="c",return;end
+    R.examined=1;
+    inputRx=cons8{mc};
+    if numel(inputRx)<2,return;end
+    inputRx=inputRx(1:min(end,maxBranch));
+    stop=false;
+    for i1=reshape(inputRx,1,[])
+        if stop,break;end
+        nfCandidates=do{i1};
+        nfCandidates=nfCandidates(arrayfun(@(v)d1SignalOK(v,mc,metIDs,comp,currency),nfCandidates));
+        nfCandidates=nfCandidates(1:min(end,maxBranch));
+        for nf=reshape(nfCandidates,1,[])
+            if stop,break;end
+            secondRx=cons8{nf};secondRx=secondRx(1:min(end,maxBranch));
+            for i2=reshape(secondRx,1,[])
+                if stop,break;end
+                if di(i2)==di(i1),continue;end
+                ndCandidates=do{i2};
+                ndCandidates=ndCandidates(arrayfun(@(v)d1SignalOK(v,nf,metIDs,comp,currency) && v~=mc,ndCandidates));
+                ndCandidates=ndCandidates(1:min(end,maxBranch));
+                for nd=reshape(ndCandidates,1,[])
+                    if stop,break;end
+                    ndRx=cons8{nd};ndRx=ndRx(1:min(end,maxBranch));
+                    if numel(ndRx)<2,continue;end
+                    for i4=reshape(ndRx,1,[])
+                        if stop,break;end
+                        if ismember(di(i4),di([i1,i2])),continue;end
+                        nf2Candidates=do{i4};
+                        nf2Candidates=nf2Candidates(arrayfun(@(v)d1SignalOK(v,nd,metIDs,comp,currency) && ~ismember(v,[mc,nf]),nf2Candidates));
+                        nf2Candidates=nf2Candidates(1:min(end,maxBranch));
+                        for nf2=reshape(nf2Candidates,1,[])
+                            if stop,break;end
+                            fifthRx=cons8{nf2};fifthRx=fifthRx(1:min(end,maxBranch));
+                            for i5=reshape(fifthRx,1,[])
+                                if stop,break;end
+                                if ismember(di(i5),di([i1,i2,i4])),continue;end
+                                outCandidates=do{i5};
+                                outCandidates=outCandidates(arrayfun(@(v)d1SignalOK(v,nf2,metIDs,comp,currency) && ~ismember(v,[mc,nf,nd]),outCandidates));
+                                outCandidates=outCandidates(1:min(end,maxBranch));
+                                for mout=reshape(outCandidates,1,[])
+                                    if stop,break;end
+                                    endRx=cons8{mout};endRx=endRx(1:min(end,maxBranch));
+                                    if isempty(endRx),continue;end
+                                    for irc=reshape(inputRx,1,[])
+                                        if stop,break;end
+                                        if di(irc)==di(i1),continue;end
+                                        for inr=reshape(ndRx,1,[])
+                                            if stop,break;end
+                                            if di(inr)==di(i4),continue;end
+                                            for inr2=reshape(endRx,1,[])
+                                                if R.tests>=maxTests,R.capReached=1;stop=true;break;end
+                                                R.tests=R.tests+1;
+                                                chosen=[irc,i1,i2,inr,i4,i5,inr2];
+                                                if numel(unique(di(chosen)))~=7
+                                                    R.rejectDuplicateReaction=R.rejectDuplicateReaction+1;continue;
+                                                end
+                                                d=sel.d;d1ids=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri];
+                                                if any(ismember(di(chosen),d1ids))
+                                                    R.rejectD1Overlap=R.rejectD1Overlap+1;continue;
+                                                end
+                                                [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
+                                                allRx=[block0Reactions,d1ids,sel.exchangePathRxns, ...
+                                                    double(T.modelIndex(tr)),reshape(di(chosen),1,[])];
+                                                if reactionHasExcludedEC(model,allRx,excludedECs)
+                                                    R.rejectExcludedEC=R.rejectExcludedEC+1;continue;
+                                                end
+                                                if requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,allRx)
+                                                    R.rejectRepeatedEC=R.rejectRepeatedEC+1;continue;
+                                                end
+                                                chemicalKey=sprintf('%d,',[d.min,d.mff,d.mfd,d.msf,sel.target, ...
+                                                    mc,nf,nd,nf2,mout,d1ids,sel.exchangePathRxns, ...
+                                                    double(T.modelIndex(tr)),reshape(di(chosen),1,[])]);
+                                                counterKey=counterChemicalKey(sel,double(T.modelIndex(tr)),di(irc),mc);
+                                                c=struct('mc',mc,'nf',nf,'nd',nd,'nf2',nf2,'mout',mout, ...
+                                                    'chosen',chosen,'chemicalKey',chemicalKey,'counterKey',counterKey);
+                                                R.candidates(end+1)=c; %#ok<AGROW>
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 function tf=reactionHasExcludedEC(model,reactionIDs,excludedECs)
