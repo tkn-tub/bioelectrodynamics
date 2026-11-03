@@ -32,6 +32,9 @@ BLOCK0_MAX_DEPTH = Inf;
 BLOCK0_MAX_EXPANSIONS = Inf;
 BLOCK0_ALLOW_ZERO_STEP = false;
 BLOCK0_DIAGNOSTICS_ONLY = false;
+% Per constrained path search. Inf removes a budget; capped failures are
+% reported as unresolved within the budget, never as biological absence.
+BLOCK0_MAX_PATH_STATES = Inf;
 % Currency metabolites may occur in equations, but cannot carry a Block 0
 % connection or be m_in. Match exact base IDs, without [c] or _c suffixes.
 BLOCK0_CURRENCY_BASE_IDS = block0DefaultCurrencyIDs(); % Edit this list/helper if needed.
@@ -118,6 +121,7 @@ assert(isnumeric(EC_BIGG_MAX_CONSECUTIVE_FAILURES) && ...
 if RUN_RANKING_SELF_TESTS
     selfTestBlock0Connectivity();
     selfTestBlock0CurrencyPolicy();
+    selfTestBlock0Isolation();
     selfTestDistanceRanking();
     selfTestMotifCounts();
     selfTestRequiredECPolicy();
@@ -187,11 +191,17 @@ report(logID,ecResolutionInfo);
 block0Cache=buildBlock0Cache(model,metIDs,comp,ub, ...
     BLOCK0_SOURCE_MET_ID,BLOCK0_MAX_DEPTH,BLOCK0_MAX_EXPANSIONS, ...
     BLOCK0_CURRENCY_BASE_IDS);
+assert(isscalar(BLOCK0_MAX_PATH_STATES) && isnumeric(BLOCK0_MAX_PATH_STATES) && ...
+    ~isnan(BLOCK0_MAX_PATH_STATES) && BLOCK0_MAX_PATH_STATES>=1 && ...
+    (isinf(BLOCK0_MAX_PATH_STATES) || BLOCK0_MAX_PATH_STATES==floor(BLOCK0_MAX_PATH_STATES)), ...
+    'Block0:StateCap','BLOCK0_MAX_PATH_STATES must be a positive integer or Inf.');
+block0Cache.pathOptions=struct('maxStates',BLOCK0_MAX_PATH_STATES, ...
+    'excludedECs',EXCLUDED_MOTIF_ECS,'requireUniqueEC',REQUIRE_UNIQUE_COMPLETE_ECS);
 block0InputAllowed=block0Cache.reachable;
 if ~BLOCK0_ALLOW_ZERO_STEP
     block0InputAllowed(block0Cache.start)=false;
 end
-report(logID,sprintf('Block 0: %d eligible m_in species reachable from %s; depth <= %g; expansions = %d; expansion cap reached = %d.', ...
+report(logID,sprintf('Block 0 structural prefilter: %d candidate m_in species reachable from %s; depth <= %g; expansions = %d; expansion cap reached = %d.', ...
     nnz(block0InputAllowed),BLOCK0_SOURCE_MET_ID,BLOCK0_MAX_DEPTH, ...
     block0Cache.expansions,block0Cache.expansionLimitReached));
 report(logID,sprintf('Block 0: %d cytosolic currency metabolites excluded as connectors and m_in; permitted as reaction co-participants.', ...
@@ -213,17 +223,21 @@ end
 if block0Cache.expansionLimitReached
     block0Status(:)="not_reached_before_expansion_cap";
 end
-block0Status(block0Cache.reachable(block0Rows))="connected";
+block0Status(block0Cache.reachable(block0Rows))="structural_prefilter_only";
 block0Status(block0Cache.currencyMask(block0Rows))="excluded_currency_connector";
 if ~BLOCK0_ALLOW_ZERO_STEP
     block0Status(block0Rows==block0Cache.start)="zero_step_not_allowed";
 end
 block0MetPaths=strings(numel(block0Rows),1);
 block0ReactionPaths=strings(numel(block0Rows),1);
+block0InternalPass=false(numel(block0Rows),1);
+block0InternalReason=repmat("not_reached",numel(block0Rows),1);
 for b0row=1:numel(block0Rows)
     b0target=block0Rows(b0row);
     if block0Cache.reachable(b0target)
         [b0mets,b0rx]=block0CachedPath(block0Cache,b0target);
+        [block0InternalPass(b0row),block0InternalReason(b0row)]= ...
+            validateBlock0Isolation(block0Cache,b0mets,b0rx,[],[]);
         block0MetPaths(b0row)=join(metIDs(b0mets),' -> ');
         if ~isempty(b0rx)
             block0ReactionPaths(b0row)=join(rxnIDs(b0rx),' -> ');
@@ -234,11 +248,13 @@ Block0Reachability=table(metIDs(block0Rows),metNames(block0Rows), ...
     block0Cache.reachable(block0Rows),block0InputAllowed(block0Rows), ...
     block0Cache.depth(block0Rows),block0Status,block0MetPaths,block0ReactionPaths, ...
     block0Cache.currencyMask(block0Rows), ...
+    block0InternalPass,block0InternalReason, ...
     'VariableNames',{'MetaboliteID','MetaboliteName','Reachable', ...
     'AllowedAsInput','ReactionDepth','Status','PathMetaboliteIDs','PathReactionIDs', ...
-    'IsCurrency'});
+    'IsCurrency','CachedPathInternallyIsolated','CachedPathIsolationStatus'});
 writetable(Block0Reachability,fullfile(outDir,'00_Block0_Reachable_Inputs.csv'));
 report(logID,['Block 0 reachability report: ' fullfile(outDir,'00_Block0_Reachable_Inputs.csv')]);
+report(logID,'Block 0 CSV paths are optimistic prefilters; accepted motifs use separately searched, isolated paths.');
 if BLOCK0_DIAGNOSTICS_ONLY
     report(logID,'Block 0 diagnostics complete; EC annotation resolution and Block 0 only. Downstream circuit search was skipped.');
     clear logGuard;
@@ -1051,7 +1067,9 @@ foundD1=0; inspected=0; testedTotal=0; seenD1=strings(0,1);
 d1TestLimitedCalls=0;d1BranchLimitedCalls=0;d1RetentionLimitedCalls=0;
 discoveredD1Keys=containers.Map('KeyType','char','ValueType','logical');
 selectedD1=struct('d',{},'target',{},'transportRow',{},'regulatorRow',{},'exchangeRow',{}, ...
-    'exchangePathMets',{},'exchangePathRxns',{});
+    'exchangePathMets',{},'exchangePathRxns',{},'block0Path',{});
+block0Memo=containers.Map('KeyType','char','ValueType','any');
+block0ParentRejected=0;block0ParentCapped=0;
 if ~EXCHANGE_ONLY && ~isempty(RANK) && ~isempty(C) && ~isempty(T)
     for si=1:height(RANK)
         if foundD1>=D1_MAX_MOTIFS || inspected>=D1_MAX_TARGETS,break;end
@@ -1085,7 +1103,15 @@ if ~EXCHANGE_ONLY && ~isempty(RANK) && ~isempty(C) && ~isempty(T)
             if foundD1>=D1_MAX_MOTIFS,break;end
             d=motifs(mi);
             d1ids=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri];
-            [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
+            parentDownstream=[d1ids,double(T.modelIndex(chosenT))];
+            b0=memoizedBlock0Path(model,block0Cache,d.min,parentDownstream, ...
+                [d.rff,d.rsf],[],block0Memo);
+            if ~b0.found
+                block0ParentRejected=block0ParentRejected+1;
+                block0ParentCapped=block0ParentCapped+b0.expansionLimitReached+b0.stateLimitReached;
+                continue;
+            end
+            block0Reactions=b0.rxns;
             motifPrefix=[block0Reactions,d1ids,double(T.modelIndex(chosenT))];
             if ~reactionsHaveRequiredEC(model,[block0Reactions,d1ids]),continue;end
             if reactionHasExcludedEC(model,motifPrefix,EXCLUDED_MOTIF_ECS),continue;end
@@ -1093,7 +1119,8 @@ if ~EXCHANGE_ONLY && ~isempty(RANK) && ~isempty(C) && ~isempty(T)
             foundD1=foundD1+1;
             selectedD1(end+1)=struct('d',d,'target',target,'transportRow',chosenT, ...
                 'regulatorRow',si,'exchangeRow',0, ...
-                'exchangePathMets',zeros(1,0),'exchangePathRxns',zeros(1,0)); %#ok<SAGROW>
+                'exchangePathMets',zeros(1,0),'exchangePathRxns',zeros(1,0), ...
+                'block0Path',b0); %#ok<SAGROW>
             fprintf(fid7,'============================================================\n');
             fprintf(fid7,'STRUCTURAL D1 CANDIDATE %d\n',foundD1);
             fprintf(fid7,'============================================================\n');
@@ -1265,7 +1292,15 @@ if height(X)>0
                     pathMets=pathMetsBySource{si};
                     pathRxns=pathRxnsBySource{si};
                     d1ids=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri];
-                    [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
+                    parentDownstream=[d1ids,pathRxns,double(T.modelIndex(tr))];
+                    b0=memoizedBlock0Path(model,block0Cache,d.min,parentDownstream, ...
+                        [d.rff,d.rsf],[],block0Memo);
+                    if ~b0.found
+                        block0ParentRejected=block0ParentRejected+1;
+                        block0ParentCapped=block0ParentCapped+b0.expansionLimitReached+b0.stateLimitReached;
+                        continue;
+                    end
+                    block0Reactions=b0.rxns;
                     motifPrefix=[block0Reactions,d1ids,pathRxns,double(T.modelIndex(tr))];
                     if ~reactionsHaveRequiredEC(model,[block0Reactions,d1ids,pathRxns]),continue;end
                     if reactionHasExcludedEC(model,motifPrefix,EXCLUDED_MOTIF_ECS),continue;end
@@ -1274,7 +1309,8 @@ if height(X)>0
                     bestCounterPathDepth=currentPathDepth;
                     selectedD1(end+1)=struct('d',d,'target',signalMet,'transportRow',tr, ...
                         'regulatorRow',0,'exchangeRow',xi, ...
-                        'exchangePathMets',pathMets,'exchangePathRxns',pathRxns); %#ok<SAGROW>
+                        'exchangePathMets',pathMets,'exchangePathRxns',pathRxns, ...
+                        'block0Path',b0); %#ok<SAGROW>
                     exchangeMatchRows(end+1,:)={exchangeFound,string(metIDs(signalMet)), ...
                         join(metIDs(pathMets),' -> '),join(rxnIDs(pathRxns),'; '), ...
                         numel(pathRxns),counterID, ...
@@ -1319,6 +1355,8 @@ if height(X)>0
                 char(rxnIDs(d.rff)),char(rxnIDs(d.rfd)),char(rxnIDs(d.rfr)), ...
                 char(rxnIDs(d.rsf)),char(rxnIDs(d.rsd)),char(rxnIDs(d.rsr)),char(rxnIDs(d.ri)));
             fprintf(fid7x,'m_in: %s | %s\n',char(metIDs(d.min)),char(metNames(d.min)));
+            fprintf(fid7x,'Isolated Block 0 path (%d reactions): %s\n', ...
+                b0.distance,char(join(metIDs(b0.mets),' -> ')));
             fprintf(fid7x,'m_Ff: %s | %s\n',char(metIDs(d.mff)),char(metNames(d.mff)));
             fprintf(fid7x,'m_Fd: %s | %s\n',char(metIDs(d.mfd)),char(metNames(d.mfd)));
             fprintf(fid7x,'m_Sf: %s | %s\n',char(metIDs(d.msf)),char(metNames(d.msf)));
@@ -1366,6 +1404,8 @@ if RI_KCAT_RANKING && ~isempty(selectedD1)
     end
 end
 [selectedD1,parentDistances]=rankD1Parents(selectedD1,block0Cache.depth);
+report(logID,sprintf('Block 0 isolation: %d parent connections rejected; %d budget-limited rejections; %d distinct path queries memoized.', ...
+    block0ParentRejected,block0ParentCapped,block0Memo.Count));
 assert(all([selectedD1.exchangeRow]>0),'ExchangeOnly:ParentMode', ...
     'Only stoichiometric exchange parents may enter the complete-motif search.');
 % Avoid spending the neuron budget again on the same D1/transporter chemistry.
@@ -1435,7 +1475,7 @@ fid8=fopen(outN8,'w');assert(fid8>0,'Cannot create Stage 8 TXT');
 close8=onCleanup(@()fclose(fid8));
 fprintf(fid8,'SELECTED BLOCK 0 -> D1 -> TRANSPORT -> COUNTER -> TWO CONSUMING NEURONS\n');
 fprintf(fid8,'Direction policy: STRICT +1 relative to original model.S.\n');
-fprintf(fid8,'Selection: up to %d complete motifs, ranked by shortest m_Sd-to-counter path, then cAMP-to-m_in path.\n',PRINT_TOP_MOTIFS);
+fprintf(fid8,'Selection: up to %d complete motifs, ranked by m_Sd-to-counter distance, r_I kinetic evidence/kcat, then isolated cAMP-to-m_in distance.\n',PRINT_TOP_MOTIFS);
 fprintf(fid8,'Transport mechanism filter: stoichiometric exchange only; protein-path regulation is excluded.\n');
 fprintf(fid8,'EC policy: complete annotation required for Block 0, D1, intracellular connectors, r_cr and every neuron reaction; r_T is exempt.\n');
 fprintf(fid8,'Annotation audit: 00_Reaction_EC_Annotation_Audit.csv; unresolved exclusions: 00_Excluded_Missing_EC_Reactions.csv.\n');
@@ -1447,6 +1487,10 @@ fprintf(fid8,'Block 0 depth cap=%g; expansion cap=%g; expansion limit reached=%d
     BLOCK0_MAX_DEPTH,BLOCK0_MAX_EXPANSIONS,block0Cache.expansionLimitReached);
 fprintf(fid8,'Block 0: currency metabolites cannot carry path connections or be m_in; they may remain in reaction equations.\n');
 fprintf(fid8,'Block 0 excluded currency base IDs: %s\n',char(join(block0Cache.currencyBaseIDs,', ')));
+fprintf(fid8,'Block 0 isolation: all non-currency participants checked; sharing within Block 0 only at adjacent chain steps.\n');
+fprintf(fid8,'Block 0 shares only m_in with downstream chemistry, consumed only by r_Ff and r_Sf; reaction reuse is forbidden.\n');
+fprintf(fid8,'Alternative Block 0 paths are searched per motif. Per-query expansion cap=%g; partial-path state cap=%g.\n', ...
+    BLOCK0_MAX_EXPANSIONS,BLOCK0_MAX_PATH_STATES);
 fprintf(fid8,'Upstream caps: protein hops=%g; metabolite-match rows=%g; backward metabolic steps=%g; backward path rows=%g.\n', ...
     MAX_HOPS,STAGE5_MAX_MATCH_ROWS,STAGE5_MAX_HOPS,STAGE5_MAX_PATH_ROWS);
 fprintf(fid8,'D1 caps: targets=%g; motifs=%g; retained/target=%g; branch=%g; reaction candidates=%g; tests/target=%g.\n', ...
@@ -1476,10 +1520,12 @@ retainedD1Keys=containers.Map('KeyType','char','ValueType','logical');
 counterKeys=containers.Map('KeyType','char','ValueType','logical');
 counterCoreKeys=containers.Map('KeyType','char','ValueType','logical');
 counterRows=cell(0,12);counterRowKeys=cell(0,1);
+block0CounterRejected=0;block0CounterCapped=0;
 for cp=1:numel(selectedD1)
     assert(selectedD1(cp).exchangeRow>0,'ExchangeOnly:ParentMode', ...
         'A regulatory protein-path parent reached the complete-motif search.');
     parent=selectedD1(cp);dd=parent.d;tt=parent.transportRow;
+    selectedD1(cp).counterLinks=struct('reaction',{},'path',{});
     retainedD1Keys(d1ChemicalKey(parent))=true;
     mm=find(metIDs==string(T.cytosolic(tt)),1);
     if isempty(mm) || comp(mm)~="c",continue;end
@@ -1490,13 +1536,22 @@ for cp=1:numel(selectedD1)
         transportReaction=double(T.modelIndex(tt));
         if di(cr)==transportReaction,continue;end
         if ~ecReactionAllowed(model,di(cr)),continue;end
+        counterDownstream=[d1reactions,parent.exchangePathRxns,transportReaction,di(cr)];
+        counterPath=memoizedBlock0Path(model,block0Cache,dd.min,counterDownstream, ...
+            [dd.rff,dd.rsf],parent.block0Path,block0Memo);
+        if ~counterPath.found
+            block0CounterRejected=block0CounterRejected+1;
+            block0CounterCapped=block0CounterCapped+counterPath.expansionLimitReached+counterPath.stateLimitReached;
+            continue;
+        end
+        selectedD1(cp).counterLinks(end+1)=struct('reaction',di(cr),'path',counterPath);
         ck=counterChemicalKey(parent,transportReaction,di(cr),mm);
         if isKey(counterKeys,ck),continue;end
         counterKeys(ck)=true;
         counterCoreKeys(sprintf('%d,',[transportReaction,di(cr),mm]))=true;
         mode="stoichiometric_exchange";
         counterRows(end+1,:)={size(counterRows,1)+1,cp, ...
-            numel(parent.exchangePathRxns),block0Cache.depth(dd.min), ...
+            numel(parent.exchangePathRxns),counterPath.distance, ...
             metIDs(dd.min),metIDs(parent.target),metIDs(mm), ...
             rxnIDs(transportReaction),rxnIDs(di(cr)),mode,d1ChemicalKey(parent), ...
             join(rxnIDs(parent.exchangePathRxns),'; ')}; %#ok<SAGROW>
@@ -1505,13 +1560,15 @@ for cp=1:numel(selectedD1)
 end
 report(logID,sprintf('Counters: %d distinct D1-counter solutions; %d distinct transport/loss cores before neuron search.', ...
     counterKeys.Count,counterCoreKeys.Count));
+report(logID,sprintf('Block 0 isolation at counter stage: %d rejected; %d budget limited.', ...
+    block0CounterRejected,block0CounterCapped));
 
 found8=0; tests8=0; examined8=0;
 seen8=containers.Map('KeyType','char','ValueType','logical');
 countersWithComplete=containers.Map('KeyType','char','ValueType','logical');
 completeExchange8=0;completeRegulatory8=0;
 best8=struct('parentIndex',{},'mc',{},'nf',{},'nd',{},'nf2',{}, ...
-    'mout',{},'chosen',{},'counterDistance',{},'distance',{},'rIKcat',{},'rIKcatEvidence',{},'discoveryIndex',{});
+    'mout',{},'chosen',{},'block0Path',{},'counterDistance',{},'distance',{},'rIKcat',{},'rIKcatEvidence',{},'discoveryIndex',{});
 rankingRows8=cell(0,12);
 
 % Stage 8 is embarrassingly parallel by retained D1 parent. Each worker gets
@@ -1562,7 +1619,8 @@ end
 % Serial deterministic merge. Parent order, then each parent's discovery
 % order, defines the stable discoveryIndex independently of worker scheduling.
 reject8=struct('duplicateReaction',0,'d1Overlap',0,'excludedEC',0, ...
-    'repeatedEC',0,'missingEC',0,'duplicateChemistry',0,'accepted',0,'parentsCapped',0);
+    'repeatedEC',0,'missingEC',0,'block0Isolation',0,'block0PathCapped',0, ...
+    'duplicateChemistry',0,'accepted',0,'parentsCapped',0);
 for ii=1:nParents8
     R8=parentResults8{ii};
     if isempty(R8),continue;end
@@ -1573,6 +1631,8 @@ for ii=1:nParents8
     reject8.excludedEC=reject8.excludedEC+R8.rejectExcludedEC;
     reject8.repeatedEC=reject8.repeatedEC+R8.rejectRepeatedEC;
     reject8.missingEC=reject8.missingEC+R8.rejectMissingEC;
+    reject8.block0Isolation=reject8.block0Isolation+R8.rejectBlock0Isolation;
+    reject8.block0PathCapped=reject8.block0PathCapped+R8.block0PathCapped;
     reject8.parentsCapped=reject8.parentsCapped+R8.capReached;
     for jj=1:numel(R8.candidates)
         c8=R8.candidates(jj);
@@ -1587,9 +1647,9 @@ for ii=1:nParents8
         if sel.exchangeRow>0,completeExchange8=completeExchange8+1;
         else,completeRegulatory8=completeRegulatory8+1;end
         item8=struct('parentIndex',ii,'mc',c8.mc,'nf',c8.nf,'nd',c8.nd, ...
-            'nf2',c8.nf2,'mout',c8.mout,'chosen',c8.chosen, ...
+            'nf2',c8.nf2,'mout',c8.mout,'chosen',c8.chosen,'block0Path',c8.block0Path, ...
             'counterDistance',numel(sel.exchangePathRxns), ...
-            'distance',block0Cache.depth(sel.d.min),'rIKcat',sel.rIKcat, ...
+            'distance',c8.block0Path.distance,'rIKcat',sel.rIKcat, ...
             'rIKcatEvidence',sel.rIKcatEvidence,'discoveryIndex',found8);
         best8(end+1)=item8; %#ok<SAGROW>
         best8=keepTopCompleteMotifs(best8,PRINT_TOP_MOTIFS);
@@ -1610,7 +1670,7 @@ end
 fprintf(fid8,'\n============================================================\n');
 fprintf(fid8,'SEARCH COUNTS: FOUND VERSUS PRINTED\n');
 fprintf(fid8,'============================================================\n');
-fprintf(fid8,'Distinct D1 motifs discovered in bounded searches: %d\n',discoveredD1Keys.Count);
+fprintf(fid8,'Distinct structural D1 motifs discovered before Block 0 isolation: %d\n',discoveredD1Keys.Count);
 fprintf(fid8,'Distinct D1 motifs retained for downstream search: %d\n',retainedD1Keys.Count);
 fprintf(fid8,'D1/transporter parent connections retained: %d\n',numel(selectedD1));
 fprintf(fid8,'Distinct counter cores (r_T, m_c, r_cr): %d\n',counterCoreKeys.Count);
@@ -1620,7 +1680,12 @@ fprintf(fid8,'Distinct complete motifs found: %d\n',found8);
 fprintf(fid8,'  Exchange mode: %d; regulatory-hypothesis mode: %d\n',completeExchange8,completeRegulatory8);
 fprintf(fid8,'Complete motifs printed: %d (requested maximum %d)\n',printed8,PRINT_TOP_MOTIFS);
 fprintf(fid8,'Count definitions: chemical structures are deduplicated; alternate protein annotations do not add motifs.\n');
-fprintf(fid8,'One shortest Block 0 path is used per m_in; alternate connectors do not multiply motif counts.\n');
+fprintf(fid8,'One shortest isolated Block 0 path is used per accepted motif; alternate connectors do not multiply motif counts.\n');
+fprintf(fid8,'Parent/counter distances use their prefix constraints; complete-motif distances also include both neurons.\n');
+fprintf(fid8,'Block 0 parent rejections=%d; parent path-budget limits=%d; counter rejections=%d; counter path-budget limits=%d.\n', ...
+    block0ParentRejected,block0ParentCapped,block0CounterRejected,block0CounterCapped);
+fprintf(fid8,'Final-assembly Block 0 isolation rejections=%d; path-budget limits=%d.\n', ...
+    reject8.block0Isolation,reject8.block0PathCapped);
 fprintf(fid8,'Counter total includes counters with no two-neuron solution; complete count requires both neurons.\n');
 fprintf(fid8,'D1 parents examined for neurons: %d/%d; total trials=%d; parents reaching per-parent cap=%d.\n', ...
     examined8,numel(selectedD1),tests8,reject8.parentsCapped);
@@ -1629,14 +1694,37 @@ fprintf(fid8,'Stage 8 rejection diagnostics: duplicate reaction=%d; D1 overlap=%
     reject8.duplicateReaction,reject8.d1Overlap,reject8.excludedEC,reject8.repeatedEC, ...
     reject8.duplicateChemistry,reject8.accepted);
 fprintf(fid8,'Counts describe the configured search only; finite branch/trial/retention caps can hide additional solutions.\n');
+fprintf(fid8,'Budget-limited path failures are unresolved searches, not proof that an isolated connection is absent.\n');
 fprintf(fid8,'Selecting ten for printing does NOT stop discovery/counting at ten.\n\n');
 
+block0AuditRows=cell(0,8);
 for printedRank8=1:printed8
     item8=best8(printedRank8);
     ii=item8.parentIndex;sel=selectedD1(ii);d=sel.d;tr=sel.transportRow;
     mc=item8.mc;nf=item8.nf;nd=item8.nd;nf2=item8.nf2;mout=item8.mout;
     chosen=item8.chosen;distance=item8.distance;
-    [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
+    block0Reactions=item8.block0Path.rxns;
+    finalDownstream=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri, ...
+        sel.exchangePathRxns,double(T.modelIndex(tr)),reshape(di(chosen),1,[])];
+    [isolated,why]=validateBlock0Isolation(block0Cache,item8.block0Path.mets, ...
+        block0Reactions,finalDownstream,[d.rff,d.rsf]);
+    assert(isolated,'Block0:FinalIsolation','Final Block 0 cross-talk check failed: %s.',char(why));
+    participants=find(full(any(abs(model.S(:,block0Reactions))>1e-12,2)) & ~block0Cache.currencyMask);
+    for bm=reshape(participants,1,[])
+        role="side_participant";
+        if bm==d.min,role="m_in";
+        elseif bm==block0Cache.start,role="cAMP";
+        elseif ismember(bm,item8.block0Path.mets),role="internal_connector";end
+        producing=block0Reactions(full(model.S(bm,block0Reactions))>1e-12);
+        consuming=block0Reactions(full(model.S(bm,block0Reactions))<-1e-12);
+        shared=finalDownstream(abs(full(model.S(bm,finalDownstream)))>1e-12);
+        producerText="";consumerText="";sharedText="";
+        if ~isempty(producing),producerText=join(rxnIDs(producing),'; ');end
+        if ~isempty(consuming),consumerText=join(rxnIDs(consuming),'; ');end
+        if ~isempty(shared),sharedText=join(rxnIDs(shared),'; ');end
+        block0AuditRows(end+1,:)={printedRank8,metIDs(bm),metNames(bm),role, ...
+            producerText,consumerText,sharedText,isempty(shared) || bm==d.min}; %#ok<SAGROW>
+    end
     requiredFinalReactions=[block0Reactions,d.rff,d.rfd,d.rfr,d.rsf,d.rsd, ...
         d.rsr,d.ri,sel.exchangePathRxns,reshape(di(chosen),1,[])];
     assert(reactionsHaveRequiredEC(model,requiredFinalReactions), ...
@@ -1667,7 +1755,8 @@ for printedRank8=1:printed8
     fprintf(fid8,'============================================================\n');
     fprintf(fid8,'BLOCK 0: cAMP TO m_in\n');
     fprintf(fid8,'============================================================\n');
-    printBlock0(fid8,model,metIDs,metNames,d.min,signalIDs,signalNames,block0Cache);
+    printBlock0(fid8,model,metIDs,metNames,d.min,signalIDs,signalNames, ...
+        block0Cache,item8.block0Path,finalDownstream,[d.rff,d.rsf]);
     fprintf(fid8,'\n============================================================\n');
     fprintf(fid8,'DIFFERENTIATOR (SEVEN REACTIONS)\n');
     fprintf(fid8,'============================================================\n');
@@ -1729,7 +1818,18 @@ if printed8==0
     fprintf(fid8,'No cAMP-connected complete two-neuron motif passed the exchange-only filter within configured search limits.\n');
     fprintf(fid8,'No regulatory protein-path fallback was used. Check 18b_Exchange_D1_Connections.txt for exchange matches.\n');
     fprintf(fid8,'This is NOT proof of biological absence.\n');
+    fprintf(fid8,'Block 0 isolation was required, including all co-substrates/products and all selected downstream reactions.\n');
 end
+auditNames={'MotifRank','MetaboliteID','MetaboliteName','Role', ...
+    'Block0ProducerReactions','Block0ConsumerReactions','DownstreamReactions','IsolationPass'};
+if isempty(block0AuditRows)
+    Block0IsolationAudit=table('Size',[0 8],'VariableTypes', ...
+        {'double','string','string','string','string','string','string','logical'}, ...
+        'VariableNames',auditNames);
+else
+    Block0IsolationAudit=cell2table(block0AuditRows,'VariableNames',auditNames);
+end
+writetable(Block0IsolationAudit,fullfile(outDir,'19b_Block0_Isolation_Audit.csv'));
 rankNames8={'Rank','m_SdToCounterReactionDistance','CAMPReactionDistance', ...
     'm_in_ID','m_Sd_ID','m_c_ID', ...
     'm_out_ID','TransportReactionID','TransportMode','ParentRank', ...
@@ -1741,13 +1841,9 @@ if isempty(rankingRows8)
 else
     MotifRanking=cell2table(rankingRows8,'VariableNames',rankNames8);
     if height(MotifRanking)>1
-        counterDistanceOrder=MotifRanking.m_SdToCounterReactionDistance;
-        campDistanceOrder=MotifRanking.CAMPReactionDistance;
-        ordered=counterDistanceOrder(1:end-1)<counterDistanceOrder(2:end) | ...
-            (counterDistanceOrder(1:end-1)==counterDistanceOrder(2:end) & ...
-            campDistanceOrder(1:end-1)<=campDistanceOrder(2:end));
-        assert(all(ordered),'Ranking:OutputOrder', ...
-            'Final motif ranking must prioritize m_Sd-to-counter distance, then cAMP distance.');
+        expectedOrder=keepTopCompleteMotifs(best8,numel(best8));
+        assert(isequal([best8.discoveryIndex],[expectedOrder.discoveryIndex]), ...
+            'Ranking:OutputOrder','Final ranking must follow counter distance, r_I evidence/kcat, then isolated cAMP distance.');
     end
 end
 writetable(MotifRanking,fullfile(outDir,'19_Selected_Motifs_Counter_Distance_Ranking.csv'));
@@ -1954,6 +2050,20 @@ function cache=buildBlock0Cache(model,metIDs,comp,ub,sourceID,maxDepth,maxExpans
     % No extracellular or organelle participant may occur in Block 0.
     outside=comp~="c";
     eligible=eligible & ~full(any(abs(S(outside,:))>tol,1))';
+    % Immutable adjacency for motif-specific searches. The original BFS below
+    % remains an optimistic distance/reachability prefilter, not an accepted path.
+    cache.S=S;cache.eligible=eligible;
+    cache.consumers=cell(nm,1);cache.producers=cell(nm,1);
+    cache.substrates=cell(size(S,2),1);cache.products=cell(size(S,2),1);
+    cache.participants=cell(size(S,2),1);
+    for j=reshape(find(eligible),1,[])
+        a=find(S(:,j)<-tol & ~currencyMask);
+        b=find(S(:,j)>tol & ~currencyMask);
+        cache.substrates{j}=a;cache.products{j}=b;
+        cache.participants{j}=find(abs(S(:,j))>tol & ~currencyMask);
+        for m=reshape(a,1,[]),cache.consumers{m}(end+1)=j;end
+        for m=reshape(b,1,[]),cache.producers{m}(end+1)=j;end
+    end
     queue=zeros(nm,1);queue(1)=start;head=1;tail=1;
     while head<=tail
         current=queue(head);head=head+1;
@@ -1978,6 +2088,184 @@ function cache=buildBlock0Cache(model,metIDs,comp,ub,sourceID,maxDepth,maxExpans
     end
 end
 
+function [ok,reason,blocked]=block0InterfaceMask(cache,target,downstreamRx,inputRx)
+% m_in is the only permitted non-currency interface with downstream chemistry,
+% and only the two D1 input reactions may consume it.
+    downstreamRx=unique(reshape(downstreamRx,1,[]));
+    inputRx=unique(reshape(inputRx,1,[]));
+    blocked=false(size(cache.S,1),1);ok=false;reason="";
+    if ~isempty(downstreamRx)
+        if isempty(inputRx) || ~all(ismember(inputRx,downstreamRx)) || ...
+                any(full(cache.S(target,inputRx))>=-1e-12)
+            reason="invalid_D1_input_interface";return;
+        end
+        other=setdiff(downstreamRx,inputRx);
+        if any(abs(full(cache.S(target,other)))>1e-12)
+            reason="m_in_used_outside_D1_input_reactions";return;
+        end
+        blocked=full(any(abs(cache.S(:,downstreamRx))>1e-12,2)) & ~cache.currencyMask;
+        blocked(target)=false;
+    end
+    ok=true;reason="PASS";
+end
+
+function [ok,reason]=validateBlock0Isolation(cache,mets,rx,downstreamRx,inputRx)
+% Every repeated non-currency participant must be the intended intermediate
+% between two adjacent steps. This checks ALL substrates/products, not only
+% the metabolite chosen to draw each graph edge.
+    mets=reshape(mets,1,[]);rx=reshape(rx,1,[]);
+    ok=false;reason="invalid_path_shape";
+    if isempty(mets) || numel(mets)~=numel(rx)+1 || mets(1)~=cache.start || ...
+            numel(unique(mets))~=numel(mets) || numel(unique(rx))~=numel(rx),return;end
+    if any(cache.currencyMask(mets)),reason="currency_connector";return;end
+    if any(~cache.eligible(rx)),reason="ineligible_reaction";return;end
+    if any(ismember(rx,downstreamRx)),reason="reaction_reused_between_blocks";return;end
+    [interfaceOK,reason,blocked]=block0InterfaceMask(cache,mets(end),downstreamRx,inputRx);
+    if ~interfaceOK,return;end
+    seen=false(size(cache.S,1),1);
+    for k=1:numel(rx)
+        if cache.S(mets(k),rx(k))>=-1e-12 || cache.S(mets(k+1),rx(k))<=1e-12
+            reason="invalid_forward_edge";return;
+        end
+        part=cache.participants{rx(k)};
+        if any(blocked(part)),reason="noncurrency_overlap_with_downstream";return;end
+        shared=part(seen(part));
+        if k==1
+            if ~isempty(shared),reason="repeated_nonadjacent_participant";return;end
+        elseif numel(shared)~=1 || shared~=mets(k)
+            reason="repeated_nonadjacent_or_side_participant";return;
+        end
+        seen(part)=true;
+    end
+    ok=true;reason="PASS";
+end
+
+function result=emptyBlock0Connection(target)
+    result=struct('found',false,'mets',zeros(1,0),'rxns',zeros(1,0), ...
+        'distance',Inf,'target',target,'downstreamRx',zeros(1,0), ...
+        'inputRx',zeros(1,0),'shortestVerified',false,'expansions',0, ...
+        'states',0,'expansionLimitReached',false,'stateLimitReached',false, ...
+        'status',"no_isolated_path");
+end
+
+function result=findIsolatedBlock0Path(model,cache,target,downstreamRx,inputRx,preferred)
+% Breadth-first search over PATH STATES. A visited-metabolite-only BFS is
+% insufficient: two prefixes at the same metabolite can have different side
+% participants and therefore different legal continuations.
+    if nargin<6,preferred=[];end
+    result=emptyBlock0Connection(target);
+    downstreamRx=unique(reshape(downstreamRx,1,[]));
+    inputRx=unique(reshape(inputRx,1,[]));
+    result.downstreamRx=downstreamRx;result.inputRx=inputRx;
+    options=struct('maxStates',Inf,'excludedECs',strings(0,1),'requireUniqueEC',false);
+    if isfield(cache,'pathOptions'),options=cache.pathOptions;end
+    [interfaceOK,why,blocked]=block0InterfaceMask(cache,target,downstreamRx,inputRx);
+    if ~interfaceOK,result.status=why;return;end
+    if options.requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,downstreamRx)
+        result.status="downstream_EC_assignment_conflict";return;
+    end
+    if ~cache.reachable(target)
+        result.status="not_reached_by_structural_prefilter";return;
+    end
+    if isempty(preferred)
+        [m,r]=block0CachedPath(cache,target);
+        preferred=emptyBlock0Connection(target);preferred.mets=m;preferred.rxns=r;
+    end
+    [valid,~]=validateBlock0Isolation(cache,preferred.mets,preferred.rxns,downstreamRx,inputRx);
+    inheritedProof=preferred.shortestVerified && preferred.target==target && ...
+        all(ismember(preferred.downstreamRx,downstreamRx)) && ...
+        isequal(preferred.inputRx,inputRx);
+    if valid && preferred.mets(end)==target && numel(preferred.rxns)<=cache.maxDepth && ...
+            (numel(preferred.rxns)==cache.depth(target) || inheritedProof) && ...
+            ~reactionHasExcludedEC(model,[downstreamRx,preferred.rxns],options.excludedECs) && ...
+            (~options.requireUniqueEC || reactionsHaveUniqueECAssignment(model,[downstreamRx,preferred.rxns]))
+        result.found=true;result.mets=preferred.mets;result.rxns=preferred.rxns;
+        result.distance=numel(preferred.rxns);result.shortestVerified=true;
+        result.status="isolated_shortest_path";return;
+    end
+    eligible=cache.eligible;
+    eligible(downstreamRx)=false;
+    eligible=eligible & ~full(any(abs(cache.S(blocked,:))>1e-12,1))';
+    % The final output cannot be a co-substrate of an upstream step, and the
+    % source cannot be regenerated later in the connector.
+    eligible=eligible & full(cache.S(target,:)>=-1e-12)' & ...
+        full(cache.S(cache.start,:)<=1e-12)';
+    for j=reshape(find(eligible),1,[])
+        if reactionHasExcludedEC(model,j,options.excludedECs) || ...
+                (options.requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,[downstreamRx,j]))
+            eligible(j)=false;
+        end
+    end
+    if reactionHasExcludedEC(model,downstreamRx,options.excludedECs)
+        result.status="downstream_excluded_EC";return;
+    end
+    % Reverse graph distances are only lower bounds; they prune impossible
+    % branches without merging distinct path states.
+    remaining=inf(size(cache.S,1),1);remaining(target)=0;
+    q=target;head=1;
+    while head<=numel(q)
+        v=q(head);head=head+1;
+        for j=reshape(cache.producers{v},1,[])
+            if ~eligible(j),continue;end
+            for pre=reshape(cache.substrates{j},1,[])
+                if isfinite(remaining(pre)),continue;end
+                remaining(pre)=remaining(v)+1;q(end+1)=pre; %#ok<AGROW>
+            end
+        end
+    end
+    if ~isfinite(remaining(cache.start)) || remaining(cache.start)>cache.maxDepth
+        result.status="no_path_in_allowed_graph_within_depth";return;
+    end
+    stateMets={cache.start};stateRx={zeros(1,0)};stateUsed={zeros(1,0)};
+    head=1;tail=1;result.states=1;
+    while head<=tail
+        mets=stateMets{head};rx=stateRx{head};used=stateUsed{head};
+        stateMets{head}=[];stateRx{head}=[];stateUsed{head}=[];head=head+1;
+        v=mets(end);depth=numel(rx);
+        if depth>=cache.maxDepth,continue;end
+        for j=reshape(cache.consumers{v},1,[])
+            if ~eligible(j),continue;end
+            if result.expansions>=cache.maxExpansions
+                result.expansionLimitReached=true;result.status="path_expansion_budget_reached";return;
+            end
+            result.expansions=result.expansions+1;
+            part=reshape(cache.participants{j},1,[]);
+            shared=intersect(part,used);
+            if depth>0 && (numel(shared)~=1 || shared~=v),continue;end
+            newRx=[rx,j];
+            if options.requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,[downstreamRx,newRx]),continue;end
+            nexts=reshape(cache.products{j},1,[]);
+            if any(nexts==target),nexts=target;end
+            for next=nexts
+                if ismember(next,mets) || ~isfinite(remaining(next)) || ...
+                        depth+1+remaining(next)>cache.maxDepth,continue;end
+                newMets=[mets,next];
+                if next==target
+                    [valid,why]=validateBlock0Isolation(cache,newMets,newRx,downstreamRx,inputRx);
+                    assert(valid,'Block0:IsolationSearchBug','Invalid constrained path: %s.',char(why));
+                    result.found=true;result.mets=newMets;result.rxns=newRx;
+                    result.distance=numel(newRx);result.shortestVerified=true;
+                    result.status="isolated_shortest_path";return;
+                end
+                if tail>=options.maxStates
+                    result.stateLimitReached=true;result.status="path_state_budget_reached";return;
+                end
+                tail=tail+1;stateMets{tail}=newMets;stateRx{tail}=newRx; %#ok<AGROW>
+                stateUsed{tail}=union(used,part);result.states=tail; %#ok<AGROW>
+            end
+        end
+    end
+end
+
+function result=memoizedBlock0Path(model,cache,target,downstreamRx,inputRx,preferred,memo)
+% One result per exact constraint set; alternate connectors do not multiply
+% motif counts. Workers create their own memo rather than sharing handles.
+    key=sprintf('%d,',[target,-1,sort(unique(downstreamRx)),-2,sort(unique(inputRx))]);
+    if isKey(memo,key),result=memo(key);return;end
+    result=findIsolatedBlock0Path(model,cache,target,downstreamRx,inputRx,preferred);
+    memo(key)=result;
+end
+
 function [mets,rx]=block0CachedPath(cache,target)
 % Reconstruct the shortest verified forward path from the BFS tree.
     assert(cache.reachable(target),'Block0:UnconnectedInput', ...
@@ -1996,13 +2284,22 @@ function [mets,rx]=block0CachedPath(cache,target)
         'Refusing a Block 0 path containing an excluded currency metabolite.');
 end
 
-function printBlock0(fid,model,metIDs,metNames,target,signalIDs,signalNames,cache)
+function printBlock0(fid,model,metIDs,metNames,target,signalIDs,signalNames,cache,connection,downstreamRx,inputRx)
 % Print precisely the path used to accept this motif; never rerun a search.
-    [mets,rx]=block0CachedPath(cache,target);
+    assert(connection.found && connection.shortestVerified && connection.target==target, ...
+        'Block0:UnverifiedPrintedPath','Block 0 output requires an accepted isolated path.');
+    mets=connection.mets;rx=connection.rxns;
+    [valid,why]=validateBlock0Isolation(cache,mets,rx,downstreamRx,inputRx);
+    assert(valid,'Block0:PrintedCrossTalk','Refusing a Block 0 path with cross-talk: %s.',char(why));
     fprintf(fid,'  Anchor: %s | %s\n', ...
         char(metIDs(cache.start)),char(metNames(cache.start)));
     fprintf(fid,'  Connection status: CONNECTED (+1 only)\n');
     fprintf(fid,'  Currency check: PASS (no currency connector or m_in; co-participants retained).\n');
+    fprintf(fid,'  Internal isolation: PASS (non-currency sharing only between adjacent path steps).\n');
+    fprintf(fid,'  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).\n');
+    fprintf(fid,'  No Block 0 reaction is reused in another block.\n');
+    if ~isempty(rx),fprintf(fid,'  m_in is produced only by the last Block 0 step and is never consumed within Block 0.\n');end
+    fprintf(fid,'  Shared currency co-participants remain permitted; their buffering is not verified.\n');
     fprintf(fid,'  Search depth limit: %g; expansion cap reached: %d\n', ...
         cache.maxDepth,cache.expansionLimitReached);
     fprintf(fid,'  Path: %s (%d reaction(s))\n', ...
@@ -2019,7 +2316,7 @@ function printBlock0(fid,model,metIDs,metNames,target,signalIDs,signalNames,cach
         printModelReaction(fid,model,rx(k),1,metIDs,metNames,"","",signalIDs,signalNames);
         fprintf(fid,'  EC: %s\n',char(d1EC(model,rx(k))));
     end
-    fprintf(fid,'  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.\n');
+    fprintf(fid,'  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.\n');
 end
 
 function selfTestBlock0Connectivity()
@@ -2115,6 +2412,70 @@ function selfTestBlock0CurrencyPolicy()
     end
     assert(rejected,'Block0:SelfTestCurrencyGuard','Cached-path currency guard failed.');
     fprintf('PASS: Block 0 currency exclusion, retained AMP/co-participants, filtered distances and path guard.\n');
+end
+
+function selfTestBlock0Isolation()
+% Covers the reported f6p co-substrate/recycling problem, hidden side-product
+% sharing, downstream leaks, longer alternatives and path-state BFS behavior.
+    ids=["camp[c]";"a[c]";"b[c]";"f6p[c]";"u[c]";"v[c]";"w[c]"; ...
+        "x[c]";"fast[c]";"slow[c]";"h[c]";"h2o[c]";"side[c]"];
+    fixture.S=sparse(numel(ids),13);fixture.rxns=cellstr("test_"+string((1:13)'));
+    fixture.S([1 4 2],1)=[-1;-1;1]; % invalid: m_in consumed before it is made
+    fixture.S([2 4],2)=[-1;1];
+    fixture.S([1 12 3 11],3)=[-1;-1;1;1];
+    fixture.S([3 5],4)=[-1;1];fixture.S([5 4],5)=[-1;1];
+    fixture.S([4 9],6)=[-1;1];fixture.S([4 10],7)=[-1;1];
+    fixture.S([1 6],8)=[-1;1];fixture.S([6 7],9)=[-1;1];
+    fixture.S([7 8],10)=[-1;1];fixture.S([8 4],11)=[-1;1];
+    fixture.S([3 13],12)=[-1;1];fixture.S([13 9],13)=[-1;1];
+    comp=repmat("c",numel(ids),1);ub=1000*ones(13,1);
+    cache=buildBlock0Cache(fixture,ids,comp,ub,'camp[c]',Inf,Inf);
+    [rawM,rawR]=block0CachedPath(cache,4);
+    [ok,~]=validateBlock0Isolation(cache,rawM,rawR,[6 7],[6 7]);
+    assert(cache.depth(4)==2 && ~ok,'Block0:SelfTestPrematureInput', ...
+        'The f6p recycling shortcut was not reproduced/rejected.');
+    first=findIsolatedBlock0Path(fixture,cache,4,[6 7],[6 7],[]);
+    assert(first.found && first.distance==3 && isequal(first.rxns,[3 4 5]), ...
+        'Block0:SelfTestLongerAlternative','A valid longer isolated route was missed.');
+    second=findIsolatedBlock0Path(fixture,cache,4,[6 7 12],[6 7],first);
+    assert(second.found && second.distance==4 && isequal(second.rxns,[8 9 10 11]), ...
+        'Block0:SelfTestDownstreamReroute','A downstream leak did not trigger an alternative path.');
+    [ok,~]=validateBlock0Isolation(cache,first.mets,first.rxns,[3 6 7],[6 7]);
+    assert(~ok,'Block0:SelfTestSharedReaction','A reaction reused across blocks was accepted.');
+    leaking=cache;leaking.S(4,12)=1;
+    rejected=findIsolatedBlock0Path(fixture,leaking,4,[6 7 12],[6 7],first);
+    assert(~rejected.found && rejected.status=="m_in_used_outside_D1_input_reactions", ...
+        'Block0:SelfTestInputLeak','A downstream producer of m_in was accepted.');
+    limited=cache;limited.maxDepth=2;
+    rejected=findIsolatedBlock0Path(fixture,limited,4,[6 7],[6 7],[]);
+    assert(~rejected.found,'Block0:SelfTestIsolationDepth','The isolated path exceeded the depth cap.');
+    limited=cache;limited.maxExpansions=0;
+    rejected=findIsolatedBlock0Path(fixture,limited,4,[6 7],[6 7],[]);
+    assert(~rejected.found && rejected.expansionLimitReached, ...
+        'Block0:SelfTestIsolationBudget','Path expansion-budget failure was not reported.');
+    limited=cache;limited.pathOptions=struct('maxStates',1, ...
+        'excludedECs',strings(0,1),'requireUniqueEC',false);
+    rejected=findIsolatedBlock0Path(fixture,limited,4,[6 7],[6 7],[]);
+    assert(~rejected.found && rejected.stateLimitReached, ...
+        'Block0:SelfTestIsolationStates','Path state-budget failure was not reported.');
+    side=fixture;side.S=sparse(numel(ids),2);side.rxns={'side_1';'side_2'};
+    side.S([1 13 2],1)=[-1;-1;1];side.S([2 4 13],2)=[-1;1;1];
+    sc=buildBlock0Cache(side,ids,comp,1000*ones(2,1),'camp[c]',Inf,Inf);
+    rejected=findIsolatedBlock0Path(side,sc,4,[],[],[]);
+    assert(~rejected.found,'Block0:SelfTestSideMetabolite', ...
+        'Cross-talk through a non-chain co-substrate/product was accepted.');
+    % Two prefixes reach x. Only the second leaves side available for the last
+    % reaction. A single global visited(x) flag would discard that solution.
+    prefix=fixture;prefix.S=sparse(numel(ids),5);
+    prefix.rxns=cellstr("prefix_"+string((1:5)'));
+    prefix.S([1 13 2],1)=[-1;-1;1];prefix.S([2 8],2)=[-1;1];
+    prefix.S([1 3],3)=[-1;1];prefix.S([3 8],4)=[-1;1];
+    prefix.S([8 13 4],5)=[-1;-1;1];
+    pc=buildBlock0Cache(prefix,ids,comp,1000*ones(5,1),'camp[c]',Inf,Inf);
+    alternative=findIsolatedBlock0Path(prefix,pc,4,[],[],[]);
+    assert(alternative.found && isequal(alternative.rxns,[3 4 5]), ...
+        'Block0:SelfTestDistinctPrefixes','Distinct path states were incorrectly merged.');
+    fprintf('PASS: Block 0 recycling, side-participant and downstream isolation; alternative paths, budgets and distinct prefixes.\n');
 end
 
 function printModelReaction(fid,model,idx,orient,metIDs,metNames,markedID,markedLabel,varargin)
@@ -2371,7 +2732,10 @@ function [parents,distances]=rankD1Parents(parents,depth)
 % Rank: shortest m_Sd-to-counter path; best r_I evidence; largest r_I kcat; then cAMP distance.
     distances=zeros(numel(parents),1);
     if isempty(parents),return;end
-    for k=1:numel(parents), distances(k)=depth(parents(k).d.min); end
+    for k=1:numel(parents)
+        if isfield(parents,'block0Path'),distances(k)=parents(k).block0Path.distance;
+        else,distances(k)=depth(parents(k).d.min);end
+    end
     assert(all(isfinite(distances)),'Ranking:DisconnectedParent','Only cAMP-connected parents may be ranked.');
     counterDistances=reshape(arrayfun(@(p)numel(p.exchangePathRxns),parents),[],1);
     evidence=zeros(numel(parents),1); kc=nan(numel(parents),1);
@@ -3052,9 +3416,12 @@ function R=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency,cons8,di,do, 
 % Pure per-parent Stage 8 search. Safe for parfor: no file I/O, no shared maps.
     R=struct('examined',0,'tests',0,'capReached',0, ...
         'rejectDuplicateReaction',0,'rejectD1Overlap',0,'rejectExcludedEC',0, ...
-        'rejectRepeatedEC',0,'rejectMissingEC',0,'candidates',struct('mc',{},'nf',{},'nd',{}, ...
-        'nf2',{},'mout',{},'chosen',{},'chemicalKey',{},'counterKey',{}));
+        'rejectRepeatedEC',0,'rejectMissingEC',0,'rejectBlock0Isolation',0, ...
+        'block0PathCapped',0,'candidates',struct('mc',{},'nf',{},'nd',{}, ...
+        'nf2',{},'mout',{},'chosen',{},'block0Path',{},'chemicalKey',{},'counterKey',{}));
     sel=selectedD1(ii);tr=sel.transportRow;
+    pathMemo=containers.Map('KeyType','char','ValueType','any');
+    if isempty(sel.counterLinks),return;end
     mc=find(metIDs==string(T.cytosolic(tr)),1);
     if isempty(mc) || comp(mc)~="c",return;end
     R.examined=1;
@@ -3102,6 +3469,8 @@ function R=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency,cons8,di,do, 
                                     for irc=reshape(inputRx,1,[])
                                         if stop,break;end
                                         if di(irc)==di(i1),continue;end
+                                        counterLink=find([sel.counterLinks.reaction]==di(irc),1);
+                                        if isempty(counterLink),continue;end
                                         for inr=reshape(ndRx,1,[])
                                             if stop,break;end
                                             if di(inr)==di(i4),continue;end
@@ -3116,7 +3485,22 @@ function R=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency,cons8,di,do, 
                                                 if any(ismember(di(chosen),d1ids))
                                                     R.rejectD1Overlap=R.rejectD1Overlap+1;continue;
                                                 end
-                                                [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
+                                                downstreamRx=[d1ids,sel.exchangePathRxns, ...
+                                                    double(T.modelIndex(tr)),reshape(di(chosen),1,[])];
+                                                if reactionHasExcludedEC(model,downstreamRx,excludedECs)
+                                                    R.rejectExcludedEC=R.rejectExcludedEC+1;continue;
+                                                end
+                                                if requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,downstreamRx)
+                                                    R.rejectRepeatedEC=R.rejectRepeatedEC+1;continue;
+                                                end
+                                                b0=memoizedBlock0Path(model,block0Cache,d.min,downstreamRx, ...
+                                                    [d.rff,d.rsf],sel.counterLinks(counterLink).path,pathMemo);
+                                                if ~b0.found
+                                                    R.rejectBlock0Isolation=R.rejectBlock0Isolation+1;
+                                                    R.block0PathCapped=R.block0PathCapped+b0.expansionLimitReached+b0.stateLimitReached;
+                                                    continue;
+                                                end
+                                                block0Reactions=b0.rxns;
                                                 allRx=[block0Reactions,d1ids,sel.exchangePathRxns, ...
                                                     double(T.modelIndex(tr)),reshape(di(chosen),1,[])];
                                                 requiredECReactions=[block0Reactions,d1ids,sel.exchangePathRxns, ...
@@ -3135,7 +3519,8 @@ function R=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency,cons8,di,do, 
                                                     double(T.modelIndex(tr)),reshape(di(chosen),1,[])]);
                                                 counterKey=counterChemicalKey(sel,double(T.modelIndex(tr)),di(irc),mc);
                                                 c=struct('mc',mc,'nf',nf,'nd',nd,'nf2',nf2,'mout',mout, ...
-                                                    'chosen',chosen,'chemicalKey',chemicalKey,'counterKey',counterKey);
+                                                    'chosen',chosen,'block0Path',b0, ...
+                                                    'chemicalKey',chemicalKey,'counterKey',counterKey);
                                                 R.candidates(end+1)=c; %#ok<AGROW>
                                             end
                                         end
@@ -3154,6 +3539,7 @@ function tf=reactionHasExcludedEC(model,reactionIDs,excludedECs)
 % True if any reaction annotation matches an excluded EC number.
     tf=false;
     excludedECs=string(excludedECs(:));
+    if isempty(excludedECs),return;end
     for jj=reshape(unique(reactionIDs),1,[])
         ec=d1EC(model,jj);
         if ec=="",continue;end

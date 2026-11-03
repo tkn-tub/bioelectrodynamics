@@ -1,6 +1,6 @@
 SELECTED BLOCK 0 -> D1 -> TRANSPORT -> COUNTER -> TWO CONSUMING NEURONS
 Direction policy: STRICT +1 relative to original model.S.
-Selection: up to 10 complete motifs, ranked by shortest m_Sd-to-counter path, then cAMP-to-m_in path.
+Selection: up to 10 complete motifs, ranked by m_Sd-to-counter distance, r_I kinetic evidence/kcat, then isolated cAMP-to-m_in distance.
 Transport mechanism filter: stoichiometric exchange only; protein-path regulation is excluded.
 EC policy: complete annotation required for Block 0, D1, intracellular connectors, r_cr and every neuron reaction; r_T is exempt.
 Annotation audit: 00_Reaction_EC_Annotation_Audit.csv; unresolved exclusions: 00_Excluded_Missing_EC_Reactions.csv.
@@ -11,6 +11,9 @@ Equal-distance motifs may share m_in. Ties retain discovery order after both pat
 Block 0 depth cap=Inf; expansion cap=Inf; expansion limit reached=0.
 Block 0: currency metabolites cannot carry path connections or be m_in; they may remain in reaction equations.
 Block 0 excluded currency base IDs: h, h+, proton, h2o, water, atp, adp, pi, ppi, nad, nadh, nadp, nadph, coa, co2, o2, na1, na, k, k1, cl, cl1
+Block 0 isolation: all non-currency participants checked; sharing within Block 0 only at adjacent chain steps.
+Block 0 shares only m_in with downstream chemistry, consumed only by r_Ff and r_Sf; reaction reuse is forbidden.
+Alternative Block 0 paths are searched per motif. Per-query expansion cap=Inf; partial-path state cap=Inf.
 Upstream caps: protein hops=3; metabolite-match rows=250000; backward metabolic steps=2; backward path rows=100000.
 D1 caps: targets=Inf; motifs=Inf; retained/target=100; branch=14; reaction candidates=60; tests/target=40000.
 Exchange caps: pairs=Inf; connections=Inf. Neuron caps: branch=25; tests/parent=5000; parallel=1.
@@ -24,27 +27,31 @@ Stoichiometric exchange topology only; transporter abundance, flux, and kinetics
 ============================================================
 SEARCH COUNTS: FOUND VERSUS PRINTED
 ============================================================
-Distinct D1 motifs discovered in bounded searches: 729
-Distinct D1 motifs retained for downstream search: 248
-D1/transporter parent connections retained: 8548
-Distinct counter cores (r_T, m_c, r_cr): 51
-Distinct D1-counter solutions in retained parent pool: 5622
-D1-counter solutions extended to both neurons: 768
-Distinct complete motifs found: 33516
-  Exchange mode: 33516; regulatory-hypothesis mode: 0
+Distinct structural D1 motifs discovered before Block 0 isolation: 729
+Distinct D1 motifs retained for downstream search: 30
+D1/transporter parent connections retained: 1200
+Distinct counter cores (r_T, m_c, r_cr): 20
+Distinct D1-counter solutions in retained parent pool: 600
+D1-counter solutions extended to both neurons: 300
+Distinct complete motifs found: 8160
+  Exchange mode: 8160; regulatory-hypothesis mode: 0
 Complete motifs printed: 10 (requested maximum 10)
 Count definitions: chemical structures are deduplicated; alternate protein annotations do not add motifs.
-One shortest Block 0 path is used per m_in; alternate connectors do not multiply motif counts.
+One shortest isolated Block 0 path is used per accepted motif; alternate connectors do not multiply motif counts.
+Parent/counter distances use their prefix constraints; complete-motif distances also include both neurons.
+Block 0 parent rejections=7348; parent path-budget limits=0; counter rejections=0; counter path-budget limits=0.
+Final-assembly Block 0 isolation rejections=420; path-budget limits=0.
 Counter total includes counters with no two-neuron solution; complete count requires both neurons.
-D1 parents examined for neurons: 8548/8548; total trials=1331284; parents reaching per-parent cap=100.
+D1 parents examined for neurons: 360/1200; total trials=15480; parents reaching per-parent cap=0.
 Missing EC rejections during final assembly: 0 (EC filtering also occurred before candidate enumeration).
-Stage 8 rejection diagnostics: duplicate reaction=112480; D1 overlap=1061792; excluded EC=0; repeated/unassignable EC=123496; duplicate chemistry=0; accepted=33516.
+Stage 8 rejection diagnostics: duplicate reaction=1440; D1 overlap=5400; excluded EC=0; repeated/unassignable EC=60; duplicate chemistry=0; accepted=8160.
 Counts describe the configured search only; finite branch/trial/retention caps can hide additional solutions.
+Budget-limited path failures are unresolved searches, not proof that an isolated connection is absent.
 Selecting ten for printing does NOT stop discovery/counting at ten.
 
 ============================================================
 CANDIDATE 1
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -65,8 +72,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -78,46 +90,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -188,17 +220,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
@@ -319,7 +351,7 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 2
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -340,8 +372,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -353,46 +390,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -463,17 +520,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
@@ -594,7 +651,7 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 3
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -615,8 +672,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -628,46 +690,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -738,17 +820,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
@@ -869,7 +951,7 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 4
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -890,8 +972,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -903,46 +990,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -1013,17 +1120,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
@@ -1144,7 +1251,7 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 5
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -1165,8 +1272,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -1178,46 +1290,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -1288,17 +1420,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
@@ -1419,7 +1551,7 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 6
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -1440,8 +1572,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -1453,46 +1590,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -1563,17 +1720,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
@@ -1694,7 +1851,7 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 7
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -1715,8 +1872,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -1728,46 +1890,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -1838,17 +2020,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
@@ -1969,7 +2151,7 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 8
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -1990,8 +2172,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -2003,46 +2190,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -2113,17 +2320,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
@@ -2244,7 +2451,7 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 9
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -2265,8 +2472,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -2278,46 +2490,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -2388,17 +2620,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
@@ -2519,7 +2751,7 @@ WARNING: no flux feasibility, kinetic differentiation, or validated transporter 
 
 ============================================================
 CANDIDATE 10
-m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 5 reaction(s) | D1 parent rank: 1
+m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -2540,8 +2772,13 @@ BLOCK 0: cAMP TO m_in
   Anchor: camp[c] | 3,5-Cyclic Adenosine Monophosphate
   Connection status: CONNECTED (+1 only)
   Currency check: PASS (no currency connector or m_in; co-participants retained).
+  Internal isolation: PASS (non-currency sharing only between adjacent path steps).
+  Downstream isolation: PASS (only m_in shared, consumed by r_Ff and r_Sf).
+  No Block 0 reaction is reused in another block.
+  m_in is produced only by the last Block 0 step and is never consumed within Block 0.
+  Shared currency co-participants remain permitted; their buffering is not verified.
   Search depth limit: Inf; expansion cap reached: 0
-  Path: camp[c] -> amp[c] -> nh4[c] -> gln_L[c] -> gam6p[c] -> f6p[c] (5 reaction(s))
+  Path: camp[c] -> amp[c] -> adn[c] -> r1p[c] -> r5p[c] -> ru5p_D[c] -> xu5p_D[c] -> f6p[c] (7 reaction(s))
 r_CAMP_1
   ID: PDE1
   Name: 3', 5'-Cyclic-Nucleotide Phosphodiesterase
@@ -2553,46 +2790,66 @@ r_CAMP_1
 
   EC: 3.1.4.17
 r_CAMP_2
-  ID: AMPDA
-  Name: Adenosine Monophosphate Deaminase
+  ID: NTD7
+  Name: 5'-Nucleotidase (AMP)
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.4.6
+  Resolved EC: 3.1.3.5
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction AMPDA
-  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]] + Proton [h[c]]  ->  Inosine-5'-Monophosphate [imp[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction NTD7
+  Equation: Adenosine Monophosphate [amp[c]] + Water [h2o[c]]  ->  Adenosine [adn[c]] + Orthophosphate [pi[c]]
 
-  EC: 3.5.4.6
+  EC: 3.1.3.5
 r_CAMP_3
-  ID: GLNS
-  Name: Glutamine Synthetase
+  ID: PUNP1
+  Name: Purine-Nucleoside Phosphorylase (Adenosine)
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.1.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.4.2.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PUNP1
+  Equation: Adenosine [adn[c]] + Orthophosphate [pi[c]]  ->  Adenine [ade[c]] + Alpha-D-Ribose 1-Phosphate [r1p[c]]
 
-  EC: 6.3.1.2
+  EC: 3.4.2.1
 r_CAMP_4
-  ID: GF6PTA
-  Name: Glutamine-Fructose-6-Phosphate Transaminase
+  ID: PPM
+  Name: Phosphopentomutase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.16
+  Resolved EC: 5.4.2.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction PPM
+  Equation: Alpha-D-Ribose 1-Phosphate [r1p[c]]  ->  Alpha-D-Ribose 5-Phosphate [r5p[c]]
 
-  EC: 2.6.1.16
+  EC: 5.4.2.7
 r_CAMP_5
-  ID: G6PDA
-  Name: Glucosamine-6-Phosphate Deaminase
+  ID: RPI
+  Name: Ribose-5-Phosphate Isomerase
   Direction: +1 relative to model.S
-  Resolved EC: 3.5.99.6
+  Resolved EC: 5.3.1.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction G6PDA
-  Equation: D-Glucosamine-6-Phosphate [gam6p[c]] + Water [h2o[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Ammonium [nh4[c]]
+  EC annotation reference: model reaction RPI
+  Equation: Alpha-D-Ribose 5-Phosphate [r5p[c]]  ->  D-Ribulose 5-Phosphate [ru5p_D[c]]
 
-  EC: 3.5.99.6
-  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.
+  EC: 5.3.1.6
+r_CAMP_6
+  ID: RPEc
+  Name: Ribulose 5-Phosphate 3-Epimerase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.1.3.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RPEc
+  Equation: 2 D-Ribulose 5-Phosphate [ru5p_D[c]]  ->  2 D-Xylulose 5-Phosphate [xu5p_D[c]]
+
+  EC: 5.1.3.1
+r_CAMP_7
+  ID: TKT2
+  Name: Transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction TKT2
+  Equation: D-Erythrose 4-Phosphate [e4p[c]] + D-Xylulose 5-Phosphate [xu5p_D[c]]  ->  D-Fructose 6-Phosphate (m_in) [f6p[c]] + Glyceraldehyde 3-Phosphate [g3p[c]]
+
+  EC: 2.2.1.1
+  WARNING: shortest isolated structural path within the selected motif; atom transfer, additional substrates and flux feasibility unverified.
 
 ============================================================
 DIFFERENTIATOR (SEVEN REACTIONS)
@@ -2663,17 +2920,17 @@ r_Sd
   Resolved genes: 2752;51557
 
 r_Sr
-  ID: ASNS1
-  Name: Asparagine Synthase (Glutamine-Hydrolysing)
+  ID: PHACCOAGLNAC
+  Name: Phenylacetyl Coenzyme A:L-Glutamine Alpha-N-Phenylacetyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.5.4
+  Resolved EC: 2.3.1.14
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASNS1
-  Equation: L-Aspartate [asp_L[c]] + Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]]  ->  Adenosine Monophosphate [amp[c]] + L-Asparagine [asn_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Proton [h[c]] + Diphosphate [ppi[c]]
+  EC annotation reference: model reaction PHACCOAGLNAC
+  Equation: L-Glutamine (m_Sd) [gln_L[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + (2S)-4-Carbamoyl-2-(2-Phenylacetamido)Butanoate [pheacgln[c]]
 
-  EC: 6.3.5.4
-  GPR: (440)
-  Resolved genes: 440
+  EC: 2.3.1.14
+  GPR: 
+  Resolved genes: 
 
 r_I
   ID: CTPS2
