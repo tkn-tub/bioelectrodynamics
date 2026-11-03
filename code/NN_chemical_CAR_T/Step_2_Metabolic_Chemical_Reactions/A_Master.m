@@ -6,7 +6,20 @@
 % No checkpoints or network-cache directories are generated.
 clearvars; clc;
 MODEL_NAME = 'Puniya2021_TNM1055.xml';
-OUT_NAME = 'Transport_Stages1to5_BRENDA_Results_RankedTop10';
+OUT_NAME = 'Transport_Stages1to5_BRENDA_Results_EC_Required';
+% Every selected chemical reaction EXCEPT the r_T role requires a complete
+% EC annotation. Model fields are merged; missing annotations may be resolved
+% by exact reaction-ID links in BiGG or a sourced BRENDA reaction mapping.
+EC_TRY_BIGG = true;              % Also requires ONLINE=true.
+EC_BIGG_TIMEOUT = 10;             % Seconds per request; failures do not admit reactions.
+EC_BIGG_MAX_LOOKUPS = Inf;
+EC_BIGG_MAX_CONSECUTIVE_FAILURES = 3;
+EC_EXTERNAL_MAPPING_FILE = 'Reaction_EC_Evidence.tsv'; % Optional, found with which().
+EC_BRENDA_FILE = 'brenda_2026_1.txt'; % Validates BRENDA-sourced mapping EC entries.
+% Optional TSV columns: ReactionID, EC, Source, Reference.
+% Source must be BRENDA or BiGG; exact reaction IDs and a source reference
+% are required. No mapping is inferred merely from a similar enzyme name.
+
 
 %% Ranking: distance means the number of cAMP -> m_in reactions.
 PRINT_TOP_MOTIFS = 10;
@@ -19,6 +32,10 @@ BLOCK0_MAX_DEPTH = Inf;
 BLOCK0_MAX_EXPANSIONS = Inf;
 BLOCK0_ALLOW_ZERO_STEP = false;
 BLOCK0_DIAGNOSTICS_ONLY = false;
+% Currency metabolites may occur in equations, but cannot carry a Block 0
+% connection or be m_in. Match exact base IDs, without [c] or _c suffixes.
+BLOCK0_CURRENCY_BASE_IDS = block0DefaultCurrencyIDs(); % Edit this list/helper if needed.
+% AMP is deliberately retained: cAMP -> AMP is a valid possible first step.
 RUN_RANKING_SELF_TESTS = true;
 % r_I kinetic ranking: structural counter distance ALWAYS remains first.
 RI_KCAT_RANKING = true;
@@ -85,10 +102,25 @@ assert(isscalar(EXCHANGE_MAX_SIGNAL_PRECURSORS) && ~isnan(EXCHANGE_MAX_SIGNAL_PR
     EXCHANGE_MAX_SIGNAL_PRECURSORS>=1 && ...
     (isinf(EXCHANGE_MAX_SIGNAL_PRECURSORS) || EXCHANGE_MAX_SIGNAL_PRECURSORS==floor(EXCHANGE_MAX_SIGNAL_PRECURSORS)), ...
     'ExchangeSearch:PrecursorCap','EXCHANGE_MAX_SIGNAL_PRECURSORS must be a positive integer or Inf.');
+assert(isnumeric(EC_BIGG_TIMEOUT) && isscalar(EC_BIGG_TIMEOUT) && ...
+    isfinite(EC_BIGG_TIMEOUT) && EC_BIGG_TIMEOUT>0, ...
+    'ECPolicy:Timeout','EC_BIGG_TIMEOUT must be a positive finite number.');
+assert(isnumeric(EC_BIGG_MAX_LOOKUPS) && isscalar(EC_BIGG_MAX_LOOKUPS) && ...
+    ~isnan(EC_BIGG_MAX_LOOKUPS) && EC_BIGG_MAX_LOOKUPS>=0 && ...
+    (isinf(EC_BIGG_MAX_LOOKUPS) || EC_BIGG_MAX_LOOKUPS==floor(EC_BIGG_MAX_LOOKUPS)), ...
+    'ECPolicy:LookupCap','EC_BIGG_MAX_LOOKUPS must be a nonnegative integer or Inf.');
+assert(isnumeric(EC_BIGG_MAX_CONSECUTIVE_FAILURES) && ...
+    isscalar(EC_BIGG_MAX_CONSECUTIVE_FAILURES) && ...
+    isfinite(EC_BIGG_MAX_CONSECUTIVE_FAILURES) && ...
+    EC_BIGG_MAX_CONSECUTIVE_FAILURES>=1 && ...
+    EC_BIGG_MAX_CONSECUTIVE_FAILURES==floor(EC_BIGG_MAX_CONSECUTIVE_FAILURES), ...
+    'ECPolicy:FailureCap','EC_BIGG_MAX_CONSECUTIVE_FAILURES must be a positive integer.');
 if RUN_RANKING_SELF_TESTS
     selfTestBlock0Connectivity();
+    selfTestBlock0CurrencyPolicy();
     selfTestDistanceRanking();
     selfTestMotifCounts();
+    selfTestRequiredECPolicy();
 end
 
 % Inline equivalent of addingPathParentFolderByName('code').
@@ -133,9 +165,28 @@ if isfield(model,'lb'), lb=model.lb(:);else,lb=zeros(numel(rxnIDs),1);end
 if isfield(model,'ub'), ub=model.ub(:);else,ub=ones(numel(rxnIDs),1)*1000;end
 % Only standard [e] and [c] or _e and _c compartment naming is used.
 [baseMet,comp]=splitCompartments(metIDs);
+% Resolve annotations once, BEFORE Block 0 and all reaction candidate pools.
+% Workers receive this immutable annotation table; no parallel network lookups.
+ecOptions=struct('online',ONLINE && EC_TRY_BIGG,'timeout',EC_BIGG_TIMEOUT, ...
+    'maxLookups',EC_BIGG_MAX_LOOKUPS, ...
+    'maxFailures',EC_BIGG_MAX_CONSECUTIVE_FAILURES, ...
+    'mappingFile',EC_EXTERNAL_MAPPING_FILE,'brendaFile',EC_BRENDA_FILE);
+[model,ECAnnotationAudit,ecResolutionInfo]=resolveRequiredECAnnotations( ...
+    model,comp,ub,codeRoot,ecOptions);
+writetable(ECAnnotationAudit,fullfile(outDir,'00_Reaction_EC_Annotation_Audit.csv'));
+writetable(ECAnnotationAudit(ECAnnotationAudit.CandidateNonTransport & ...
+    ~ECAnnotationAudit.HasCompleteEC,:), ...
+    fullfile(outDir,'00_Excluded_Missing_EC_Reactions.csv'));
+report(logID,sprintf('EC policy: %d/%d forward intracellular reactions have a complete EC; %d excluded as unresolved. r_T alone is exempt.', ...
+    nnz(ECAnnotationAudit.CandidateNonTransport & ECAnnotationAudit.HasCompleteEC), ...
+    nnz(ECAnnotationAudit.CandidateNonTransport), ...
+    nnz(ECAnnotationAudit.CandidateNonTransport & ~ECAnnotationAudit.HasCompleteEC)));
+report(logID,ecResolutionInfo);
+
 % A single forward-only breadth-first search supplies every later motif.
 block0Cache=buildBlock0Cache(model,metIDs,comp,ub, ...
-    BLOCK0_SOURCE_MET_ID,BLOCK0_MAX_DEPTH,BLOCK0_MAX_EXPANSIONS);
+    BLOCK0_SOURCE_MET_ID,BLOCK0_MAX_DEPTH,BLOCK0_MAX_EXPANSIONS, ...
+    BLOCK0_CURRENCY_BASE_IDS);
 block0InputAllowed=block0Cache.reachable;
 if ~BLOCK0_ALLOW_ZERO_STEP
     block0InputAllowed(block0Cache.start)=false;
@@ -143,6 +194,9 @@ end
 report(logID,sprintf('Block 0: %d eligible m_in species reachable from %s; depth <= %g; expansions = %d; expansion cap reached = %d.', ...
     nnz(block0InputAllowed),BLOCK0_SOURCE_MET_ID,BLOCK0_MAX_DEPTH, ...
     block0Cache.expansions,block0Cache.expansionLimitReached));
+report(logID,sprintf('Block 0: %d cytosolic currency metabolites excluded as connectors and m_in; permitted as reaction co-participants.', ...
+    nnz(block0Cache.currencyMask & comp=="c")));
+report(logID,['Block 0 excluded currency base IDs: ' char(join(block0Cache.currencyBaseIDs,', '))]);
 if ~any(block0InputAllowed)
     report(logID,'Block 0: no eligible connected inputs; complete-circuit search will return no motifs.');
 end
@@ -154,12 +208,13 @@ end
 block0Rows=find(comp=="c");
 block0Status=repmat("no_path_within_depth",numel(block0Rows),1);
 if isinf(BLOCK0_MAX_DEPTH)
-    block0Status(:)="no_path_in_forward_cytosolic_graph";
+    block0Status(:)="no_path_in_forward_cytosolic_noncurrency_graph";
 end
 if block0Cache.expansionLimitReached
     block0Status(:)="not_reached_before_expansion_cap";
 end
 block0Status(block0Cache.reachable(block0Rows))="connected";
+block0Status(block0Cache.currencyMask(block0Rows))="excluded_currency_connector";
 if ~BLOCK0_ALLOW_ZERO_STEP
     block0Status(block0Rows==block0Cache.start)="zero_step_not_allowed";
 end
@@ -178,12 +233,14 @@ end
 Block0Reachability=table(metIDs(block0Rows),metNames(block0Rows), ...
     block0Cache.reachable(block0Rows),block0InputAllowed(block0Rows), ...
     block0Cache.depth(block0Rows),block0Status,block0MetPaths,block0ReactionPaths, ...
+    block0Cache.currencyMask(block0Rows), ...
     'VariableNames',{'MetaboliteID','MetaboliteName','Reachable', ...
-    'AllowedAsInput','ReactionDepth','Status','PathMetaboliteIDs','PathReactionIDs'});
+    'AllowedAsInput','ReactionDepth','Status','PathMetaboliteIDs','PathReactionIDs', ...
+    'IsCurrency'});
 writetable(Block0Reachability,fullfile(outDir,'00_Block0_Reachable_Inputs.csv'));
 report(logID,['Block 0 reachability report: ' fullfile(outDir,'00_Block0_Reachable_Inputs.csv')]);
 if BLOCK0_DIAGNOSTICS_ONLY
-    report(logID,'Block 0 diagnostics complete; no online enrichment or circuit search was run.');
+    report(logID,'Block 0 diagnostics complete; EC annotation resolution and Block 0 only. Downstream circuit search was skipped.');
     clear logGuard;
     return;
 end
@@ -797,7 +854,7 @@ if ~isempty(RANK)
             rrIdx=find(model.S(curr,:)~=0);
             for r=reshape(rrIdx,1,[])
                 coeff=full(model.S(curr,r));
-                if coeff>0 && ub(r)>0
+                if coeff>0 && ub(r)>0 && ecReactionAllowed(model,r)
                     orient=1; label="forward";
                 else
                     continue;
@@ -939,7 +996,7 @@ if ~EXCHANGE_ONLY && ~isempty(RANK) && ~isempty(C) && ~isempty(T)
         assert(string(T.direction(chosenT))=="forward", ...
             'ForwardOnly:TransportDirection','A transporter has non-forward direction.');
         orient=1;
-        printModelReaction(fid6,model,ri,orient,metIDs,metNames,T.cytosolic(chosenT),'m_c');
+        printModelReaction(fid6,model,ri,orient,metIDs,metNames,T.cytosolic(chosenT),'m_c',[],[],true);
         fprintf(fid6,'  GPR: %s\n',char(C.full_GPR(chosen)));
         fprintf(fid6,'  Gene association is NOT proof of direct transport protein identity.\n\n');
         fprintf(fid6,'COUNTER REACTIONS\n');
@@ -1030,6 +1087,7 @@ if ~EXCHANGE_ONLY && ~isempty(RANK) && ~isempty(C) && ~isempty(T)
             d1ids=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri];
             [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
             motifPrefix=[block0Reactions,d1ids,double(T.modelIndex(chosenT))];
+            if ~reactionsHaveRequiredEC(model,[block0Reactions,d1ids]),continue;end
             if reactionHasExcludedEC(model,motifPrefix,EXCLUDED_MOTIF_ECS),continue;end
             assert(block0InputAllowed(d.min),'Ranking:UnconnectedD1','Unconnected input cannot be selected.');
             foundD1=foundD1+1;
@@ -1082,7 +1140,7 @@ if ~EXCHANGE_ONLY && ~isempty(RANK) && ~isempty(C) && ~isempty(T)
             assert(string(T.direction(chosenT))=="forward", ...
             'ForwardOnly:TransportDirection','A transporter has non-forward direction.');
         orient=1;
-            printModelReaction(fid7,model,double(T.modelIndex(chosenT)),orient,metIDs,metNames,T.cytosolic(chosenT),'m_c');
+            printModelReaction(fid7,model,double(T.modelIndex(chosenT)),orient,metIDs,metNames,T.cytosolic(chosenT),'m_c',[],[],true);
             fprintf(fid7,'  GPR: %s\n\n',char(C.full_GPR(chosenC)));
             fprintf(fid7,'COUNTER REACTIONS\n');
             fprintf(fid7,'  r_ac: NOT IDENTIFIED\n  r_cr: NOT IDENTIFIED\n');
@@ -1209,6 +1267,7 @@ if height(X)>0
                     d1ids=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri];
                     [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
                     motifPrefix=[block0Reactions,d1ids,pathRxns,double(T.modelIndex(tr))];
+                    if ~reactionsHaveRequiredEC(model,[block0Reactions,d1ids,pathRxns]),continue;end
                     if reactionHasExcludedEC(model,motifPrefix,EXCLUDED_MOTIF_ECS),continue;end
                     assert(block0InputAllowed(d.min),'Ranking:UnconnectedExchange','Unconnected input cannot be selected.');
                     exchangeFound=exchangeFound+1;
@@ -1378,11 +1437,16 @@ fprintf(fid8,'SELECTED BLOCK 0 -> D1 -> TRANSPORT -> COUNTER -> TWO CONSUMING NE
 fprintf(fid8,'Direction policy: STRICT +1 relative to original model.S.\n');
 fprintf(fid8,'Selection: up to %d complete motifs, ranked by shortest m_Sd-to-counter path, then cAMP-to-m_in path.\n',PRINT_TOP_MOTIFS);
 fprintf(fid8,'Transport mechanism filter: stoichiometric exchange only; protein-path regulation is excluded.\n');
+fprintf(fid8,'EC policy: complete annotation required for Block 0, D1, intracellular connectors, r_cr and every neuron reaction; r_T is exempt.\n');
+fprintf(fid8,'Annotation audit: 00_Reaction_EC_Annotation_Audit.csv; unresolved exclusions: 00_Excluded_Missing_EC_Reactions.csv.\n');
+fprintf(fid8,'An EC annotation does not guarantee matching KM or kcat measurements.\n');
 fprintf(fid8,'Excluded reaction ECs: %s\n',char(join(EXCLUDED_MOTIF_ECS,', ')));
 fprintf(fid8,'Scope: retained D1 parents and configured branch/trial limits; global optimality is not assumed.\n');
 fprintf(fid8,'Equal-distance motifs may share m_in. Ties retain discovery order after both path distances.\n');
 fprintf(fid8,'Block 0 depth cap=%g; expansion cap=%g; expansion limit reached=%d.\n', ...
     BLOCK0_MAX_DEPTH,BLOCK0_MAX_EXPANSIONS,block0Cache.expansionLimitReached);
+fprintf(fid8,'Block 0: currency metabolites cannot carry path connections or be m_in; they may remain in reaction equations.\n');
+fprintf(fid8,'Block 0 excluded currency base IDs: %s\n',char(join(block0Cache.currencyBaseIDs,', ')));
 fprintf(fid8,'Upstream caps: protein hops=%g; metabolite-match rows=%g; backward metabolic steps=%g; backward path rows=%g.\n', ...
     MAX_HOPS,STAGE5_MAX_MATCH_ROWS,STAGE5_MAX_HOPS,STAGE5_MAX_PATH_ROWS);
 fprintf(fid8,'D1 caps: targets=%g; motifs=%g; retained/target=%g; branch=%g; reaction candidates=%g; tests/target=%g.\n', ...
@@ -1425,6 +1489,7 @@ for cp=1:numel(selectedD1)
         if ismember(di(cr),d1reactions),continue;end
         transportReaction=double(T.modelIndex(tt));
         if di(cr)==transportReaction,continue;end
+        if ~ecReactionAllowed(model,di(cr)),continue;end
         ck=counterChemicalKey(parent,transportReaction,di(cr),mm);
         if isKey(counterKeys,ck),continue;end
         counterKeys(ck)=true;
@@ -1497,7 +1562,7 @@ end
 % Serial deterministic merge. Parent order, then each parent's discovery
 % order, defines the stable discoveryIndex independently of worker scheduling.
 reject8=struct('duplicateReaction',0,'d1Overlap',0,'excludedEC',0, ...
-    'repeatedEC',0,'duplicateChemistry',0,'accepted',0,'parentsCapped',0);
+    'repeatedEC',0,'missingEC',0,'duplicateChemistry',0,'accepted',0,'parentsCapped',0);
 for ii=1:nParents8
     R8=parentResults8{ii};
     if isempty(R8),continue;end
@@ -1507,6 +1572,7 @@ for ii=1:nParents8
     reject8.d1Overlap=reject8.d1Overlap+R8.rejectD1Overlap;
     reject8.excludedEC=reject8.excludedEC+R8.rejectExcludedEC;
     reject8.repeatedEC=reject8.repeatedEC+R8.rejectRepeatedEC;
+    reject8.missingEC=reject8.missingEC+R8.rejectMissingEC;
     reject8.parentsCapped=reject8.parentsCapped+R8.capReached;
     for jj=1:numel(R8.candidates)
         c8=R8.candidates(jj);
@@ -1558,6 +1624,7 @@ fprintf(fid8,'One shortest Block 0 path is used per m_in; alternate connectors d
 fprintf(fid8,'Counter total includes counters with no two-neuron solution; complete count requires both neurons.\n');
 fprintf(fid8,'D1 parents examined for neurons: %d/%d; total trials=%d; parents reaching per-parent cap=%d.\n', ...
     examined8,numel(selectedD1),tests8,reject8.parentsCapped);
+fprintf(fid8,'Missing EC rejections during final assembly: %d (EC filtering also occurred before candidate enumeration).\n',reject8.missingEC);
 fprintf(fid8,'Stage 8 rejection diagnostics: duplicate reaction=%d; D1 overlap=%d; excluded EC=%d; repeated/unassignable EC=%d; duplicate chemistry=%d; accepted=%d.\n', ...
     reject8.duplicateReaction,reject8.d1Overlap,reject8.excludedEC,reject8.repeatedEC, ...
     reject8.duplicateChemistry,reject8.accepted);
@@ -1570,6 +1637,11 @@ for printedRank8=1:printed8
     mc=item8.mc;nf=item8.nf;nd=item8.nd;nf2=item8.nf2;mout=item8.mout;
     chosen=item8.chosen;distance=item8.distance;
     [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
+    requiredFinalReactions=[block0Reactions,d.rff,d.rfd,d.rfr,d.rsf,d.rsd, ...
+        d.rsr,d.ri,sel.exchangePathRxns,reshape(di(chosen),1,[])];
+    assert(reactionsHaveRequiredEC(model,requiredFinalReactions), ...
+        'ECPolicy:FinalMotifMissingEC', ...
+        'A final motif contains a non-r_T reaction without a complete EC annotation.');
     mode="stoichiometric_exchange";
     counterDistance=numel(sel.exchangePathRxns);
     rankingRows8(end+1,:)={printedRank8,counterDistance,distance, ...
@@ -1640,7 +1712,7 @@ for printedRank8=1:printed8
     assert(string(T.direction(tr))=="forward", ...
         'ForwardOnly:TransportDirection','A transporter has non-forward direction.');
     ot=1;
-    printModelReaction(fid8,model,double(T.modelIndex(tr)),ot,metIDs,metNames,"","",signalIDs,signalNames);
+    printModelReaction(fid8,model,double(T.modelIndex(tr)),ot,metIDs,metNames,"","",signalIDs,signalNames,true);
     fprintf(fid8,'\nCOUNTER LOSS AND TWO CONSUMING NEURONS\n');
     labels8=["r_cr","r_Nf_1","r_Nd_1","r_Nr_1","r_Nf_2","r_Nd_2","r_Nr_2"];
     for kk=1:7
@@ -1711,6 +1783,9 @@ function report(fid,msg)
 end
 function path=findNamed(root,name)
     path=which(name);if ~isempty(path) && isfile(path),return;end
+    % A supplied full path (including an off-path temporary test file) is
+    % already a file location. Do not prepend pwd or root to it.
+    if isfile(name),path=char(name);return;end
     p=fullfile(pwd,name);if isfile(p),path=p;return;end
     p=fullfile(root,name);if isfile(p),path=p;return;end
     path='';
@@ -1819,10 +1894,34 @@ function key=normalizeCompound(name)
     if ismissing(key),key="";end
 end
 
-function cache=buildBlock0Cache(model,metIDs,comp,ub,sourceID,maxDepth,maxExpansions)
+function ids=block0DefaultCurrencyIDs()
+% Block 0 only: do not change the existing currency policy of other blocks.
+% AMP and NH4 intentionally remain available as potential signal metabolites.
+    ids=["h","h+","proton","h2o","water","atp","adp","pi","ppi", ...
+        "nad","nadh","nadp","nadph","coa","co2","o2", ...
+        "na1","na","k","k1","cl","cl1"];
+end
+
+function [mask,excluded]=block0CurrencyMask(metIDs,currencyBaseIDs)
+% Exact base-ID matching, accepting [c], _c and an optional SBML M_ prefix.
+% Never use substring matching: h[c] must not also exclude hco3[c], etc.
+    [base,~]=splitCompartments(lower(strtrim(string(metIDs(:)))));
+    base=regexprep(base,'^m_','');
+    excluded=lower(strtrim(string(currencyBaseIDs(:))));
+    assert(all(~ismissing(excluded)) && all(strlength(excluded)>0), ...
+        'Block0:CurrencyList','Currency IDs must be nonempty, nonmissing strings.');
+    [excluded,~]=splitCompartments(excluded);
+    excluded=unique(regexprep(excluded,'^m_',''),'stable');
+    mask=ismember(base,excluded);
+end
+
+function cache=buildBlock0Cache(model,metIDs,comp,ub,sourceID,maxDepth,maxExpansions,currencyBaseIDs)
 % Explore ALL structurally reachable inputs once, using +1 reactions only.
-% A reaction is an edge from each substrate to each product. Other substrates
-% are not assumed to be produced by this path; flux feasibility is unverified.
+% Only NON-CURRENCY substrates and products can carry path edges. Currency
+% co-participants stay in S; reactions using water, protons, ATP, etc. remain
+% available when they also link two allowed metabolites. Other substrates
+% need not be produced by this path; atom transfer and flux are unverified.
+    if nargin<8,currencyBaseIDs=block0DefaultCurrencyIDs();end
     assert(isnumeric(maxDepth) && isscalar(maxDepth) && ...
         ~isnan(maxDepth) && maxDepth>=0 && ...
         (isinf(maxDepth) || maxDepth==floor(maxDepth)), ...
@@ -1837,17 +1936,21 @@ function cache=buildBlock0Cache(model,metIDs,comp,ub,sourceID,maxDepth,maxExpans
     assert(comp(start)=="c",'Block0:Compartment', ...
         'The Block 0 anchor must be cytosolic.');
     nm=numel(metIDs);
+    [currencyMask,currencyBaseIDs]=block0CurrencyMask(metIDs,currencyBaseIDs);
+    assert(~currencyMask(start),'Block0:CurrencyAnchor', ...
+        'The Block 0 anchor cannot be an excluded currency metabolite.');
     cache=struct('start',start,'sourceID',string(sourceID), ...
         'maxDepth',maxDepth,'maxExpansions',maxExpansions, ...
+        'currencyMask',currencyMask,'currencyBaseIDs',currencyBaseIDs, ...
         'reachable',false(nm,1),'depth',inf(nm,1), ...
         'parentMet',zeros(nm,1),'parentRx',zeros(nm,1), ...
         'expansions',0,'expansionLimitReached',false);
     cache.reachable(start)=true;cache.depth(start)=0;
     S=model.S;
     tol=1e-12;
-    eligible=ub(:)>0;
-    eligible=eligible & full(any(S < -tol,1))' & ...
-        full(any(S > tol,1))';
+    eligible=ub(:)>0 & ecSearchMask(model);
+    eligible=eligible & full(any(S(~currencyMask,:) < -tol,1))' & ...
+        full(any(S(~currencyMask,:) > tol,1))';
     % No extracellular or organelle participant may occur in Block 0.
     outside=comp~="c";
     eligible=eligible & ~full(any(abs(S(outside,:))>tol,1))';
@@ -1862,7 +1965,7 @@ function cache=buildBlock0Cache(model,metIDs,comp,ub,sourceID,maxDepth,maxExpans
                 return;
             end
             cache.expansions=cache.expansions+1;
-            products=find(S(:,j)>tol);
+            products=find(S(:,j)>tol & ~currencyMask);
             for next=reshape(products,1,[])
                 if cache.reachable(next),continue;end
                 cache.reachable(next)=true;
@@ -1889,6 +1992,8 @@ function [mets,rx]=block0CachedPath(cache,target)
     end
     assert(numel(rx)==cache.depth(target),'Block0:PathLength', ...
         'Cached path depth and reaction count differ.');
+    assert(~any(cache.currencyMask(mets)),'Block0:CurrencyPath', ...
+        'Refusing a Block 0 path containing an excluded currency metabolite.');
 end
 
 function printBlock0(fid,model,metIDs,metNames,target,signalIDs,signalNames,cache)
@@ -1897,6 +2002,7 @@ function printBlock0(fid,model,metIDs,metNames,target,signalIDs,signalNames,cach
     fprintf(fid,'  Anchor: %s | %s\n', ...
         char(metIDs(cache.start)),char(metNames(cache.start)));
     fprintf(fid,'  Connection status: CONNECTED (+1 only)\n');
+    fprintf(fid,'  Currency check: PASS (no currency connector or m_in; co-participants retained).\n');
     fprintf(fid,'  Search depth limit: %g; expansion cap reached: %d\n', ...
         cache.maxDepth,cache.expansionLimitReached);
     fprintf(fid,'  Path: %s (%d reaction(s))\n', ...
@@ -1913,7 +2019,7 @@ function printBlock0(fid,model,metIDs,metNames,target,signalIDs,signalNames,cach
         printModelReaction(fid,model,rx(k),1,metIDs,metNames,"","",signalIDs,signalNames);
         fprintf(fid,'  EC: %s\n',char(d1EC(model,rx(k))));
     end
-    fprintf(fid,'  WARNING: shortest structural path; additional substrates and flux feasibility unverified.\n');
+    fprintf(fid,'  WARNING: shortest structural path excluding currency connectors; atom transfer, additional substrates and flux feasibility unverified.\n');
 end
 
 function selfTestBlock0Connectivity()
@@ -1955,8 +2061,71 @@ function selfTestBlock0Connectivity()
     fprintf('PASS: Block 0 connectivity, +1 direction, compartments, limits and shortest paths.\n');
 end
 
+function selfTestBlock0CurrencyPolicy()
+% A false two-step cAMP -> proton -> f6p shortcut must lose to the real
+% three-step route. Water/cofactor-only routes must remain unreachable.
+    ids=["camp[c]";"amp[c]";"h[c]";"h2o[c]";"atp[c]";"adp[c]"; ...
+        "nad[c]";"nadh[c]";"f6p[c]";"water_only[c]"; ...
+        "atp_only[c]";"nad_only[c]";"real_mid[c]"];
+    comps=repmat("c",numel(ids),1);ub=1000*ones(9,1);
+    fixture.S=sparse(numel(ids),9);
+    fixture.S([1 4 2 3],1)=[-1;-1;1;1]; % camp + water -> amp + proton
+    fixture.S([3 9],2)=[-1;1];          % proton -> f6p (false link)
+    fixture.S([4 10],3)=[-1;1];         % water-only link
+    fixture.S([2 5 7 13 6 8],4)=[-1;-1;-1;1;1;1];
+    fixture.S([6 11],5)=[-1;1];         % ADP-only link
+    fixture.S([8 12],6)=[-1;1];         % NADH-only link
+    fixture.S([13 3 9 4],7)=[-1;-1;1;1]; % real_mid + proton -> f6p + water
+    fixture.S([13 5],8)=[-1;1];         % ATP must not become a connector
+    fixture.S([13 7],9)=[-1;1];         % NAD must not become a connector
+    c=buildBlock0Cache(fixture,ids,comps,ub,'camp[c]',Inf,Inf);
+    assert(~any(c.reachable(3:8)) && all(c.currencyMask(3:8)), ...
+        'Block0:SelfTestCurrencyNodes','A currency metabolite became reachable.');
+    assert(~any(c.reachable(10:12)), ...
+        'Block0:SelfTestCurrencyShortcut','A currency-only connection was accepted.');
+    assert(c.reachable(2) && c.depth(2)==1, ...
+        'Block0:SelfTestAMP','The valid cAMP -> AMP first step was removed.');
+    [m,r]=block0CachedPath(c,9);
+    assert(c.depth(9)==3 && isequal(m,[1 2 13 9]) && isequal(r,[1 4 7]), ...
+        'Block0:SelfTestCurrencyDistance', ...
+        'Shortest distance did not use the allowed route with currency co-participants.');
+    unfiltered=buildBlock0Cache(fixture,ids,comps,ub,'camp[c]',Inf,Inf,strings(0,1));
+    assert(unfiltered.depth(9)==2 && all(unfiltered.reachable(10:12)), ...
+        'Block0:SelfTestFixture','The fixture does not reproduce currency shortcuts.');
+    custom=buildBlock0Cache(fixture,ids,comps,ub,'camp[c]',Inf,Inf, ...
+        [block0DefaultCurrencyIDs(),"amp"]);
+    assert(nnz(custom.reachable)==1, ...
+        'Block0:SelfTestCurrencyConfig','A configured extra currency was ignored.');
+    aliases=block0CurrencyMask(["M_H2O_c";"H[c]";"ATP_c";"amp[c]"; ...
+        "hco3[c]";"water[c]";"f6p[c]"],block0DefaultCurrencyIDs());
+    assert(isequal(aliases,[true;true;true;false;false;true;false]), ...
+        'Block0:SelfTestCurrencyIDs','Currency alias matching is too broad or incomplete.');
+    rejected=false;
+    try
+        buildBlock0Cache(fixture,ids,comps,ub,'h[c]',Inf,Inf);
+    catch ME
+        rejected=strcmp(ME.identifier,'Block0:CurrencyAnchor');
+    end
+    assert(rejected,'Block0:SelfTestCurrencyAnchor','A currency anchor was accepted.');
+    corrupted=c;corrupted.currencyMask(2)=true;rejected=false;
+    try
+        block0CachedPath(corrupted,9);
+    catch ME
+        rejected=strcmp(ME.identifier,'Block0:CurrencyPath');
+    end
+    assert(rejected,'Block0:SelfTestCurrencyGuard','Cached-path currency guard failed.');
+    fprintf('PASS: Block 0 currency exclusion, retained AMP/co-participants, filtered distances and path guard.\n');
+end
+
 function printModelReaction(fid,model,idx,orient,metIDs,metNames,markedID,markedLabel,varargin)
 % Print original stoichiometry; never relabel or reverse a stored reaction.
+    isTransportRole=false;
+    if numel(varargin)>=3,isTransportRole=isequal(varargin{3},true);end
+    if isfield(model,'circuitECPolicyActive') && model.circuitECPolicyActive && ~isTransportRole
+        assert(ecReactionAllowed(model,idx),'ECPolicy:MissingAnnotation', ...
+            'Reaction %s has no complete EC annotation; only the r_T role is exempt.', ...
+            char(string(model.rxns(idx))));
+    end
     assert(isscalar(orient) && orient==1, ...
         'ForwardOnly:PrintedDirection', ...
         'Refusing to print reaction %s with direction other than +1.', ...
@@ -1987,6 +2156,14 @@ function printModelReaction(fid,model,idx,orient,metIDs,metNames,markedID,marked
     fprintf(fid,'  ID: %s\n',char(rxn));
     fprintf(fid,'  Name: %s\n',char(rxnName));
     fprintf(fid,'  Direction: %+d relative to model.S\n',orient);
+    if isfield(model,'circuitResolvedEC')
+        fprintf(fid,'  Resolved EC: %s\n',char(d1EC(model,idx)));
+        fprintf(fid,'  EC annotation source: %s\n',char(model.circuitECSource(idx)));
+        fprintf(fid,'  EC annotation reference: %s\n',char(model.circuitECReference(idx)));
+        if isTransportRole && ~ecReactionAllowed(model,idx)
+            fprintf(fid,'  EC requirement: exempt for r_T only; transporter GPR is reported separately.\n');
+        end
+    end
     fprintf(fid,'  Equation: %s  ->  %s\n',char(join(lhs,' + ')),char(join(rhs,' + ')));
     fprintf(fid,'\n');
 end
@@ -2007,7 +2184,9 @@ end
 
 function [rx,sgn,products,substrates]=d1BuildOriented(model,comp,lb,ub,skipTransport)
     rx=zeros(0,1);sgn=zeros(0,1);products=cell(0,1);substrates=cell(0,1);
+    ecAllowed=ecSearchMask(model);
     for j=1:numel(model.rxns)
+        if ~ecAllowed(j),continue;end
         ids=find(model.S(:,j));
         if numel(ids)<2,continue;end
         if skipTransport && (any(comp(ids)~="c")),continue;end
@@ -2382,14 +2561,445 @@ end
 function s=emptyRIRec(),s=struct('value',{},'substrate',{},'organism',{});end
 function s=normRI(s),s=lower(strtrim(string(s)));s=regexprep(s,'\s+',' ');end
 
-function ec=d1EC(model,j)
-    ec="";
-    if isfield(model,'rxnECNumbers') && numel(model.rxnECNumbers)>=j
-        ec=string(model.rxnECNumbers(j));
-    elseif isfield(model,'rxnEC') && numel(model.rxnEC)>=j
-        ec=string(model.rxnEC(j));
+
+function mappings=readECMappingTable(mappingPath)
+% EC codes are identifiers, never numeric values or dates. Force every column
+% to string BEFORE reading; TextType='string' alone still permits type inference.
+    [~,~,extension]=fileparts(mappingPath);delimiter=sprintf('\t');
+    if strcmpi(extension,'.csv'),delimiter=',';end
+    opts=detectImportOptions(mappingPath,'FileType','text','Delimiter',delimiter, ...
+        'VariableNamingRule','preserve');
+    opts.VariableNamesLine=1;
+    opts.DataLines=[2 Inf];
+    opts=setvartype(opts,opts.VariableNames,'string');
+    mappings=readtable(mappingPath,opts);
+    required={'ReactionID','EC','Source','Reference'};
+    assert(all(ismember(required,mappings.Properties.VariableNames)), ...
+        'ECPolicy:MappingColumns', ...
+        'EC evidence file needs ReactionID, EC, Source, and Reference columns.');
+    for k=1:numel(required)
+        mappings.(required{k})=strtrim(mappings.(required{k}));
     end
-    if ismissing(ec) || lower(ec)=="nan",ec="";end
+end
+
+function [model,audit,info]=resolveRequiredECAnnotations(model,comp,ub,root,options)
+% Resolve exact reaction annotations once. No enzyme-name similarity matching.
+    n=numel(model.rxns);ids=string(model.rxns(:));names=ids;
+    if isfield(model,'rxnNames'),names=string(model.rxnNames(:));end
+    originalEC=strings(n,1);resolved=strings(n,1);source=strings(n,1);
+    reference=strings(n,1);status=repmat("unresolved",n,1);
+    for j=1:n
+        [tokens,fields]=modelECTokens(model,j);
+        if ~isempty(tokens)
+            originalEC(j)=join(tokens,'; ');
+            resolved(j)=originalEC(j);source(j)=join(fields,'; ');
+            reference(j)="model reaction "+ids(j);status(j)="model_annotation";
+        end
+    end
+    S=model.S;tol=1e-12;
+    candidate=ub(:)>0 & full(any(S < -tol,1))' & full(any(S > tol,1))';
+    candidate=candidate & ~full(any(abs(S(comp~="c",:))>tol,1))';
+    mappingPath=which(options.mappingFile);
+    if isempty(mappingPath),mappingPath=findNamed(root,options.mappingFile);end
+    mappings=table();
+    if ~isempty(mappingPath)
+        mappings=readECMappingTable(mappingPath);
+    end
+    brendaPath=which(options.brendaFile);
+    if isempty(brendaPath),brendaPath=findNamed(root,options.brendaFile);end
+    wanted=strings(0,1);
+    if ~isempty(mappings)
+        for k=1:height(mappings)
+            if strcmpi(strtrim(string(mappings.Source(k))),'BRENDA')
+                wanted=[wanted;completeECTokens(mappings.EC(k))]; %#ok<AGROW>
+            end
+        end
+    end
+    brendaEntries=brendaECEntries(brendaPath,unique(wanted));
+    queries=0;failures=0;stopped=false;
+    if ~isempty(mappings)
+        for k=1:height(mappings)
+            j=find(ids==strtrim(string(mappings.ReactionID(k))),1);
+            if isempty(j) || resolved(j)~="",continue;end
+            codes=completeECTokens(mappings.EC(k));
+            evidenceSource=strtrim(string(mappings.Source(k)));
+            ref=strtrim(string(mappings.Reference(k)));
+            if isempty(codes) || ismissing(ref) || ref=="",continue;end
+            if strcmpi(evidenceSource,'BRENDA')
+                valid=false(size(codes));
+                for q=1:numel(codes),valid(q)=isKey(brendaEntries,char(codes(q)));end
+                codes=codes(valid);
+                if isempty(codes),status(j)="BRENDA_mapping_not_confirmed_in_local_file";continue;end
+                source(j)="BRENDA curated reaction mapping; local ID entry confirmed";
+                reference(j)=ref+" | "+string(brendaPath);
+            elseif strcmpi(evidenceSource,'BiGG')
+                % A user-supplied exact reaction-ID mapping is evidence, not a
+                % name guess. Require a BiGG source URL for auditability.
+                if isempty(regexpi(char(ref),'^https?://(www\.)?(bigg\.bio|bigg\.ucsd\.edu|biggdata\.ucsd\.edu)/','once'))
+                    status(j)="BiGG_mapping_missing_BiGG_source_URL";continue;
+                end
+                if ~options.online || stopped || queries>=options.maxLookups
+                    status(j)="BiGG_mapping_could_not_be_verified";continue;
+                end
+                queries=queries+1;
+                [confirmed,canonicalRef,responded]=lookupBiGGEC(ids(j),options.timeout);
+                if responded,failures=0;else,failures=failures+1;end
+                if failures>=options.maxFailures,stopped=true;end
+                codes=intersect(codes,confirmed,'stable');
+                if isempty(codes)
+                    status(j)="BiGG_mapping_not_confirmed_in_database_response";continue;
+                end
+                source(j)="BiGG exact reaction-ID annotation; supplied mapping confirmed";
+                reference(j)=canonicalRef+" | "+ref;
+            else
+                status(j)="mapping_source_not_BiGG_or_BRENDA";continue;
+            end
+            resolved(j)=join(codes,'; ');status(j)="external_sourced_mapping";
+        end
+    end
+    for j=reshape(find(candidate & resolved==""),1,[])
+        if ~options.online
+            status(j)=status(j)+";online_lookup_disabled";continue;
+        end
+        if queries>=options.maxLookups
+            status(j)="unresolved_lookup_budget";continue;
+        end
+        if stopped
+            status(j)="unresolved_BiGG_service_unavailable";continue;
+        end
+        queries=queries+1;
+        [codes,ref,serviceResponded]=lookupBiGGEC(ids(j),options.timeout);
+        if serviceResponded,failures=0;else,failures=failures+1;end
+        if ~isempty(codes)
+            resolved(j)=join(codes,'; ');source(j)="BiGG exact reaction-ID annotation";
+            reference(j)=ref;status(j)="BiGG_annotation";
+        elseif serviceResponded
+            status(j)="unresolved_BiGG_no_complete_EC";
+        else
+            status(j)="unresolved_BiGG_lookup_failed";
+        end
+        if failures>=options.maxFailures,stopped=true;end
+        if mod(queries,50)==0
+            fprintf('EC annotation resolution: %d BiGG lookups; %d annotated intracellular reactions.\n', ...
+                queries,nnz(candidate & resolved~=""));
+        end
+    end
+    model.circuitResolvedEC=resolved;
+    model.circuitECSource=source;
+    model.circuitECReference=reference;
+    model.circuitECEligible=resolved~="";
+    model.circuitECPolicyActive=true;
+    audit=table(ids,names,originalEC,resolved,source,reference,status, ...
+        model.circuitECEligible,candidate, ...
+        'VariableNames',{'ReactionID','ReactionName','ModelEC','ResolvedEC', ...
+        'AnnotationSource','Reference','ResolutionStatus','HasCompleteEC','CandidateNonTransport'});
+    info=sprintf('EC resolution: %d model-annotated reactions; %d BiGG requests; circuit breaker=%d. Unresolved means excluded, not proven absent from every database.', ...
+        nnz(originalEC~=""),queries,stopped);
+end
+
+function [codes,fields]=modelECTokens(model,j)
+% Union all known EC fields, including a populated fallback after an empty one.
+    codes=strings(0,1);fields=strings(0,1);
+    names={'rxnECNumbers','rxnEC','eccodes','ecCodes','ecNumbers','rxnECNumber', ...
+        'rxnECcodes','rxnEnzymeClassification','circuitSBMLEC'};
+    for q=1:numel(names)
+        if ~isfield(model,names{q}),continue;end
+        value=ecAnnotationAt(model.(names{q}),j,numel(model.rxns));
+        found=completeECTokens(value);
+        if ~isempty(found)
+            codes=[codes;found];fields(end+1,1)="model."+string(names{q}); %#ok<AGROW>
+        end
+    end
+    if isfield(model,'rxnMiriams')
+        node=ecAnnotationAt(model.rxnMiriams,j,numel(model.rxns));
+        found=namedECAnnotations(node);
+        if ~isempty(found)
+            codes=[codes;found];fields(end+1,1)="model.rxnMiriams"; %#ok<AGROW>
+        end
+    end
+    codes=unique(codes,'stable');fields=unique(fields,'stable');
+end
+
+function value=ecAnnotationAt(values,j,n)
+    value=[];
+    if iscell(values)
+        if numel(values)==n,value=values{j};end
+    elseif isstring(values) || isstruct(values)
+        if numel(values)==n,value=values(j);end
+    elseif ischar(values)
+        if n==1,value=values;
+        elseif size(values,1)==n,value=values(j,:);end
+    end
+end
+
+function codes=completeECTokens(value)
+% Only full four-field ECs qualify. Partial, blank and non-EC labels do not.
+    codes=strings(0,1);
+    if iscell(value)
+        for k=1:numel(value),codes=[codes;completeECTokens(value{k})];end %#ok<AGROW>
+    elseif isstruct(value)
+        fields=fieldnames(value);
+        for k=1:numel(value)
+            for q=1:numel(fields)
+                codes=[codes;completeECTokens(value(k).(fields{q}))]; %#ok<AGROW>
+            end
+        end
+    elseif ischar(value) || isstring(value)
+        text=string(value);text=text(~ismissing(text));
+        if isempty(text),return;end
+        text=char(join(text(:),' '));
+        hit=regexp(text,'(?<![0-9.])[1-7]\.[0-9]+\.[0-9]+\.[0-9]+(?![0-9.\-])','match');
+        codes=string(hit(:));
+    end
+    codes=unique(codes,'stable');
+end
+
+function codes=namedECAnnotations(node)
+% Parse only EC-labelled namespaces, keys, or explicit EC-code URIs.
+% A bare number elsewhere in a database payload is NOT an EC annotation.
+    codes=strings(0,1);
+    if iscell(node)
+        for k=1:numel(node),codes=[codes;namedECAnnotations(node{k})];end %#ok<AGROW>
+    elseif isstruct(node)
+        names=fieldnames(node);
+        for k=1:numel(node)
+            % COBRA MIRIAM: name='ec-code', ids={'1.2.3.4'}.
+            for nsName={'name','namespace','database','data_source'}
+                if isfield(node,nsName{1})
+                    ns=node(k).(nsName{1});
+                    if (ischar(ns) || isstring(ns)) && isECNamespace(ns)
+                        for idName={'ids','id','identifier','identifiers','accession','value'}
+                            if isfield(node,idName{1})
+                                codes=[codes;completeECTokens(node(k).(idName{1}))]; %#ok<AGROW>
+                            end
+                        end
+                    end
+                end
+            end
+            for q=1:numel(names)
+                val=node(k).(names{q});
+                if isECNamespace(names{q})
+                    codes=[codes;completeECTokens(val)]; %#ok<AGROW>
+                else
+                    codes=[codes;namedECAnnotations(val)]; %#ok<AGROW>
+                end
+            end
+        end
+    elseif ischar(node) || isstring(node)
+        vals=string(node);vals=vals(~ismissing(vals));
+        for k=1:numel(vals)
+            text=char(vals(k));
+            if ~isempty(regexpi(text,'(ec-code|ec_code|enzyme-commission|(^|\s)EC:)[/: ]','once'))
+                codes=[codes;completeECTokens(text)]; %#ok<AGROW>
+            end
+        end
+    end
+    codes=unique(codes,'stable');
+end
+
+function tf=isECNamespace(value)
+    text=lower(string(value));text=regexprep(text,'[^a-z0-9]','');
+    tf=isscalar(text) && any(text==["ec","eccode","eccodes","ecnumber","ecnumbers", ...
+        "enzymecommission","enzymecommissionnumber","enzymeclassification", ...
+        "ecx0x2dcode","ec0x2dcode"]);
+end
+
+function entries=brendaECEntries(path,wanted)
+% Validate explicitly sourced BRENDA mappings against ID records, not names.
+    entries=containers.Map('KeyType','char','ValueType','logical');
+    if isempty(path) || isempty(wanted),return;end
+    fid=fopen(path,'r','n','UTF-8');
+    if fid<0,return;end
+    closeFile=onCleanup(@()fclose(fid)); %#ok<NASGU>
+    wanted=unique(wanted);
+    while true
+        line=fgetl(fid);if ~ischar(line),break;end
+        hit=regexp(line,'^ID\s+([1-7]\.[0-9]+\.[0-9]+\.[0-9]+)(?![0-9.\-])','tokens','once');
+        if ~isempty(hit) && any(wanted==string(hit{1}))
+            entries(hit{1})=true;
+            if entries.Count==numel(wanted),break;end
+        end
+    end
+end
+
+function [codes,reference,responded]=lookupBiGGEC(reactionID,timeout)
+% Exact ID requests only. Prefer the current v3 object API, then legacy v2.
+% Missing EC fields, errors and unknown payload shapes all fail closed.
+    codes=strings(0,1);reference="";responded=false;
+    id=char(string(reactionID));
+    if isempty(regexp(id,'^[A-Za-z0-9_\-]+$','once')),return;end
+    try
+        endpoint='https://bigg.bio/api/v3/objects';
+        record=webwrite(endpoint,struct('type','universalreaction','id',id), ...
+            weboptions('Timeout',timeout,'MediaType','application/json','ContentType','json'));
+        if isfield(record,'data') && isstruct(record.data),record=record.data;end
+        if isstruct(record) && isscalar(record) && isfield(record,'bigg_id') && ...
+                strcmp(string(record.bigg_id),string(reactionID))
+            responded=true;codes=namedECAnnotations(record);
+            if ~isempty(codes)
+                reference="https://bigg.bio/universal/reactions/"+string(reactionID);return;
+            end
+        end
+    catch ME
+        if contains(ME.identifier,'HTTP404') || contains(ME.message,'404')
+            responded=true; % Unknown reaction is not a network outage.
+        end
+        % Try the legacy exact-ID endpoint; never infer an EC from an error.
+    end
+    try
+        endpoint=['https://bigg.ucsd.edu/api/v2/universal/reactions/',id];
+        record=webread(endpoint,weboptions('Timeout',timeout,'ContentType','json'));
+        if isstruct(record) && isscalar(record) && isfield(record,'bigg_id') && ...
+                strcmp(string(record.bigg_id),string(reactionID))
+            responded=true;codes=namedECAnnotations(record);
+            if ~isempty(codes),reference=string(endpoint);end
+        end
+    catch ME
+        if contains(ME.identifier,'HTTP404') || contains(ME.message,'404')
+            responded=true;
+        end
+    end
+end
+
+function mask=ecSearchMask(model)
+% Synthetic legacy fixtures without an active policy retain their old behavior.
+    if isfield(model,'S'),n=size(model.S,2);else,n=numel(model.rxns);end
+    mask=true(n,1);
+    if isfield(model,'circuitECPolicyActive') && model.circuitECPolicyActive
+        mask=logical(model.circuitECEligible(:));
+    end
+end
+
+function tf=ecReactionAllowed(model,j)
+    mask=ecSearchMask(model);tf=all(mask(j));
+end
+
+function tf=reactionsHaveRequiredEC(model,reactionIDs)
+    tf=true;
+    for j=reshape(unique(reactionIDs),1,[])
+        if isempty(completeECTokens(d1EC(model,j))),tf=false;return;end
+    end
+end
+
+function selfTestRequiredECPolicy()
+% No external calls. In particular, a missing r_cr must never be admitted.
+    fixture.rxns={'annotated';'fallback';'partial';'MCLACCYSR';'transporter'};
+    fixture.rxnECNumbers={'1.1.1.1';'';'2.7.1.-';'';''};
+    fixture.rxnEC={'';'2.7.1.1';'';'';''};
+    [codes,~]=modelECTokens(fixture,2);
+    assert(isequal(codes,"2.7.1.1"),'EC self-test: empty primary field hid a valid fallback.');
+    assert(isempty(completeECTokens('2.7.1.-; NaN')), ...
+        'EC self-test: partial EC was admitted.');
+    record=struct('database_links',struct('ec_code', ...
+        struct('id','1.2.3.4','link','https://identifiers.org/ec-code/1.2.3.4')));
+    assert(isequal(namedECAnnotations(record),"1.2.3.4"), ...
+        'EC self-test: BiGG EC namespace was not parsed.');
+    miriam=struct('name','ec-code','ids',{{'2.3.4.5'}});
+    assert(isequal(namedECAnnotations(miriam),"2.3.4.5"), ...
+        'EC self-test: model MIRIAM EC namespace was not parsed.');
+    assert(isempty(namedECAnnotations(struct('unrelated_id','1.2.3.4'))), ...
+        'EC self-test: unrelated numeric identifier was treated as an EC.');
+    fixture.circuitResolvedEC=["1.1.1.1";"2.7.1.1";"";"";""];
+    fixture.circuitECEligible=fixture.circuitResolvedEC~="";
+    fixture.circuitECPolicyActive=true;
+    assert(~ecReactionAllowed(fixture,4) && ~reactionsHaveRequiredEC(fixture,[1 4]), ...
+        'EC self-test: missing MCLACCYSR EC passed the required-EC filter.');
+    assert(reactionsHaveRequiredEC(fixture,[1 2]), ...
+        'EC self-test: annotated nontransport reactions were rejected.');
+    % The required list excludes the r_T role only; using that unannotated
+    % reaction in any other role is still forbidden.
+    assert(~reactionsHaveRequiredEC(fixture,[1 2 5]), ...
+        'EC self-test: exemption leaked from a role to a reaction ID.');
+    folder=tempname;mkdir(folder);cleanup=onCleanup(@()rmdir(folder,'s')); %#ok<NASGU>
+    fixture.rxns{6,1}='external_test';
+    fixture.rxnECNumbers{6,1}='';fixture.rxnEC{6,1}='';
+    fixture.S=sparse([-ones(1,6);ones(1,6)]);
+    fixture.rxnNames=fixture.rxns;
+    brenda=fullfile(folder,'brenda_test.txt');fid=fopen(brenda,'w');
+    assert(fid>0,'EC self-test: cannot create temporary BRENDA fixture.');
+    fprintf(fid,'ID\t1.2.3.4\nRN\tSynthetic enzyme\n');fclose(fid);
+    mapping=fullfile(folder,'mapping.tsv');fid=fopen(mapping,'w');
+    assert(fid>0,'EC self-test: cannot create temporary mapping fixture.');
+    fprintf(fid,'ReactionID\tEC\tSource\tReference\n');
+    fprintf(fid,'external_test\t1.2.3.4\tBRENDA\tSynthetic test source\n');fclose(fid);
+    foundMapping=findNamed(folder,mapping);foundBrenda=findNamed(folder,brenda);
+    assert(~isempty(foundMapping) && isfile(foundMapping), ...
+        'ECPolicy:SelfTestMappingPath','Explicit temporary mapping path was not resolved.');
+    assert(~isempty(foundBrenda) && isfile(foundBrenda), ...
+        'ECPolicy:SelfTestBRENDAPath','Explicit temporary BRENDA path was not resolved.');
+    imported=readECMappingTable(foundMapping);
+    assert(height(imported)==1 && isstring(imported.EC) && ...
+        imported.ReactionID(1)=="external_test" && imported.EC(1)=="1.2.3.4" && ...
+        imported.Source(1)=="BRENDA" && imported.Reference(1)=="Synthetic test source", ...
+        'ECPolicy:SelfTestMappingText','TSV mapping did not preserve the original reaction/EC/source text.');
+    csvMapping=fullfile(folder,'mapping with spaces.csv');fid=fopen(csvMapping,'w');
+    assert(fid>0,'EC self-test: cannot create CSV mapping fixture.');
+    fprintf(fid,'ReactionID,EC,Source,Reference\n');
+    fprintf(fid,'external_test,"1.2.3.4",BRENDA,"Synthetic, test source"\n');fclose(fid);
+    importedCSV=readECMappingTable(csvMapping);
+    assert(height(importedCSV)==1 && importedCSV.EC(1)=="1.2.3.4" && ...
+        importedCSV.Reference(1)=="Synthetic, test source", ...
+        'ECPolicy:SelfTestCSVMapping','CSV mapping did not preserve quoted EC/reference text.');
+    options=struct('online',false,'timeout',1,'maxLookups',0,'maxFailures',1, ...
+        'mappingFile',mapping,'brendaFile',brenda);
+    [resolved,audit,~]=resolveRequiredECAnnotations(fixture,["c";"c"],ones(6,1),folder,options);
+    assert(resolved.circuitECEligible(1),'ECPolicy:SelfTestPrimaryEC', ...
+        'Model EC was lost: status=%s; EC=%s.', ...
+        char(audit.ResolutionStatus(1)),char(audit.ResolvedEC(1)));
+    assert(resolved.circuitECEligible(2),'ECPolicy:SelfTestFallbackEC', ...
+        'Fallback model EC was lost: status=%s; EC=%s.', ...
+        char(audit.ResolutionStatus(2)),char(audit.ResolvedEC(2)));
+    assert(resolved.circuitECEligible(6),'ECPolicy:SelfTestBRENDAImport', ...
+        'Synthetic BRENDA mapping was not loaded: status=%s; EC=%s; mapping=%s; BRENDA=%s.', ...
+        char(audit.ResolutionStatus(6)),char(audit.ResolvedEC(6)),mapping,brenda);
+    assert(~resolved.circuitECEligible(4),'ECPolicy:SelfTestUnknownReaction', ...
+        'Unannotated MCLACCYSR was incorrectly accepted: status=%s; EC=%s.', ...
+        char(audit.ResolutionStatus(4)),char(audit.ResolvedEC(4)));
+    assert(audit.ResolvedEC(6)=="1.2.3.4" && contains(audit.AnnotationSource(6),"BRENDA"), ...
+        'EC self-test: BRENDA mapping source was not recorded.');
+    [pool,~,~,~]=d1BuildOriented(resolved,["c";"c"],zeros(6,1),ones(6,1),true);
+    assert(isequal(pool,[1;2;6]),'EC self-test: unannotated reaction survived pool filtering.');
+    % Printing provides an independent guard. The SAME unannotated model
+    % reaction is forbidden in r_cr and allowed only in an explicit r_T role.
+    probe=fopen(fullfile(folder,'reaction_role_test.txt'),'w');
+    assert(probe>0,'ECPolicy:SelfTestReport','Cannot create temporary role report.');
+    closeProbe=onCleanup(@()fclose(probe)); %#ok<NASGU>
+    rejected=false;
+    try
+        printModelReaction(probe,resolved,4,1,["camp[c]";"amp[c]"], ...
+            ["cAMP";"AMP"],"","");
+    catch ME
+        rejected=strcmp(ME.identifier,'ECPolicy:MissingAnnotation');
+    end
+    assert(rejected,'ECPolicy:SelfTestCounterPrint', ...
+        'An unannotated r_cr reaction passed the final printing guard.');
+    printModelReaction(probe,resolved,4,1,["camp[c]";"amp[c]"], ...
+        ["cAMP";"AMP"],"","",[],[],true);
+    clear closeProbe;
+    % A missing-EC direct connector must not hide an annotated longer path.
+    connector.S=sparse([-1 -1 0;1 0 -1;0 1 1]);
+    connector.rxns={'first';'unannotated_shortcut';'second'};
+    connector.rxnECNumbers={'3.1.4.17';'';'3.5.4.6'};
+    connector.circuitResolvedEC=["3.1.4.17";"";"3.5.4.6"];
+    connector.circuitECEligible=[true;false;true];
+    connector.circuitECPolicyActive=true;
+    c=buildBlock0Cache(connector,["camp[c]";"amp[c]";"imp[c]"], ...
+        repmat("c",3,1),ones(3,1),'camp[c]',Inf,Inf);
+    [~,connectorRx]=block0CachedPath(c,3);
+    assert(c.depth(3)==2 && isequal(connectorRx,[1 3]), ...
+        'ECPolicy:SelfTestBlock0','An unannotated shortcut was selected in Block 0.');
+    fprintf('PASS: complete EC presence, fallback annotations, namespace parsing and role-only transport exemption.\n');
+end
+
+function ec=d1EC(model,j)
+    if isfield(model,'circuitResolvedEC')
+        ec=string(model.circuitResolvedEC(j));
+    else
+        [ecs,~]=modelECTokens(model,j);
+        ec="";
+        if ~isempty(ecs),ec=join(ecs,'; ');end
+    end
+    if ismissing(ec),ec="";end
 end
 
 function tf=reactionsHaveUniqueECAssignment(model,reactionIDs)
@@ -2398,6 +3008,8 @@ function tf=reactionsHaveUniqueECAssignment(model,reactionIDs)
 % reaction may carry several EC annotations. Repeated reaction indices are
 % collapsed: one chemical reaction appearing twice in the assembled list is
 % still one reaction, not two enzymes.
+% EC presence is enforced separately, even if this uniqueness check is off.
+% Blank annotations may occur here only for the independently exempt r_T role.
     reactionIDs=unique(reshape(reactionIDs,1,[]),'stable');
     ecSets=cell(numel(reactionIDs),1);
     constrained=false(numel(reactionIDs),1);
@@ -2440,7 +3052,7 @@ function R=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency,cons8,di,do, 
 % Pure per-parent Stage 8 search. Safe for parfor: no file I/O, no shared maps.
     R=struct('examined',0,'tests',0,'capReached',0, ...
         'rejectDuplicateReaction',0,'rejectD1Overlap',0,'rejectExcludedEC',0, ...
-        'rejectRepeatedEC',0,'candidates',struct('mc',{},'nf',{},'nd',{}, ...
+        'rejectRepeatedEC',0,'rejectMissingEC',0,'candidates',struct('mc',{},'nf',{},'nd',{}, ...
         'nf2',{},'mout',{},'chosen',{},'chemicalKey',{},'counterKey',{}));
     sel=selectedD1(ii);tr=sel.transportRow;
     mc=find(metIDs==string(T.cytosolic(tr)),1);
@@ -2507,6 +3119,11 @@ function R=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency,cons8,di,do, 
                                                 [~,block0Reactions]=block0CachedPath(block0Cache,d.min);
                                                 allRx=[block0Reactions,d1ids,sel.exchangePathRxns, ...
                                                     double(T.modelIndex(tr)),reshape(di(chosen),1,[])];
+                                                requiredECReactions=[block0Reactions,d1ids,sel.exchangePathRxns, ...
+                                                    reshape(di(chosen),1,[])];
+                                                if ~reactionsHaveRequiredEC(model,requiredECReactions)
+                                                    R.rejectMissingEC=R.rejectMissingEC+1;continue;
+                                                end
                                                 if reactionHasExcludedEC(model,allRx,excludedECs)
                                                     R.rejectExcludedEC=R.rejectExcludedEC+1;continue;
                                                 end
