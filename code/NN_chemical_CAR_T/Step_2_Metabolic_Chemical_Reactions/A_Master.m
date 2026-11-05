@@ -1,4 +1,4 @@
-%% A_Master.m - Strict +1 transport, differentiator, counter and two neurons
+%% A_Master.m - Strict +1 differentiator, TWO exchange transports, counter and two neurons
 % ONE FILE: discover exchange transport -> transporter GPR -> D1 candidates.
 % Complete motifs use stoichiometric exchange only; protein-path regulation is excluded.
 % Requires COBRA Toolbox readCbModel, MATLAB with webread (online enrichment optional).
@@ -6,8 +6,8 @@
 % No checkpoints or network-cache directories are generated.
 clearvars; clc;
 MODEL_NAME = 'Puniya2021_TNM1055.xml';
-OUT_NAME = 'Transport_Stages1to5_BRENDA_Results_EC_Required';
-% Every selected chemical reaction EXCEPT the r_T role requires a complete
+OUT_NAME = 'Transport_Stages1to5_BRENDA_Results_Two_Transports';
+% Every selected chemical reaction EXCEPT the r_T and r_T_2 roles requires a complete
 % EC annotation. Model fields are merged; missing annotations may be resolved
 % by exact reaction-ID links in BiGG or a sourced BRENDA reaction mapping.
 EC_TRY_BIGG = true;              % Also requires ONLINE=true.
@@ -64,6 +64,14 @@ EXCHANGE_REQUIRE_GPR = true;               % Keep only transport reactions with 
 % Complete-circuit search admits only stoichiometric exchange transport.
 % Regulatory protein-path candidates are not passed into the final motif search.
 EXCHANGE_ONLY = true;
+% Second exchange interface: m_c -> [optional c-only path] -> exported
+% counter-substrate; import a DIFFERENT extracellular cargo as m_Nin_1.
+% Uses the same model [e] <-> [c] compartments as the first interface.
+COUNTER_TO_N1_MAX_DEPTH = 0; % 0: m_c itself is exported by r_T_2.
+N1_TRANSPORT_REQUIRE_GPR = true;
+N1_TRANSPORT_MAX_PATH_EXPANSIONS = Inf; % Per exchange row; Inf removes the cap.
+N1_TRANSPORT_MAX_LINKS_PER_COUNTER = Inf;
+N1_TRANSPORT_ISOLATE_INTERFACE = true; % Only m_c joins upstream to this interface/neurons.
 N8_MAX_BRANCH = 25;
 N8_MAX_TESTS = Inf; % Legacy global cap disabled; Stage 8 now uses a fair per-parent budget.
 N8_MAX_TESTS_PER_PARENT = 5000; % Deterministic budget for every retained D1 parent.
@@ -118,6 +126,19 @@ assert(isnumeric(EC_BIGG_MAX_CONSECUTIVE_FAILURES) && ...
     EC_BIGG_MAX_CONSECUTIVE_FAILURES>=1 && ...
     EC_BIGG_MAX_CONSECUTIVE_FAILURES==floor(EC_BIGG_MAX_CONSECUTIVE_FAILURES), ...
     'ECPolicy:FailureCap','EC_BIGG_MAX_CONSECUTIVE_FAILURES must be a positive integer.');
+assert(isnumeric(COUNTER_TO_N1_MAX_DEPTH) && isscalar(COUNTER_TO_N1_MAX_DEPTH) && ...
+    isfinite(COUNTER_TO_N1_MAX_DEPTH) && COUNTER_TO_N1_MAX_DEPTH>=0 && ...
+    COUNTER_TO_N1_MAX_DEPTH==floor(COUNTER_TO_N1_MAX_DEPTH), ...
+    'NeuronTransport:Depth','COUNTER_TO_N1_MAX_DEPTH must be a nonnegative integer.');
+for capName={'N1_TRANSPORT_MAX_PATH_EXPANSIONS','N1_TRANSPORT_MAX_LINKS_PER_COUNTER'}
+    capValue=eval(capName{1});
+    assert(isnumeric(capValue) && isscalar(capValue) && ~isnan(capValue) && ...
+        capValue>=0 && (isinf(capValue) || capValue==floor(capValue)), ...
+        'NeuronTransport:Cap','%s must be a nonnegative integer or Inf.',capName{1});
+end
+assert(islogical(N1_TRANSPORT_REQUIRE_GPR) && isscalar(N1_TRANSPORT_REQUIRE_GPR) && ...
+    islogical(N1_TRANSPORT_ISOLATE_INTERFACE) && isscalar(N1_TRANSPORT_ISOLATE_INTERFACE), ...
+    'NeuronTransport:Flags','The neuron transport flags must be logical scalars.');
 if RUN_RANKING_SELF_TESTS
     selfTestBlock0Connectivity();
     selfTestBlock0CurrencyPolicy();
@@ -125,6 +146,7 @@ if RUN_RANKING_SELF_TESTS
     selfTestDistanceRanking();
     selfTestMotifCounts();
     selfTestRequiredECPolicy();
+    selfTestCounterNeuronTransport();
 end
 
 % Inline equivalent of addingPathParentFolderByName('code').
@@ -181,7 +203,7 @@ writetable(ECAnnotationAudit,fullfile(outDir,'00_Reaction_EC_Annotation_Audit.cs
 writetable(ECAnnotationAudit(ECAnnotationAudit.CandidateNonTransport & ...
     ~ECAnnotationAudit.HasCompleteEC,:), ...
     fullfile(outDir,'00_Excluded_Missing_EC_Reactions.csv'));
-report(logID,sprintf('EC policy: %d/%d forward intracellular reactions have a complete EC; %d excluded as unresolved. r_T alone is exempt.', ...
+report(logID,sprintf('EC policy: %d/%d forward intracellular reactions have a complete EC; %d excluded as unresolved. Only r_T and r_T_2 transport roles are exempt.', ...
     nnz(ECAnnotationAudit.CandidateNonTransport & ECAnnotationAudit.HasCompleteEC), ...
     nnz(ECAnnotationAudit.CandidateNonTransport), ...
     nnz(ECAnnotationAudit.CandidateNonTransport & ~ECAnnotationAudit.HasCompleteEC)));
@@ -1466,18 +1488,18 @@ writetable(exchangeMatches,fullfile(outDir,'18b_Exchange_D1_Connections.csv'));
 report(logID,sprintf('Stage 7B: inspected %d exchange pairs; tested %d motif steps; found %d D1/exchange matches', ...
     exchangeInspected,exchangeTests,exchangeFound));
 report(logID,['Stage 7B file: ' outExchangeD1]);
-%% STAGE 8: STOICHIOMETRIC counter loss and two consuming neurons.
-% Neuron 1 consumes m_c; neuron 2 consumes m_Nd. No catalytic input
-% is assumed. With EXCHANGE_ONLY=true, Stage 8 receives exchange candidates only.
-report(logID,'Stage 8: searching CONSUMING counter -> neuron 1 -> neuron 2 chains.');
+%% STAGE 8: counter -> second exchange transport -> two consuming neurons.
+% r_T_2 uses m_c (or a configured metabolic successor) as counter-substrate.
+% Neuron 1 consumes imported m_Nin_1; neuron 2 consumes m_Nd_1.
+report(logID,'Stage 8: searching counter -> r_T_2 -> m_Nin_1 -> two consuming neurons.');
 outN8=fullfile(outDir,'Step_2_Results.txt');
 fid8=fopen(outN8,'w');assert(fid8>0,'Cannot create Stage 8 TXT');
 close8=onCleanup(@()fclose(fid8));
-fprintf(fid8,'SELECTED BLOCK 0 -> D1 -> TRANSPORT -> COUNTER -> TWO CONSUMING NEURONS\n');
+fprintf(fid8,'SELECTED BLOCK 0 -> D1 -> r_T -> COUNTER -> r_T_2 -> TWO CONSUMING NEURONS\n');
 fprintf(fid8,'Direction policy: STRICT +1 relative to original model.S.\n');
-fprintf(fid8,'Selection: up to %d complete motifs, ranked by m_Sd-to-counter distance, r_I kinetic evidence/kcat, then isolated cAMP-to-m_in distance.\n',PRINT_TOP_MOTIFS);
+fprintf(fid8,'Selection: up to %d motifs, ranked by m_Sd-to-counter distance, counter-to-r_T_2 distance, r_I evidence/kcat, then isolated cAMP distance.\n',PRINT_TOP_MOTIFS);
 fprintf(fid8,'Transport mechanism filter: stoichiometric exchange only; protein-path regulation is excluded.\n');
-fprintf(fid8,'EC policy: complete annotation required for Block 0, D1, intracellular connectors, r_cr and every neuron reaction; r_T is exempt.\n');
+fprintf(fid8,'EC policy: complete EC required for all selected metabolic reactions, including both intracellular bridges; transport roles r_T and r_T_2 are exempt.\n');
 fprintf(fid8,'Annotation audit: 00_Reaction_EC_Annotation_Audit.csv; unresolved exclusions: 00_Excluded_Missing_EC_Reactions.csv.\n');
 fprintf(fid8,'An EC annotation does not guarantee matching KM or kcat measurements.\n');
 fprintf(fid8,'Excluded reaction ECs: %s\n',char(join(EXCLUDED_MOTIF_ECS,', ')));
@@ -1501,7 +1523,9 @@ fprintf(fid8,'m_Sd-to-counter path caps: depth=%g reactions; precursors/exchange
     EXCHANGE_METABOLIC_MAX_DEPTH,EXCHANGE_MAX_SIGNAL_PRECURSORS);
 fprintf(fid8,'D1 calls reaching trial/branch/retention limits: %d / %d / %d.\n', ...
     d1TestLimitedCalls,d1BranchLimitedCalls,d1RetentionLimitedCalls);
-fprintf(fid8,'r_Nf CONSUMES m_c; r_Nf_2 CONSUMES m_Nd.\n');
+fprintf(fid8,'r_T_2 exports m_c directly at depth 0; r_Nf_1 CONSUMES imported m_Nin_1; r_Nf_2 CONSUMES m_Nd_1.\n');
+fprintf(fid8,'Second interface: same model [e]<->[c] exchange convention; depth cap=%g; require GPR=%d; isolate cytosolic interface=%d.\n', ...
+    COUNTER_TO_N1_MAX_DEPTH,N1_TRANSPORT_REQUIRE_GPR,N1_TRANSPORT_ISOLATE_INTERFACE);
 fprintf(fid8,'m_Sd_1 must be produced by r_Sd_1 and lie on a shortest configured forward path to the exported counter-substrate.\n');
 fprintf(fid8,'Stoichiometric exchange topology only; transporter abundance, flux, and kinetics are unverified.\n\n');
 % Preindex substrate and product incidence by metabolite to avoid repeated
@@ -1513,6 +1537,33 @@ for q8=1:numel(di)
         cons8{mm8}(end+1)=q8;
     end
 end
+[N1TransportLinks,N1LinksByCounter,N1TransportInfo]=buildCounterNeuronTransportLinks( ...
+    model,X,metIDs,comp,block0Cache,COUNTER_TO_N1_MAX_DEPTH, ...
+    N1_TRANSPORT_REQUIRE_GPR,N1_TRANSPORT_MAX_PATH_EXPANSIONS, ...
+    N1_TRANSPORT_MAX_LINKS_PER_COUNTER,EXCLUDED_MOTIF_ECS);
+n1Rows=cell(0,13);
+for li=1:numel(N1TransportLinks)
+    link=N1TransportLinks(li);pathText="";
+    if ~isempty(link.pathRxns),pathText=join(rxnIDs(link.pathRxns),' -> ');end
+    n1Rows(end+1,:)={li,metIDs(link.source),metIDs(link.exportMet), ...
+        metIDs(link.exportProduct),metIDs(link.importSource),metIDs(link.neuronInput), ...
+        rxnIDs(link.transportReaction),link.distance,join(metIDs(link.pathMets),' -> '), ...
+        pathText,link.importStoich,link.exportStoich,link.gpr}; %#ok<SAGROW>
+end
+n1Names={'LinkIndex','m_c_ID','ExportedSubstrateID','ExportedProductID', ...
+    'ImportedSourceID','Neuron1InputID','TransportReactionID', ...
+    'CounterToTransportReactionDistance','CounterToTransportMetaboliteIDs', ...
+    'CounterToTransportReactionIDs','ImportStoichiometry','ExportStoichiometry','TransporterGPR'};
+if isempty(n1Rows)
+    N1TransportCandidates=table('Size',[0 13],'VariableTypes', ...
+        {'double','string','string','string','string','string','string', ...
+         'double','string','string','double','double','string'},'VariableNames',n1Names);
+else
+    N1TransportCandidates=cell2table(n1Rows,'VariableNames',n1Names);
+end
+writetable(N1TransportCandidates,fullfile(outDir,'18e_Counter_To_Neuron1_Transport_Links.csv'));
+report(logID,sprintf('Counter-to-neuron transport: %d retained structural links; %d path-expansion-capped exchange rows; %d retention-capped counter metabolites.', ...
+    numel(N1TransportLinks),N1TransportInfo.expansionCappedRows,N1TransportInfo.retentionCappedCounters));
 % A counter solution is a D1 + transporter r_T + forward r_cr consuming
 % imported m_c. Count these BEFORE looking for neurons, so a counter without
 % a complete downstream chain is still included in the counter total.
@@ -1566,10 +1617,14 @@ report(logID,sprintf('Block 0 isolation at counter stage: %d rejected; %d budget
 found8=0; tests8=0; examined8=0;
 seen8=containers.Map('KeyType','char','ValueType','logical');
 countersWithComplete=containers.Map('KeyType','char','ValueType','logical');
+countersWithTransport=containers.Map('KeyType','char','ValueType','logical');
+neuronTransportInterfaces=containers.Map('KeyType','char','ValueType','logical');
+neuronTransportInterfacesComplete=containers.Map('KeyType','char','ValueType','logical');
 completeExchange8=0;completeRegulatory8=0;
-best8=struct('parentIndex',{},'mc',{},'nf',{},'nd',{},'nf2',{}, ...
-    'mout',{},'chosen',{},'block0Path',{},'counterDistance',{},'distance',{},'rIKcat',{},'rIKcatEvidence',{},'discoveryIndex',{});
-rankingRows8=cell(0,12);
+best8=struct('parentIndex',{},'mc',{},'neuronInput',{},'transportLink',{}, ...
+    'nf',{},'nd',{},'nf2',{},'mout',{},'chosen',{},'block0Path',{}, ...
+    'counterDistance',{},'neuronTransportDistance',{},'distance',{},'rIKcat',{},'rIKcatEvidence',{},'discoveryIndex',{});
+rankingRows8=cell(0,16);
 
 % Stage 8 is embarrassingly parallel by retained D1 parent. Each worker gets
 % the SAME deterministic per-parent trial budget. No worker writes files or
@@ -1603,13 +1658,15 @@ if useParallel8
     parfor ii=1:nParents8
         parentResults8{ii}=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency, ...
             cons8,di,do,model,block0Cache,EXCLUDED_MOTIF_ECS, ...
-            REQUIRE_UNIQUE_COMPLETE_ECS,N8_MAX_BRANCH,N8_MAX_TESTS_PER_PARENT);
+            REQUIRE_UNIQUE_COMPLETE_ECS,N8_MAX_BRANCH,N8_MAX_TESTS_PER_PARENT, ...
+            N1TransportLinks,N1LinksByCounter,N1_TRANSPORT_ISOLATE_INTERFACE);
     end
 else
     for ii=1:nParents8
         parentResults8{ii}=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency, ...
             cons8,di,do,model,block0Cache,EXCLUDED_MOTIF_ECS, ...
-            REQUIRE_UNIQUE_COMPLETE_ECS,N8_MAX_BRANCH,N8_MAX_TESTS_PER_PARENT);
+            REQUIRE_UNIQUE_COMPLETE_ECS,N8_MAX_BRANCH,N8_MAX_TESTS_PER_PARENT, ...
+            N1TransportLinks,N1LinksByCounter,N1_TRANSPORT_ISOLATE_INTERFACE);
         if mod(ii,100)==0
             report(logID,sprintf('Stage 8 serial progress: %d/%d parents.',ii,nParents8));
         end
@@ -1619,7 +1676,7 @@ end
 % Serial deterministic merge. Parent order, then each parent's discovery
 % order, defines the stable discoveryIndex independently of worker scheduling.
 reject8=struct('duplicateReaction',0,'d1Overlap',0,'excludedEC',0, ...
-    'repeatedEC',0,'missingEC',0,'block0Isolation',0,'block0PathCapped',0, ...
+    'repeatedEC',0,'missingEC',0,'block0Isolation',0,'block0PathCapped',0,'transportInterface',0, ...
     'duplicateChemistry',0,'accepted',0,'parentsCapped',0);
 for ii=1:nParents8
     R8=parentResults8{ii};
@@ -1633,6 +1690,11 @@ for ii=1:nParents8
     reject8.missingEC=reject8.missingEC+R8.rejectMissingEC;
     reject8.block0Isolation=reject8.block0Isolation+R8.rejectBlock0Isolation;
     reject8.block0PathCapped=reject8.block0PathCapped+R8.block0PathCapped;
+    reject8.transportInterface=reject8.transportInterface+R8.rejectTransportInterface;
+    for ik=1:numel(R8.interfaceKeys)
+        neuronTransportInterfaces(char(R8.interfaceKeys(ik)))=true;
+        countersWithTransport(char(R8.interfaceCounterKeys(ik)))=true;
+    end
     reject8.parentsCapped=reject8.parentsCapped+R8.capReached;
     for jj=1:numel(R8.candidates)
         c8=R8.candidates(jj);
@@ -1643,12 +1705,15 @@ for ii=1:nParents8
         seen8(c8.chemicalKey)=true;
         found8=found8+1;reject8.accepted=reject8.accepted+1;
         countersWithComplete(c8.counterKey)=true;
+        neuronTransportInterfacesComplete(c8.interfaceKey)=true;
         sel=selectedD1(ii);
         if sel.exchangeRow>0,completeExchange8=completeExchange8+1;
         else,completeRegulatory8=completeRegulatory8+1;end
-        item8=struct('parentIndex',ii,'mc',c8.mc,'nf',c8.nf,'nd',c8.nd, ...
+        item8=struct('parentIndex',ii,'mc',c8.mc,'neuronInput',c8.neuronInput, ...
+            'transportLink',c8.transportLink,'nf',c8.nf,'nd',c8.nd, ...
             'nf2',c8.nf2,'mout',c8.mout,'chosen',c8.chosen,'block0Path',c8.block0Path, ...
             'counterDistance',numel(sel.exchangePathRxns), ...
+            'neuronTransportDistance',N1TransportLinks(c8.transportLink).distance, ...
             'distance',c8.block0Path.distance,'rIKcat',sel.rIKcat, ...
             'rIKcatEvidence',sel.rIKcatEvidence,'discoveryIndex',found8);
         best8(end+1)=item8; %#ok<SAGROW>
@@ -1666,6 +1731,13 @@ completedCounterNames=feval('keys',countersWithComplete); % Stage 5 also has a v
 for completedIndex=1:numel(completedCounterNames)
     assert(isKey(counterKeys,completedCounterNames{completedIndex}), ...
         'Counts:CounterExtension','A completed counter is missing from the counter catalog.');
+    assert(isKey(countersWithTransport,completedCounterNames{completedIndex}), ...
+        'Counts:CounterTransport','A completed motif bypassed the second transport catalog.');
+end
+completedInterfaces=feval('keys',neuronTransportInterfacesComplete);
+for ik=1:numel(completedInterfaces)
+    assert(isKey(neuronTransportInterfaces,completedInterfaces{ik}), ...
+        'Counts:NeuronTransport','A completed second interface was not counted.');
 end
 fprintf(fid8,'\n============================================================\n');
 fprintf(fid8,'SEARCH COUNTS: FOUND VERSUS PRINTED\n');
@@ -1676,20 +1748,27 @@ fprintf(fid8,'D1/transporter parent connections retained: %d\n',numel(selectedD1
 fprintf(fid8,'Distinct counter cores (r_T, m_c, r_cr): %d\n',counterCoreKeys.Count);
 fprintf(fid8,'Distinct D1-counter solutions in retained parent pool: %d\n',counterKeys.Count);
 fprintf(fid8,'D1-counter solutions extended to both neurons: %d\n',countersWithComplete.Count);
+fprintf(fid8,'Structural counter-to-neuron transport links retained: %d\n',numel(N1TransportLinks));
+fprintf(fid8,'Distinct D1-counter-r_T_2 interfaces passing prefix checks within search budgets: %d\n',neuronTransportInterfaces.Count);
+fprintf(fid8,'D1-counter solutions with a checked r_T_2 interface: %d\n',countersWithTransport.Count);
+fprintf(fid8,'Distinct r_T_2 interfaces extended to both neurons: %d\n',neuronTransportInterfacesComplete.Count);
+fprintf(fid8,'Second-interface pool: expansion-capped exchange rows=%d; retention-capped counter species=%d.\n', ...
+    N1TransportInfo.expansionCappedRows,N1TransportInfo.retentionCappedCounters);
 fprintf(fid8,'Distinct complete motifs found: %d\n',found8);
 fprintf(fid8,'  Exchange mode: %d; regulatory-hypothesis mode: %d\n',completeExchange8,completeRegulatory8);
 fprintf(fid8,'Complete motifs printed: %d (requested maximum %d)\n',printed8,PRINT_TOP_MOTIFS);
 fprintf(fid8,'Count definitions: chemical structures are deduplicated; alternate protein annotations do not add motifs.\n');
 fprintf(fid8,'One shortest isolated Block 0 path is used per accepted motif; alternate connectors do not multiply motif counts.\n');
-fprintf(fid8,'Parent/counter distances use their prefix constraints; complete-motif distances also include both neurons.\n');
+fprintf(fid8,'Parent/counter distances use prefix constraints; complete-motif Block 0 isolation also includes r_T_2 and both neurons.\n');
 fprintf(fid8,'Block 0 parent rejections=%d; parent path-budget limits=%d; counter rejections=%d; counter path-budget limits=%d.\n', ...
     block0ParentRejected,block0ParentCapped,block0CounterRejected,block0CounterCapped);
 fprintf(fid8,'Final-assembly Block 0 isolation rejections=%d; path-budget limits=%d.\n', ...
     reject8.block0Isolation,reject8.block0PathCapped);
-fprintf(fid8,'Counter total includes counters with no two-neuron solution; complete count requires both neurons.\n');
+fprintf(fid8,'Counter total includes counters without r_T_2 or a two-neuron solution; complete count requires the second transport and both neurons.\n');
 fprintf(fid8,'D1 parents examined for neurons: %d/%d; total trials=%d; parents reaching per-parent cap=%d.\n', ...
     examined8,numel(selectedD1),tests8,reject8.parentsCapped);
 fprintf(fid8,'Missing EC rejections during final assembly: %d (EC filtering also occurred before candidate enumeration).\n',reject8.missingEC);
+fprintf(fid8,'Second-transport interface rejections (overlap, reuse, bypass or recycling): %d\n',reject8.transportInterface);
 fprintf(fid8,'Stage 8 rejection diagnostics: duplicate reaction=%d; D1 overlap=%d; excluded EC=%d; repeated/unassignable EC=%d; duplicate chemistry=%d; accepted=%d.\n', ...
     reject8.duplicateReaction,reject8.d1Overlap,reject8.excludedEC,reject8.repeatedEC, ...
     reject8.duplicateChemistry,reject8.accepted);
@@ -1701,11 +1780,18 @@ block0AuditRows=cell(0,8);
 for printedRank8=1:printed8
     item8=best8(printedRank8);
     ii=item8.parentIndex;sel=selectedD1(ii);d=sel.d;tr=sel.transportRow;
-    mc=item8.mc;nf=item8.nf;nd=item8.nd;nf2=item8.nf2;mout=item8.mout;
+    mc=item8.mc;neuronInput=item8.neuronInput;link=N1TransportLinks(item8.transportLink);
+    nf=item8.nf;nd=item8.nd;nf2=item8.nf2;mout=item8.mout;
     chosen=item8.chosen;distance=item8.distance;
     block0Reactions=item8.block0Path.rxns;
     finalDownstream=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri, ...
-        sel.exchangePathRxns,double(T.modelIndex(tr)),reshape(di(chosen),1,[])];
+        sel.exchangePathRxns,double(T.modelIndex(tr)),link.pathRxns, ...
+        link.transportReaction,reshape(di(chosen),1,[])];
+    finalUpstream=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri, ...
+        sel.exchangePathRxns,double(T.modelIndex(tr)),di(chosen(1))];
+    [validInterface,interfaceReason]=validateCounterNeuronInterface(model,block0Cache,comp,mc, ...
+        link,finalUpstream,reshape(di(chosen(2:end)),1,[]),N1_TRANSPORT_ISOLATE_INTERFACE);
+    assert(validInterface,'NeuronTransport:FinalInterface','Invalid final second interface: %s.',char(interfaceReason));
     [isolated,why]=validateBlock0Isolation(block0Cache,item8.block0Path.mets, ...
         block0Reactions,finalDownstream,[d.rff,d.rsf]);
     assert(isolated,'Block0:FinalIsolation','Final Block 0 cross-talk check failed: %s.',char(why));
@@ -1726,24 +1812,27 @@ for printedRank8=1:printed8
             producerText,consumerText,sharedText,isempty(shared) || bm==d.min}; %#ok<SAGROW>
     end
     requiredFinalReactions=[block0Reactions,d.rff,d.rfd,d.rfr,d.rsf,d.rsd, ...
-        d.rsr,d.ri,sel.exchangePathRxns,reshape(di(chosen),1,[])];
+        d.rsr,d.ri,sel.exchangePathRxns,link.pathRxns,reshape(di(chosen),1,[])];
     assert(reactionsHaveRequiredEC(model,requiredFinalReactions), ...
         'ECPolicy:FinalMotifMissingEC', ...
-        'A final motif contains a non-r_T reaction without a complete EC annotation.');
-    mode="stoichiometric_exchange";
+        'A final motif contains a non-transport reaction without a complete EC annotation.');
+    mode="two_stoichiometric_exchanges";
     counterDistance=numel(sel.exchangePathRxns);
+    n1PathText="";if ~isempty(link.pathRxns),n1PathText=join(rxnIDs(link.pathRxns),'; ');end
     rankingRows8(end+1,:)={printedRank8,counterDistance,distance, ...
         metIDs(d.min),metIDs(sel.target), ...
         metIDs(mc),metIDs(mout),string(T.reaction(tr)),mode,ii, ...
         join(rxnIDs(block0Reactions),' -> '), ...
-        join(rxnIDs(di(chosen)),'; ')}; %#ok<SAGROW>
+        join(rxnIDs(di(chosen)),'; '),rxnIDs(link.transportReaction), ...
+        metIDs(neuronInput),link.distance,n1PathText}; %#ok<SAGROW>
     fprintf(fid8,'============================================================\nCANDIDATE %d\n',printedRank8);
     fprintf(fid8,'m_Sd-to-counter distance: %d reaction(s) | cAMP-to-m_in distance: %d reaction(s) | D1 parent rank: %d\n', ...
         counterDistance,distance,ii);
+    fprintf(fid8,'m_c-to-r_T_2 distance: %d intracellular reaction(s)\n',link.distance);
     fprintf(fid8,'============================================================\n');
     % Named signals: same metabolite ID is labelled consistently in every equation.
-    signalIDs=metIDs([d.min,d.mff,d.mfd,d.msf,sel.target,mc,nf,nd,nf2,mout]);
-    signalNames=["m_in","m_Ff","m_Fd","m_Sf","m_Sd","m_c", ...
+    signalIDs=metIDs([d.min,d.mff,d.mfd,d.msf,sel.target,mc,neuronInput,nf,nd,nf2,mout]);
+    signalNames=["m_in","m_Ff","m_Fd","m_Sf","m_Sd","m_c","m_Nin_1", ...
         "m_Nf_1","m_Nd_1","m_Nf_2","m_out"];
     fprintf(fid8,'SIGNAL METABOLITE MAP\n');
     for kk=1:numel(signalIDs)
@@ -1797,11 +1886,32 @@ for printedRank8=1:printed8
     else
         error('ExchangeOnly:ParentMode','A regulatory protein-path motif reached final output.');
     end
-    fprintf(fid8,'\nMEMBRANE TRANSPORT: r_T (production of m_c)\n');
+    fprintf(fid8,'\nFIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)\n');
     assert(string(T.direction(tr))=="forward", ...
         'ForwardOnly:TransportDirection','A transporter has non-forward direction.');
     ot=1;
     printModelReaction(fid8,model,double(T.modelIndex(tr)),ot,metIDs,metNames,"","",signalIDs,signalNames,true);
+    fprintf(fid8,'\nSECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)\n');
+    fprintf(fid8,'  Intracellular path from m_c (%d reactions): %s\n', ...
+        link.distance,char(join(metIDs(link.pathMets),' -> ')));
+    if isempty(link.pathRxns)
+        fprintf(fid8,'  Direct connection: m_c is the exported counter-substrate of r_T_2.\n');
+    else
+        for pk=1:numel(link.pathRxns)
+            fprintf(fid8,'r_CN_%d\n',pk);
+            printModelReaction(fid8,model,link.pathRxns(pk),1,metIDs,metNames,"","",signalIDs,signalNames);
+        end
+    end
+    fprintf(fid8,'r_T_2\n');
+    printModelReaction(fid8,model,link.transportReaction,1,metIDs,metNames,"","",signalIDs,signalNames,true);
+    fprintf(fid8,'  Export: %s -> %s; stoichiometry %.8g\n', ...
+        char(metIDs(link.exportMet)),char(metIDs(link.exportProduct)),link.exportStoich);
+    fprintf(fid8,'  Import: %s -> %s (m_Nin_1); stoichiometry %.8g\n', ...
+        char(metIDs(link.importSource)),char(metIDs(neuronInput)),link.importStoich);
+    fprintf(fid8,'  Transporter GPR: %s\n',char(link.gpr));
+    fprintf(fid8,'  Transporter genes: %s\n',char(X.transporter_genes(link.exchangeRow)));
+    fprintf(fid8,'  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.\n');
+    fprintf(fid8,'  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.\n');
     fprintf(fid8,'\nCOUNTER LOSS AND TWO CONSUMING NEURONS\n');
     labels8=["r_cr","r_Nf_1","r_Nd_1","r_Nr_1","r_Nf_2","r_Nd_2","r_Nr_2"];
     for kk=1:7
@@ -1810,12 +1920,12 @@ for printedRank8=1:printed8
         printModelReaction(fid8,model,di(j),dm(j),metIDs,metNames,"","",signalIDs,signalNames);
         fprintf(fid8,'  EC: %s\n\n',char(d1EC(model,di(j))));
     end
-    fprintf(fid8,'MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.\n');
+    fprintf(fid8,'MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.\n');
     fprintf(fid8,'WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.\n\n');
 
 end
 if printed8==0
-    fprintf(fid8,'No cAMP-connected complete two-neuron motif passed the exchange-only filter within configured search limits.\n');
+    fprintf(fid8,'No cAMP-connected two-transport/two-neuron motif passed all filters within configured search limits.\n');
     fprintf(fid8,'No regulatory protein-path fallback was used. Check 18b_Exchange_D1_Connections.txt for exchange matches.\n');
     fprintf(fid8,'This is NOT proof of biological absence.\n');
     fprintf(fid8,'Block 0 isolation was required, including all co-substrates/products and all selected downstream reactions.\n');
@@ -1833,17 +1943,19 @@ writetable(Block0IsolationAudit,fullfile(outDir,'19b_Block0_Isolation_Audit.csv'
 rankNames8={'Rank','m_SdToCounterReactionDistance','CAMPReactionDistance', ...
     'm_in_ID','m_Sd_ID','m_c_ID', ...
     'm_out_ID','TransportReactionID','TransportMode','ParentRank', ...
-    'Block0ReactionIDs','CounterNeuronReactionIDs'};
+    'Block0ReactionIDs','CounterNeuronReactionIDs','CounterNeuronTransportReactionID', ...
+    'Neuron1InputID','CounterToTransportReactionDistance','CounterToTransportReactionIDs'};
 if isempty(rankingRows8)
-    MotifRanking=table('Size',[0 12],'VariableTypes', ...
-        {'double','double','double','string','string','string','string','string','string','double','string','string'}, ...
+    MotifRanking=table('Size',[0 16],'VariableTypes', ...
+        {'double','double','double','string','string','string','string','string','string','double', ...
+         'string','string','string','string','double','string'}, ...
         'VariableNames',rankNames8);
 else
     MotifRanking=cell2table(rankingRows8,'VariableNames',rankNames8);
     if height(MotifRanking)>1
         expectedOrder=keepTopCompleteMotifs(best8,numel(best8));
         assert(isequal([best8.discoveryIndex],[expectedOrder.discoveryIndex]), ...
-            'Ranking:OutputOrder','Final ranking must follow counter distance, r_I evidence/kcat, then isolated cAMP distance.');
+            'Ranking:OutputOrder','Final ranking must follow both interface distances, r_I evidence/kcat, then isolated cAMP distance.');
     end
 end
 writetable(MotifRanking,fullfile(outDir,'19_Selected_Motifs_Counter_Distance_Ranking.csv'));
@@ -1859,10 +1971,13 @@ else
     CounterSolutions=cell2table(counterRows,'VariableNames',counterNames);
 end
 hasComplete=false(size(counterRows,1),1);
+hasTransport=false(size(counterRows,1),1);
 for ckIndex=1:numel(counterRowKeys)
     hasComplete(ckIndex)=isKey(countersWithComplete,counterRowKeys{ckIndex});
+    hasTransport(ckIndex)=isKey(countersWithTransport,counterRowKeys{ckIndex});
 end
 CounterSolutions.ExtendedToTwoNeurons=hasComplete;
+CounterSolutions.HasCheckedCounterNeuronTransport=hasTransport;
 writetable(CounterSolutions,fullfile(outDir,'18d_All_Counter_Solutions.csv'));
 clear close8;
 report(logID,sprintf('Stage 8: found %d distinct complete motifs; printed %d; %d distinct D1-counter solutions; %d trials.', ...
@@ -2484,7 +2599,7 @@ function printModelReaction(fid,model,idx,orient,metIDs,metNames,markedID,marked
     if numel(varargin)>=3,isTransportRole=isequal(varargin{3},true);end
     if isfield(model,'circuitECPolicyActive') && model.circuitECPolicyActive && ~isTransportRole
         assert(ecReactionAllowed(model,idx),'ECPolicy:MissingAnnotation', ...
-            'Reaction %s has no complete EC annotation; only the r_T role is exempt.', ...
+            'Reaction %s has no complete EC annotation; only selected r_T/r_T_2 transport roles are exempt.', ...
             char(string(model.rxns(idx))));
     end
     assert(isscalar(orient) && orient==1, ...
@@ -2522,7 +2637,7 @@ function printModelReaction(fid,model,idx,orient,metIDs,metNames,markedID,marked
         fprintf(fid,'  EC annotation source: %s\n',char(model.circuitECSource(idx)));
         fprintf(fid,'  EC annotation reference: %s\n',char(model.circuitECReference(idx)));
         if isTransportRole && ~ecReactionAllowed(model,idx)
-            fprintf(fid,'  EC requirement: exempt for r_T only; transporter GPR is reported separately.\n');
+            fprintf(fid,'  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.\n');
         end
     end
     fprintf(fid,'  Equation: %s  ->  %s\n',char(join(lhs,' + ')),char(join(rhs,' + ')));
@@ -2750,11 +2865,13 @@ end
 function motifs=keepTopCompleteMotifs(motifs,limit)
     if isempty(motifs),return;end
     counterDistances=reshape([motifs.counterDistance],[],1); distances=reshape([motifs.distance],[],1);
+    transportDistances=zeros(numel(motifs),1);
+    if isfield(motifs,'neuronTransportDistance'),transportDistances=reshape([motifs.neuronTransportDistance],[],1);end
     evidence=zeros(numel(motifs),1); kc=nan(numel(motifs),1);
     if isfield(motifs,'rIKcatEvidence'), evidence=reshape([motifs.rIKcatEvidence],[],1); end
     if isfield(motifs,'rIKcat'), kc=reshape([motifs.rIKcat],[],1); end
     known=isfinite(kc)&kc>0; ksort=kc; ksort(~known)=-Inf; serial=reshape([motifs.discoveryIndex],[],1);
-    [~,order]=sortrows([counterDistances,-evidence,-double(known),-ksort,distances,serial],[1 2 3 4 5 6]);
+    [~,order]=sortrows([counterDistances,transportDistances,-evidence,-double(known),-ksort,distances,serial],[1 2 3 4 5 6 7]);
     motifs=motifs(order); if numel(motifs)>limit,motifs=motifs(1:limit);end
 end
 
@@ -3373,7 +3490,7 @@ function tf=reactionsHaveUniqueECAssignment(model,reactionIDs)
 % collapsed: one chemical reaction appearing twice in the assembled list is
 % still one reaction, not two enzymes.
 % EC presence is enforced separately, even if this uniqueness check is off.
-% Blank annotations may occur here only for the independently exempt r_T role.
+% Blank annotations may occur here only for the independently exempt r_T/r_T_2 transport roles.
     reactionIDs=unique(reshape(reactionIDs,1,[]),'stable');
     ecSets=cell(numel(reactionIDs),1);
     constrained=false(numel(reactionIDs),1);
@@ -3411,117 +3528,390 @@ function tf=assignDistinctEC(ecSets,k,used)
     end
 end
 
+function selfTestCounterNeuronTransport()
+% Synthetic complete motif, no network or COBRA calls. A direct mc -> neuron
+% conversion is present too, but cannot substitute for the required r_T_2.
+    ids=["camp[c]";"min[c]";"ff[c]";"fd[c]";"sf[c]";"sd[c]"; ...
+        "mc[c]";"nin[c]";"nf[c]";"nd[c]";"nf2[c]";"out[c]"; ...
+        "lossf[c]";"losss[c]";"lossi[c]";"lossc[c]";"lossn1[c]"; ...
+        "lossn2[c]";"mc[e]";"sd[e]";"nin[e]";"bridge[c]";"bridge[e]"];
+    [~,comp]=splitCompartments(ids);model.S=sparse(numel(ids),19);
+    model.S([2 3],1)=[-1;1];model.S([3 4],2)=[-1;1];
+    model.S([4 13],3)=[-1;1];model.S([2 5],4)=[-1;1];
+    model.S([5 6],5)=[-1;1];model.S([6 14],6)=[-1;1];
+    model.S([4 6 15],7)=[-1;-1;1];
+    model.S([6 19 20 7],8)=[-1;-1;1;1]; % r_T: sd export, mc import
+    model.S([7 16],9)=[-1;1];           % counter loss
+    model.S([7 21 19 8],10)=[-1;-1;1;1]; % r_T_2: mc export, nin import
+    model.S([8 9],11)=[-1;1];model.S([9 10],12)=[-1;1];
+    model.S([10 17],13)=[-1;1];model.S([10 11],14)=[-1;1];
+    model.S([11 12],15)=[-1;1];model.S([12 18],16)=[-1;1];
+    model.S([1 2],17)=[-1;1];           % Block 0
+    model.S([7 9],18)=[-1;1];           % forbidden direct counter bypass
+    model.S([7 22],19)=[-1;1];          % optional bridge for a later case
+    model.rxns=cellstr("synthetic_"+string((1:19)'));
+    model.rxnNames=model.rxns;model.ub=1000*ones(19,1);model.lb=zeros(19,1);
+    codes="1.1.1."+string((1:19)');codes([8 10])="";
+    model.rxnECNumbers=cellstr(codes);model.circuitResolvedEC=codes;
+    model.circuitECEligible=codes~="";model.circuitECPolicyActive=true;
+    cache=buildBlock0Cache(model,ids,comp,model.ub,'camp[c]',Inf,Inf);
+    X=table("forward",10,"mc[c]","mc[e]","nin[c]","nin[e]","gene_T2","grRules", ...
+        'VariableNames',{'direction','modelIndex','counterSubstrate','counterProduct', ...
+        'cytosolicCargo','extracellularCargo','full_GPR','gpr_status'});
+    [links,byCounter,~]=buildCounterNeuronTransportLinks(model,X,ids,comp,cache,0,true,Inf,Inf,strings(0,1));
+    assert(numel(byCounter{7})==1,'NeuronTransport:SelfTestDirect','Direct second transport missing.');
+    link=links(byCounter{7});
+    assert(link.neuronInput==8 && link.transportReaction==10 && isempty(link.pathRxns), ...
+        'NeuronTransport:SelfTestCargo','Neuron input is not the imported distinct cargo.');
+    d=struct('min',2,'mff',3,'mfd',4,'msf',5, ...
+        'rff',1,'rfd',2,'rfr',3,'rsf',4,'rsd',5,'rsr',6,'ri',7);
+    upstream=[1:9];
+    b0=findIsolatedBlock0Path(model,cache,2,upstream,[1 4],[]);
+    assert(b0.found,'NeuronTransport:SelfTestBlock0','Synthetic parent Block 0 missing.');
+    parent=struct('d',d,'target',6,'transportRow',1,'exchangeRow',1, ...
+        'exchangePathRxns',zeros(1,0),'block0Path',b0, ...
+        'counterLinks',struct('reaction',9,'path',b0));
+    T=table(8,"mc[c]",'VariableNames',{'modelIndex','cytosolic'});
+    [di,~,products,substrates]=d1BuildOriented(model,comp,model.lb,model.ub,true);
+    cons=cell(numel(ids),1);
+    for q=1:numel(di)
+        for m=reshape(substrates{q},1,[]),cons{m}(end+1)=q;end
+    end
+    currency=block0DefaultCurrencyIDs();
+    R=searchStage8Parent(1,parent,T,ids,comp,currency,cons,di,products, ...
+        model,cache,strings(0,1),true,Inf,Inf,links,byCounter,true);
+    assert(numel(R.candidates)==1 && R.candidates.neuronInput==8 && ...
+        R.candidates.transportLink==byCounter{7} && di(R.candidates.chosen(2))==11, ...
+        'NeuronTransport:SelfTestComplete','The complete motif did not use imported nin through r_T_2.');
+    noLinks=cell(numel(ids),1);
+    none=searchStage8Parent(1,parent,T,ids,comp,currency,cons,di,products, ...
+        model,cache,strings(0,1),true,Inf,Inf,emptyNeuronTransportLinks(),noLinks,true);
+    assert(isempty(none.candidates),'NeuronTransport:SelfTestNoBypass', ...
+        'A direct mc -> neuron conversion bypassed the mandatory second transport.');
+    bad=model;bad.S(7,11)=-1;
+    [ok,~]=validateCounterNeuronInterface(bad,cache,comp,7,link,upstream,11:16,true);
+    assert(~ok,'NeuronTransport:SelfTestCounterLeak','A neuron also consumed m_c directly.');
+    bad=model;bad.ub(10)=0;
+    [blocked,~,~]=buildCounterNeuronTransportLinks(bad,X,ids,comp,cache,0,true,Inf,Inf,strings(0,1));
+    assert(isempty(blocked),'NeuronTransport:SelfTestBound','A blocked transporter was accepted.');
+    badX=X;badX.direction="reverse";
+    [blocked,~,~]=buildCounterNeuronTransportLinks(model,badX,ids,comp,cache,0,true,Inf,Inf,strings(0,1));
+    assert(isempty(blocked),'NeuronTransport:SelfTestDirection','A reverse-direction transporter was accepted.');
+    badX=X;badX.full_GPR="";
+    [blocked,~,~]=buildCounterNeuronTransportLinks(model,badX,ids,comp,cache,0,true,Inf,Inf,strings(0,1));
+    assert(isempty(blocked),'NeuronTransport:SelfTestGPR','A transporter without required GPR passed.');
+    hop=model;hop.S([7 19],10)=0;hop.S([22 23],10)=[-1;1];
+    hopX=X;hopX.counterSubstrate="bridge[c]";hopX.counterProduct="bridge[e]";
+    hc=buildBlock0Cache(hop,ids,comp,hop.ub,'camp[c]',Inf,Inf);
+    [~,zero,~]=buildCounterNeuronTransportLinks(hop,hopX,ids,comp,hc,0,true,Inf,Inf,strings(0,1));
+    [hops,one,~]=buildCounterNeuronTransportLinks(hop,hopX,ids,comp,hc,1,true,Inf,Inf,strings(0,1));
+    assert(isempty(zero{7}) && numel(one{7})==1 && isequal(hops(one{7}).pathRxns,19), ...
+        'NeuronTransport:SelfTestDepth','Depth 0/1 did not distinguish direct and bridged transport.');
+    bridged=searchStage8Parent(1,parent,T,ids,comp,currency,cons,di,products, ...
+        hop,hc,strings(0,1),true,Inf,Inf,hops,one,true);
+    assert(numel(bridged.candidates)==1 && hops(bridged.candidates.transportLink).distance==1, ...
+        'NeuronTransport:SelfTestBridgedMotif','A complete motif with a one-step pre-transport bridge was missed.');
+    [~,limited,info]=buildCounterNeuronTransportLinks(hop,hopX,ids,comp,hc,1,true,0,Inf,strings(0,1));
+    assert(isempty(limited{7}) && info.expansionCappedRows==1, ...
+        'NeuronTransport:SelfTestBudget','Transport path expansion limit was not reported.');
+    alt=link;alt.transportReaction=8;
+    assert(~strcmp(counterNeuronInterfaceKey('counter',link),counterNeuronInterfaceKey('counter',alt)), ...
+        'NeuronTransport:SelfTestIdentity','Distinct second transporters collapsed to one identity.');
+    ranked=struct('counterDistance',{0,0},'neuronTransportDistance',{1,0}, ...
+        'distance',{1,8},'discoveryIndex',{1,2});
+    ranked=keepTopCompleteMotifs(ranked,2);
+    assert(isequal([ranked.discoveryIndex],[2 1]), ...
+        'NeuronTransport:SelfTestRanking','A direct second-interface link was not preferred.');
+    fprintf('PASS: mandatory second exchange, imported neuron input, +1/GPR/bounds, depth 0/1, isolation, identity and ranking.\n');
+end
+
+function links=emptyNeuronTransportLinks()
+    links=struct('source',{},'neuronInput',{},'transportReaction',{},'exchangeRow',{}, ...
+        'exportMet',{},'exportProduct',{},'importSource',{},'pathMets',{}, ...
+        'pathRxns',{},'distance',{},'importStoich',{},'exportStoich',{},'gpr',{});
+end
+
+function [links,byCounter,info]=buildCounterNeuronTransportLinks(model,X,metIDs,comp,cache, ...
+        maxDepth,requireGPR,maxExpansions,maxLinksPerCounter,excludedECs)
+% Enumerate forward, EC-annotated intracellular prefixes leading to an
+% existing exchange reaction. No sign reversal, regulatory protein path or
+% new compartment is invented. Distinct path prefixes are kept separately.
+    links=emptyNeuronTransportLinks();byCounter=cell(numel(metIDs),1);
+    cappedRows=false(height(X),1);retainedCap=false(numel(metIDs),1);
+    seen=containers.Map('KeyType','char','ValueType','logical');
+    for xi=1:height(X)
+        j=double(X.modelIndex(xi));
+        if string(X.direction(xi))~="forward" || (isfield(model,'ub') && model.ub(j)<=0),continue;end
+        gpr=strtrim(string(X.full_GPR(xi)));
+        if requireGPR && (ismissing(gpr) || gpr=="" || string(X.gpr_status(xi))=="no_rule"),continue;end
+        exported=find(metIDs==string(X.counterSubstrate(xi)),1);
+        exportedOutside=find(metIDs==string(X.counterProduct(xi)),1);
+        imported=find(metIDs==string(X.cytosolicCargo(xi)),1);
+        importedOutside=find(metIDs==string(X.extracellularCargo(xi)),1);
+        if isempty(exported) || isempty(exportedOutside) || isempty(imported) || isempty(importedOutside),continue;end
+        if comp(exported)~="c" || comp(imported)~="c" || ...
+                comp(exportedOutside)~="e" || comp(importedOutside)~="e" || ...
+                exported==imported || cache.currencyMask(exported) || cache.currencyMask(imported),continue;end
+        [bases,~]=splitCompartments(metIDs([exported,exportedOutside,imported,importedOutside]));
+        if bases(1)~=bases(2) || bases(3)~=bases(4) || bases(1)==bases(3),continue;end
+        co=full(model.S([exported,exportedOutside,importedOutside,imported],j));
+        if co(1)>=-1e-12 || co(2)<=1e-12 || co(3)>=-1e-12 || co(4)<=1e-12 || ...
+                abs(co(1)+co(2))>1e-9*max(1,abs(co(1))) || ...
+                abs(co(3)+co(4))>1e-9*max(1,abs(co(3))),continue;end
+        if reactionHasExcludedEC(model,j,excludedECs),continue;end
+        metQueue={exported};rxQueue={zeros(1,0)};head=1;expansions=0;stop=false;
+        while head<=numel(metQueue)
+            mp=metQueue{head};rp=rxQueue{head};head=head+1;source=mp(1);
+            % The cargo imported as m_Nin_1 must be new to the whole bridge.
+            cargoInBridge=~isempty(rp) && any(abs(full(model.S(imported,rp)))>1e-12);
+            if source~=imported && ~cargoInBridge
+                key=sprintf('%d,',[source,imported,j,-1,rp]);
+                if ~isKey(seen,key)
+                    seen(key)=true;
+                    link=struct('source',source,'neuronInput',imported, ...
+                            'transportReaction',j,'exchangeRow',xi,'exportMet',exported, ...
+                            'exportProduct',exportedOutside,'importSource',importedOutside, ...
+                            'pathMets',mp,'pathRxns',rp,'distance',numel(rp), ...
+                            'importStoich',co(4),'exportStoich',-co(1),'gpr',gpr);
+                    links(end+1)=link;byCounter{source}(end+1)=numel(links); %#ok<AGROW>
+                end
+            end
+            if numel(rp)>=maxDepth,continue;end
+            for r=reshape(cache.producers{source},1,[])
+                if expansions>=maxExpansions,cappedRows(xi)=true;stop=true;break;end
+                expansions=expansions+1;
+                if r==j || ismember(r,rp) || reactionHasExcludedEC(model,r,excludedECs),continue;end
+                for pre=reshape(cache.substrates{r},1,[])
+                    if ismember(pre,mp) || pre==imported || cache.currencyMask(pre),continue;end
+                    newMp=[pre,mp];newRp=[r,rp];bridgeCache=cache;bridgeCache.start=pre;
+                    [ok,~]=validateBlock0Isolation(bridgeCache,newMp,newRp,[],[]);
+                    if ~ok,continue;end
+                    metQueue{end+1}=newMp;rxQueue{end+1}=newRp; %#ok<AGROW>
+                end
+            end
+            if stop,break;end
+        end
+    end
+    rawCount=numel(links);keep=false(rawCount,1);
+    for source=1:numel(byCounter)
+        rows=byCounter{source};if isempty(rows),continue;end
+        [~,order]=sortrows([reshape([links(rows).distance],[],1), ...
+            reshape([links(rows).transportReaction],[],1),rows(:)],[1 2 3]);
+        rows=rows(order);
+        if numel(rows)>maxLinksPerCounter
+            retainedCap(source)=true;rows=rows(1:maxLinksPerCounter);
+        end
+        byCounter{source}=rows;keep(rows)=true;
+    end
+    renumber=zeros(rawCount,1);renumber(keep)=1:nnz(keep);links=links(keep);
+    for source=1:numel(byCounter)
+        byCounter{source}=reshape(renumber(byCounter{source}),1,[]);
+    end
+    info=struct('expansionCappedRows',nnz(cappedRows),'rawCandidateCount',rawCount, ...
+        'retentionCappedCounters',nnz(retainedCap),'candidateCount',numel(links));
+end
+
+function [ok,why]=validateCounterNeuronInterface(model,cache,comp,mc,link,upstreamRx,neuronRx,isolate)
+% Check the two explicit hand-offs. Outside metabolites are reservoir species;
+% isolation applies to non-currency CYTOSOLIC participants of selected reactions.
+    ok=false;why="";j=link.transportReaction;input=link.neuronInput;
+    upstreamRx=unique(reshape(upstreamRx,1,[]));neuronRx=reshape(neuronRx,1,[]);
+    transfer=[link.pathRxns,j];
+    if link.source~=mc || input==mc || any(ismember(transfer,[upstreamRx,neuronRx])) || ...
+            numel(unique(transfer))~=numel(transfer)
+        why="duplicate_reaction_or_invalid_interface_source";return;
+    end
+    if isempty(link.pathRxns)
+        if link.exportMet~=mc || model.S(mc,j)>=-1e-12
+            why="transport_does_not_consume_m_c";return;
+        end
+    else
+        bridgeCache=cache;bridgeCache.start=mc;
+        [valid,why]=validateBlock0Isolation(bridgeCache,link.pathMets,link.pathRxns,[],[]);
+        if ~valid,return;end
+        if link.pathMets(end)~=link.exportMet || model.S(link.exportMet,j)>=-1e-12 || ...
+                any(abs(full(model.S(mc,[link.pathRxns(2:end),j])))>1e-12)
+            why="counter_signal_reused_after_first_bridge_step";return;
+        end
+        active=~cache.currencyMask & comp=="c";
+        bridgePart=full(any(abs(model.S(:,link.pathRxns))>1e-12,2));
+        transportPart=abs(full(model.S(:,j)))>1e-12;
+        shared=find(active & bridgePart & transportPart);
+        if ~isequal(shared(:),link.exportMet)
+            why="bridge_to_transport_side_overlap";return;
+        end
+    end
+    if model.S(input,j)<=1e-12 || ...
+            any(abs(full(model.S(input,link.pathRxns)))>1e-12)
+        why="neuron_input_not_newly_imported";return;
+    end
+    if ~isempty(neuronRx)
+        if numel(neuronRx)~=6 || model.S(input,neuronRx(1))>=-1e-12 || ...
+                any(abs(full(model.S(input,neuronRx(2:end))))>1e-12) || ...
+                any(abs(full(model.S(mc,neuronRx)))>1e-12)
+            why="direct_counter_bypass_or_neuron_input_recycling";return;
+        end
+        active=~cache.currencyMask & comp=="c";
+        transferPart=full(any(abs(model.S(:,transfer))>1e-12,2));
+        neuralPart=full(any(abs(model.S(:,neuronRx))>1e-12,2));
+        shared=find(active & transferPart & neuralPart);
+        if ~isequal(shared(:),input)
+            why="transfer_to_neuron_side_overlap";return;
+        end
+    end
+    if isolate
+        active=~cache.currencyMask & comp=="c";
+        a=full(any(abs(model.S(:,upstreamRx))>1e-12,2));
+        b=full(any(abs(model.S(:,[transfer,neuronRx]))>1e-12,2));
+        shared=find(active & a & b);
+        if ~isequal(shared(:),mc)
+            why="unintended_upstream_to_neuron_interface_overlap";return;
+        end
+    end
+    ok=true;why="PASS";
+end
+
+function key=counterNeuronInterfaceKey(counterKey,link)
+    key=[counterKey,'|T2|',sprintf('%d,',[link.transportReaction,link.neuronInput,link.pathRxns])];
+end
+
 function R=searchStage8Parent(ii,selectedD1,T,metIDs,comp,currency,cons8,di,do, ...
-        model,block0Cache,excludedECs,requireUniqueEC,maxBranch,maxTests)
-% Pure per-parent Stage 8 search. Safe for parfor: no file I/O, no shared maps.
+        model,block0Cache,excludedECs,requireUniqueEC,maxBranch,maxTests, ...
+        transportLinks,linksByCounter,isolateInterface)
+% Pure per-parent search: counter -> r_T_2 -> imported m_Nin_1 -> two neurons.
     R=struct('examined',0,'tests',0,'capReached',0, ...
         'rejectDuplicateReaction',0,'rejectD1Overlap',0,'rejectExcludedEC',0, ...
         'rejectRepeatedEC',0,'rejectMissingEC',0,'rejectBlock0Isolation',0, ...
-        'block0PathCapped',0,'candidates',struct('mc',{},'nf',{},'nd',{}, ...
-        'nf2',{},'mout',{},'chosen',{},'block0Path',{},'chemicalKey',{},'counterKey',{}));
+        'rejectTransportInterface',0,'block0PathCapped',0, ...
+        'interfaceKeys',strings(0,1),'interfaceCounterKeys',strings(0,1), ...
+        'candidates',struct('mc',{},'neuronInput',{},'transportLink',{}, ...
+        'nf',{},'nd',{},'nf2',{},'mout',{},'chosen',{},'block0Path',{}, ...
+        'chemicalKey',{},'counterKey',{},'interfaceKey',{}));
     sel=selectedD1(ii);tr=sel.transportRow;
     pathMemo=containers.Map('KeyType','char','ValueType','any');
     if isempty(sel.counterLinks),return;end
     mc=find(metIDs==string(T.cytosolic(tr)),1);
     if isempty(mc) || comp(mc)~="c",return;end
-    R.examined=1;
-    inputRx=cons8{mc};
-    if numel(inputRx)<2,return;end
-    inputRx=inputRx(1:min(end,maxBranch));
-    stop=false;
-    for i1=reshape(inputRx,1,[])
+    R.examined=1;stop=false;
+    d=sel.d;d1ids=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri];
+    t1=double(T.modelIndex(tr));
+    for ci=1:numel(sel.counterLinks)
         if stop,break;end
-        nfCandidates=do{i1};
-        nfCandidates=nfCandidates(arrayfun(@(v)d1SignalOK(v,mc,metIDs,comp,currency),nfCandidates));
-        nfCandidates=nfCandidates(1:min(end,maxBranch));
-        for nf=reshape(nfCandidates,1,[])
+        irc=find(di==sel.counterLinks(ci).reaction,1);
+        if isempty(irc),continue;end
+        counterKey=counterChemicalKey(sel,t1,di(irc),mc);
+        upstream=[d1ids,sel.exchangePathRxns,t1,di(irc)];
+        for li=reshape(linksByCounter{mc},1,[])
             if stop,break;end
-            secondRx=cons8{nf};secondRx=secondRx(1:min(end,maxBranch));
-            for i2=reshape(secondRx,1,[])
+            link=transportLinks(li);neuronInput=link.neuronInput;
+            [ok,~]=validateCounterNeuronInterface(model,block0Cache,comp,mc, ...
+                link,upstream,[],isolateInterface);
+            if ~ok,R.rejectTransportInterface=R.rejectTransportInterface+1;continue;end
+            prefix=[upstream,link.pathRxns,link.transportReaction];
+            requiredPrefix=[d1ids,sel.exchangePathRxns,di(irc),link.pathRxns];
+            if ~reactionsHaveRequiredEC(model,requiredPrefix)
+                R.rejectMissingEC=R.rejectMissingEC+1;continue;
+            end
+            if reactionHasExcludedEC(model,prefix,excludedECs)
+                R.rejectExcludedEC=R.rejectExcludedEC+1;continue;
+            end
+            if requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,prefix)
+                R.rejectRepeatedEC=R.rejectRepeatedEC+1;continue;
+            end
+            prefixPath=memoizedBlock0Path(model,block0Cache,d.min,prefix, ...
+                [d.rff,d.rsf],sel.counterLinks(ci).path,pathMemo);
+            if ~prefixPath.found
+                R.rejectBlock0Isolation=R.rejectBlock0Isolation+1;
+                R.block0PathCapped=R.block0PathCapped+prefixPath.expansionLimitReached+prefixPath.stateLimitReached;
+                continue;
+            end
+            interfaceKey=counterNeuronInterfaceKey(counterKey,link);
+            R.interfaceKeys(end+1,1)=string(interfaceKey);
+            R.interfaceCounterKeys(end+1,1)=string(counterKey);
+            inputRx=cons8{neuronInput};inputRx=inputRx(1:min(end,maxBranch));
+            for i1=reshape(inputRx,1,[])
                 if stop,break;end
-                if di(i2)==di(i1),continue;end
-                ndCandidates=do{i2};
-                ndCandidates=ndCandidates(arrayfun(@(v)d1SignalOK(v,nf,metIDs,comp,currency) && v~=mc,ndCandidates));
-                ndCandidates=ndCandidates(1:min(end,maxBranch));
-                for nd=reshape(ndCandidates,1,[])
+                nfCandidates=do{i1};
+                nfCandidates=nfCandidates(arrayfun(@(v)d1SignalOK(v,neuronInput,metIDs,comp,currency) && v~=mc,nfCandidates));
+                nfCandidates=nfCandidates(1:min(end,maxBranch));
+                for nf=reshape(nfCandidates,1,[])
                     if stop,break;end
-                    ndRx=cons8{nd};ndRx=ndRx(1:min(end,maxBranch));
-                    if numel(ndRx)<2,continue;end
-                    for i4=reshape(ndRx,1,[])
+                    secondRx=cons8{nf};secondRx=secondRx(1:min(end,maxBranch));
+                    for i2=reshape(secondRx,1,[])
                         if stop,break;end
-                        if ismember(di(i4),di([i1,i2])),continue;end
-                        nf2Candidates=do{i4};
-                        nf2Candidates=nf2Candidates(arrayfun(@(v)d1SignalOK(v,nd,metIDs,comp,currency) && ~ismember(v,[mc,nf]),nf2Candidates));
-                        nf2Candidates=nf2Candidates(1:min(end,maxBranch));
-                        for nf2=reshape(nf2Candidates,1,[])
+                        if di(i2)==di(i1),continue;end
+                        ndCandidates=do{i2};
+                        ndCandidates=ndCandidates(arrayfun(@(v)d1SignalOK(v,nf,metIDs,comp,currency) && ~ismember(v,[mc,neuronInput]),ndCandidates));
+                        ndCandidates=ndCandidates(1:min(end,maxBranch));
+                        for nd=reshape(ndCandidates,1,[])
                             if stop,break;end
-                            fifthRx=cons8{nf2};fifthRx=fifthRx(1:min(end,maxBranch));
-                            for i5=reshape(fifthRx,1,[])
+                            ndRx=cons8{nd};ndRx=ndRx(1:min(end,maxBranch));
+                            if numel(ndRx)<2,continue;end
+                            for i4=reshape(ndRx,1,[])
                                 if stop,break;end
-                                if ismember(di(i5),di([i1,i2,i4])),continue;end
-                                outCandidates=do{i5};
-                                outCandidates=outCandidates(arrayfun(@(v)d1SignalOK(v,nf2,metIDs,comp,currency) && ~ismember(v,[mc,nf,nd]),outCandidates));
-                                outCandidates=outCandidates(1:min(end,maxBranch));
-                                for mout=reshape(outCandidates,1,[])
+                                if ismember(di(i4),di([i1,i2])),continue;end
+                                nf2Candidates=do{i4};
+                                nf2Candidates=nf2Candidates(arrayfun(@(v)d1SignalOK(v,nd,metIDs,comp,currency) && ~ismember(v,[mc,neuronInput,nf]),nf2Candidates));
+                                nf2Candidates=nf2Candidates(1:min(end,maxBranch));
+                                for nf2=reshape(nf2Candidates,1,[])
                                     if stop,break;end
-                                    endRx=cons8{mout};endRx=endRx(1:min(end,maxBranch));
-                                    if isempty(endRx),continue;end
-                                    for irc=reshape(inputRx,1,[])
+                                    fifthRx=cons8{nf2};fifthRx=fifthRx(1:min(end,maxBranch));
+                                    for i5=reshape(fifthRx,1,[])
                                         if stop,break;end
-                                        if di(irc)==di(i1),continue;end
-                                        counterLink=find([sel.counterLinks.reaction]==di(irc),1);
-                                        if isempty(counterLink),continue;end
-                                        for inr=reshape(ndRx,1,[])
+                                        if ismember(di(i5),di([i1,i2,i4])),continue;end
+                                        outCandidates=do{i5};
+                                        outCandidates=outCandidates(arrayfun(@(v)d1SignalOK(v,nf2,metIDs,comp,currency) && ~ismember(v,[mc,neuronInput,nf,nd]),outCandidates));
+                                        outCandidates=outCandidates(1:min(end,maxBranch));
+                                        for mout=reshape(outCandidates,1,[])
                                             if stop,break;end
-                                            if di(inr)==di(i4),continue;end
-                                            for inr2=reshape(endRx,1,[])
-                                                if R.tests>=maxTests,R.capReached=1;stop=true;break;end
-                                                R.tests=R.tests+1;
-                                                chosen=[irc,i1,i2,inr,i4,i5,inr2];
-                                                if numel(unique(di(chosen)))~=7
-                                                    R.rejectDuplicateReaction=R.rejectDuplicateReaction+1;continue;
+                                            endRx=cons8{mout};endRx=endRx(1:min(end,maxBranch));
+                                            for inr=reshape(ndRx,1,[])
+                                                if stop,break;end
+                                                if di(inr)==di(i4),continue;end
+                                                for inr2=reshape(endRx,1,[])
+                                                    if R.tests>=maxTests,R.capReached=1;stop=true;break;end
+                                                    R.tests=R.tests+1;
+                                                    chosen=[irc,i1,i2,inr,i4,i5,inr2];
+                                                    if numel(unique(di(chosen)))~=7
+                                                        R.rejectDuplicateReaction=R.rejectDuplicateReaction+1;continue;
+                                                    end
+                                                    if any(ismember(di(chosen),d1ids))
+                                                        R.rejectD1Overlap=R.rejectD1Overlap+1;continue;
+                                                    end
+                                                    neuralRx=reshape(di(chosen(2:end)),1,[]);
+                                                    [ok,~]=validateCounterNeuronInterface(model,block0Cache,comp,mc, ...
+                                                        link,upstream,neuralRx,isolateInterface);
+                                                    if ~ok,R.rejectTransportInterface=R.rejectTransportInterface+1;continue;end
+                                                    downstreamRx=[prefix,neuralRx];
+                                                    requiredECReactions=[d1ids,sel.exchangePathRxns,link.pathRxns,reshape(di(chosen),1,[])];
+                                                    if ~reactionsHaveRequiredEC(model,requiredECReactions)
+                                                        R.rejectMissingEC=R.rejectMissingEC+1;continue;
+                                                    end
+                                                    if reactionHasExcludedEC(model,downstreamRx,excludedECs)
+                                                        R.rejectExcludedEC=R.rejectExcludedEC+1;continue;
+                                                    end
+                                                    if requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,downstreamRx)
+                                                        R.rejectRepeatedEC=R.rejectRepeatedEC+1;continue;
+                                                    end
+                                                    b0=memoizedBlock0Path(model,block0Cache,d.min,downstreamRx, ...
+                                                        [d.rff,d.rsf],prefixPath,pathMemo);
+                                                    if ~b0.found
+                                                        R.rejectBlock0Isolation=R.rejectBlock0Isolation+1;
+                                                        R.block0PathCapped=R.block0PathCapped+b0.expansionLimitReached+b0.stateLimitReached;
+                                                        continue;
+                                                    end
+                                                    if requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,[b0.rxns,downstreamRx])
+                                                        R.rejectRepeatedEC=R.rejectRepeatedEC+1;continue;
+                                                    end
+                                                    chemicalKey=sprintf('%d,',[d.min,d.mff,d.mfd,d.msf,sel.target, ...
+                                                        mc,neuronInput,nf,nd,nf2,mout,d1ids,sel.exchangePathRxns, ...
+                                                        t1,link.transportReaction,-1,link.pathRxns,-2,reshape(di(chosen),1,[])]);
+                                                    c=struct('mc',mc,'neuronInput',neuronInput,'transportLink',li, ...
+                                                        'nf',nf,'nd',nd,'nf2',nf2,'mout',mout,'chosen',chosen, ...
+                                                        'block0Path',b0,'chemicalKey',chemicalKey,'counterKey',counterKey, ...
+                                                        'interfaceKey',interfaceKey);
+                                                    R.candidates(end+1)=c; %#ok<AGROW>
                                                 end
-                                                d=sel.d;d1ids=[d.rff,d.rfd,d.rfr,d.rsf,d.rsd,d.rsr,d.ri];
-                                                if any(ismember(di(chosen),d1ids))
-                                                    R.rejectD1Overlap=R.rejectD1Overlap+1;continue;
-                                                end
-                                                downstreamRx=[d1ids,sel.exchangePathRxns, ...
-                                                    double(T.modelIndex(tr)),reshape(di(chosen),1,[])];
-                                                if reactionHasExcludedEC(model,downstreamRx,excludedECs)
-                                                    R.rejectExcludedEC=R.rejectExcludedEC+1;continue;
-                                                end
-                                                if requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,downstreamRx)
-                                                    R.rejectRepeatedEC=R.rejectRepeatedEC+1;continue;
-                                                end
-                                                b0=memoizedBlock0Path(model,block0Cache,d.min,downstreamRx, ...
-                                                    [d.rff,d.rsf],sel.counterLinks(counterLink).path,pathMemo);
-                                                if ~b0.found
-                                                    R.rejectBlock0Isolation=R.rejectBlock0Isolation+1;
-                                                    R.block0PathCapped=R.block0PathCapped+b0.expansionLimitReached+b0.stateLimitReached;
-                                                    continue;
-                                                end
-                                                block0Reactions=b0.rxns;
-                                                allRx=[block0Reactions,d1ids,sel.exchangePathRxns, ...
-                                                    double(T.modelIndex(tr)),reshape(di(chosen),1,[])];
-                                                requiredECReactions=[block0Reactions,d1ids,sel.exchangePathRxns, ...
-                                                    reshape(di(chosen),1,[])];
-                                                if ~reactionsHaveRequiredEC(model,requiredECReactions)
-                                                    R.rejectMissingEC=R.rejectMissingEC+1;continue;
-                                                end
-                                                if reactionHasExcludedEC(model,allRx,excludedECs)
-                                                    R.rejectExcludedEC=R.rejectExcludedEC+1;continue;
-                                                end
-                                                if requireUniqueEC && ~reactionsHaveUniqueECAssignment(model,allRx)
-                                                    R.rejectRepeatedEC=R.rejectRepeatedEC+1;continue;
-                                                end
-                                                chemicalKey=sprintf('%d,',[d.min,d.mff,d.mfd,d.msf,sel.target, ...
-                                                    mc,nf,nd,nf2,mout,d1ids,sel.exchangePathRxns, ...
-                                                    double(T.modelIndex(tr)),reshape(di(chosen),1,[])]);
-                                                counterKey=counterChemicalKey(sel,double(T.modelIndex(tr)),di(irc),mc);
-                                                c=struct('mc',mc,'nf',nf,'nd',nd,'nf2',nf2,'mout',mout, ...
-                                                    'chosen',chosen,'block0Path',b0, ...
-                                                    'chemicalKey',chemicalKey,'counterKey',counterKey);
-                                                R.candidates(end+1)=c; %#ok<AGROW>
                                             end
                                         end
                                     end

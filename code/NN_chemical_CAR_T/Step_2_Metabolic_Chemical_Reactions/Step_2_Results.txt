@@ -1,8 +1,8 @@
-SELECTED BLOCK 0 -> D1 -> TRANSPORT -> COUNTER -> TWO CONSUMING NEURONS
+SELECTED BLOCK 0 -> D1 -> r_T -> COUNTER -> r_T_2 -> TWO CONSUMING NEURONS
 Direction policy: STRICT +1 relative to original model.S.
-Selection: up to 10 complete motifs, ranked by m_Sd-to-counter distance, r_I kinetic evidence/kcat, then isolated cAMP-to-m_in distance.
+Selection: up to 10 motifs, ranked by m_Sd-to-counter distance, counter-to-r_T_2 distance, r_I evidence/kcat, then isolated cAMP distance.
 Transport mechanism filter: stoichiometric exchange only; protein-path regulation is excluded.
-EC policy: complete annotation required for Block 0, D1, intracellular connectors, r_cr and every neuron reaction; r_T is exempt.
+EC policy: complete EC required for all selected metabolic reactions, including both intracellular bridges; transport roles r_T and r_T_2 are exempt.
 Annotation audit: 00_Reaction_EC_Annotation_Audit.csv; unresolved exclusions: 00_Excluded_Missing_EC_Reactions.csv.
 An EC annotation does not guarantee matching KM or kcat measurements.
 Excluded reaction ECs: 2.4.1.23
@@ -19,7 +19,8 @@ D1 caps: targets=Inf; motifs=Inf; retained/target=100; branch=14; reaction candi
 Exchange caps: pairs=Inf; connections=Inf. Neuron caps: branch=25; tests/parent=5000; parallel=1.
 m_Sd-to-counter path caps: depth=1 reactions; precursors/exchange pair=Inf.
 D1 calls reaching trial/branch/retention limits: 0 / 4 / 2.
-r_Nf CONSUMES m_c; r_Nf_2 CONSUMES m_Nd.
+r_T_2 exports m_c directly at depth 0; r_Nf_1 CONSUMES imported m_Nin_1; r_Nf_2 CONSUMES m_Nd_1.
+Second interface: same model [e]<->[c] exchange convention; depth cap=0; require GPR=1; isolate cytosolic interface=1.
 m_Sd_1 must be produced by r_Sd_1 and lie on a shortest configured forward path to the exported counter-substrate.
 Stoichiometric exchange topology only; transporter abundance, flux, and kinetics are unverified.
 
@@ -32,19 +33,25 @@ Distinct D1 motifs retained for downstream search: 30
 D1/transporter parent connections retained: 1200
 Distinct counter cores (r_T, m_c, r_cr): 20
 Distinct D1-counter solutions in retained parent pool: 600
-D1-counter solutions extended to both neurons: 300
-Distinct complete motifs found: 8160
-  Exchange mode: 8160; regulatory-hypothesis mode: 0
+D1-counter solutions extended to both neurons: 480
+Structural counter-to-neuron transport links retained: 362
+Distinct D1-counter-r_T_2 interfaces passing prefix checks within search budgets: 5328
+D1-counter solutions with a checked r_T_2 interface: 480
+Distinct r_T_2 interfaces extended to both neurons: 1356
+Second-interface pool: expansion-capped exchange rows=0; retention-capped counter species=0.
+Distinct complete motifs found: 23208
+  Exchange mode: 23208; regulatory-hypothesis mode: 0
 Complete motifs printed: 10 (requested maximum 10)
 Count definitions: chemical structures are deduplicated; alternate protein annotations do not add motifs.
 One shortest isolated Block 0 path is used per accepted motif; alternate connectors do not multiply motif counts.
-Parent/counter distances use their prefix constraints; complete-motif distances also include both neurons.
+Parent/counter distances use prefix constraints; complete-motif Block 0 isolation also includes r_T_2 and both neurons.
 Block 0 parent rejections=7348; parent path-budget limits=0; counter rejections=0; counter path-budget limits=0.
-Final-assembly Block 0 isolation rejections=420; path-budget limits=0.
-Counter total includes counters with no two-neuron solution; complete count requires both neurons.
-D1 parents examined for neurons: 360/1200; total trials=15480; parents reaching per-parent cap=0.
+Final-assembly Block 0 isolation rejections=2712; path-budget limits=0.
+Counter total includes counters without r_T_2 or a two-neuron solution; complete count requires the second transport and both neurons.
+D1 parents examined for neurons: 360/1200; total trials=1411800; parents reaching per-parent cap=120.
 Missing EC rejections during final assembly: 0 (EC filtering also occurred before candidate enumeration).
-Stage 8 rejection diagnostics: duplicate reaction=1440; D1 overlap=5400; excluded EC=0; repeated/unassignable EC=60; duplicate chemistry=0; accepted=8160.
+Second-transport interface rejections (overlap, reuse, bypass or recycling): 299120
+Stage 8 rejection diagnostics: duplicate reaction=107400; D1 overlap=967492; excluded EC=0; repeated/unassignable EC=12660; duplicate chemistry=0; accepted=23208.
 Counts describe the configured search only; finite branch/trial/retention caps can hide additional solutions.
 Budget-limited path failures are unresolved searches, not proof that an isolated connection is absent.
 Selecting ten for printing does NOT stop discovery/counting at ten.
@@ -52,6 +59,7 @@ Selecting ten for printing does NOT stop discovery/counting at ten.
 ============================================================
 CANDIDATE 1
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -60,10 +68,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nin_1  : ser_L[c] | L-Serine
+  m_Nf_1   : etha[c] | Ethanolamine
+  m_Nd_1   : ethamp[c] | Ethanolamine Phosphate
+  m_Nf_2   : sph1p[c] | (2S,3R)-2-Azaniumyl-3-Hydroxyoctadecyl Phosphate
+  m_out    : sphgn[c] | Sphinganine
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -200,7 +209,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -213,7 +222,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -239,7 +248,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -257,16 +266,36 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
+
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1717
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + Sodium [na1[e]] + L-Serine [ser_L[e]]  ->  Glycine [gly[e]] + Sodium [na1[c]] + L-Serine (m_Nin_1) [ser_L[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: ser_L[e] -> ser_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
@@ -281,77 +310,78 @@ r_cr
   EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: PSSA2_hs
+  Name: Phosphatidylserine Synthase Homo Sapiens
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.7.8.8
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PSSA2_hs
+  Equation: Phosphatidylethanolamine [pe_hs[c]] + L-Serine (m_Nin_1) [ser_L[c]]  ->  Ethanolamine (m_Nf_1) [etha[c]] + Phosphatidylserine [ps_hs[c]]
 
-  EC: 6.3.2.3
+  EC: 2.7.8.8
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: ETHAK
+  Name: Ethanolamine Kinase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 2.7.1.82
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction ETHAK
+  Equation: Adenosine Triphosphate [atp[c]] + Ethanolamine (m_Nf_1) [etha[c]]  ->  Adenosine Diphosphate [adp[c]] + Ethanolamine Phosphate (m_Nd_1) [ethamp[c]] + Proton [h[c]]
 
-  EC: 1.8.4.4
+  EC: 2.7.1.82
 
 r_Nr_1
-  ID: r0027
-  Name: NADPH:Coa-Glutathione Oxidoreductase
+  ID: r0480
+  Name: S-Adenosyl-L-Methionine:Ethanolamine-Phosphate N-Methyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.1.9
+  Resolved EC: 2.1.1.103
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction r0027
-  Equation: 2 L-Cysteine (m_Nd_1) [cys_L[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  L-Cystine [Lcystin[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
+  EC annotation reference: model reaction r0480
+  Equation: S-Adenosyl-L-Methionine [amet[c]] + Ethanolamine Phosphate (m_Nd_1) [ethamp[c]]  ->  N-Methylethanolaminium Phosphate [HC00718[c]] + S-Adenosyl-L-Homocysteine [ahcys[c]] + Proton [h[c]]
 
-  EC: 1.8.1.9
+  EC: 2.1.1.103
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: r0537
+  Name: Sphinganine-1-Phosphate Pamlmitaldehyde-Lyase Sphingolipid Metabolism
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 4.1.2.27
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction r0537
+  Equation: Ethanolamine Phosphate (m_Nd_1) [ethamp[c]] + Hexadecanal [hxdcal[c]]  ->  (2S,3R)-2-Azaniumyl-3-Hydroxyoctadecyl Phosphate (m_Nf_2) [sph1p[c]]
 
-  EC: 2.6.1.3
+  EC: 4.1.2.27
 
 r_Nd_2
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: r0787
+  Name: 3-Sn-Phosphatidate Phosphohydrolase Sphingolipid Metabolism
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.1.3.4
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction r0787
+  Equation: Water [h2o[c]] + (2S,3R)-2-Azaniumyl-3-Hydroxyoctadecyl Phosphate (m_Nf_2) [sph1p[c]]  ->  Orthophosphate [pi[c]] + Sphinganine (m_out) [sphgn[c]]
 
-  EC: 6.3.2.2
+  EC: 3.1.3.4
 
 r_Nr_2
-  ID: r0568
-  Name: (5-L-Glutamyl)-L-Amino-Acid 5-Glutamyltransferase (Cyclizing)
+  ID: DSAT
+  Name: Dihydrosphingosine N-Acyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 2.3.2.4
+  Resolved EC: 4.1.1.33
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction r0568
-  Equation: Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]]  ->  5-Oxoprolinate [5oxpro[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]
+  EC annotation reference: model reaction DSAT
+  Equation: R Total Coenzyme A [Rtotalcoa[c]] + Sphinganine (m_out) [sphgn[c]]  ->  Coenzyme A [coa[c]] + Dihydroceramide [dhcrm_hs[c]] + Proton [h[c]]
 
-  EC: 2.3.2.4
+  EC: 4.1.1.33
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 2
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -360,10 +390,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nin_1  : ser_L[c] | L-Serine
+  m_Nf_1   : etha[c] | Ethanolamine
+  m_Nd_1   : ethamp[c] | Ethanolamine Phosphate
+  m_Nf_2   : sph1p[c] | (2S,3R)-2-Azaniumyl-3-Hydroxyoctadecyl Phosphate
+  m_out    : sphgn[c] | Sphinganine
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -500,7 +531,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -513,7 +544,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -539,7 +570,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -557,16 +588,36 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
+
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1717
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + Sodium [na1[e]] + L-Serine [ser_L[e]]  ->  Glycine [gly[e]] + Sodium [na1[c]] + L-Serine (m_Nin_1) [ser_L[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: ser_L[e] -> ser_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
@@ -581,77 +632,78 @@ r_cr
   EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: PSSA2_hs
+  Name: Phosphatidylserine Synthase Homo Sapiens
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.7.8.8
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction PSSA2_hs
+  Equation: Phosphatidylethanolamine [pe_hs[c]] + L-Serine (m_Nin_1) [ser_L[c]]  ->  Ethanolamine (m_Nf_1) [etha[c]] + Phosphatidylserine [ps_hs[c]]
 
-  EC: 6.3.2.3
+  EC: 2.7.8.8
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: ETHAK
+  Name: Ethanolamine Kinase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 2.7.1.82
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction ETHAK
+  Equation: Adenosine Triphosphate [atp[c]] + Ethanolamine (m_Nf_1) [etha[c]]  ->  Adenosine Diphosphate [adp[c]] + Ethanolamine Phosphate (m_Nd_1) [ethamp[c]] + Proton [h[c]]
 
-  EC: 1.8.4.4
+  EC: 2.7.1.82
 
 r_Nr_1
-  ID: RE1915C
-  Name: RE1915C
+  ID: r0480
+  Name: S-Adenosyl-L-Methionine:Ethanolamine-Phosphate N-Methyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 1.1.1.184
+  Resolved EC: 2.1.1.103
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction RE1915C
-  Equation: L-Cysteine (m_Nd_1) [cys_L[c]] + L-Dopaquinone [dopaqn[c]]  ->  5-S-Cysteinyldopa [CE1261[c]]
+  EC annotation reference: model reaction r0480
+  Equation: S-Adenosyl-L-Methionine [amet[c]] + Ethanolamine Phosphate (m_Nd_1) [ethamp[c]]  ->  N-Methylethanolaminium Phosphate [HC00718[c]] + S-Adenosyl-L-Homocysteine [ahcys[c]] + Proton [h[c]]
 
-  EC: 1.1.1.184
+  EC: 2.1.1.103
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: r0537
+  Name: Sphinganine-1-Phosphate Pamlmitaldehyde-Lyase Sphingolipid Metabolism
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 4.1.2.27
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction r0537
+  Equation: Ethanolamine Phosphate (m_Nd_1) [ethamp[c]] + Hexadecanal [hxdcal[c]]  ->  (2S,3R)-2-Azaniumyl-3-Hydroxyoctadecyl Phosphate (m_Nf_2) [sph1p[c]]
 
-  EC: 2.6.1.3
+  EC: 4.1.2.27
 
 r_Nd_2
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: r0787
+  Name: 3-Sn-Phosphatidate Phosphohydrolase Sphingolipid Metabolism
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 3.1.3.4
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction r0787
+  Equation: Water [h2o[c]] + (2S,3R)-2-Azaniumyl-3-Hydroxyoctadecyl Phosphate (m_Nf_2) [sph1p[c]]  ->  Orthophosphate [pi[c]] + Sphinganine (m_out) [sphgn[c]]
 
-  EC: 6.3.2.2
+  EC: 3.1.3.4
 
 r_Nr_2
-  ID: r0568
-  Name: (5-L-Glutamyl)-L-Amino-Acid 5-Glutamyltransferase (Cyclizing)
+  ID: HMR_0750
+  Name: Sphingosine N-Acyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 2.3.2.4
+  Resolved EC: 2.3.1.24
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction r0568
-  Equation: Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]]  ->  5-Oxoprolinate [5oxpro[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]
+  EC annotation reference: model reaction HMR_0750
+  Equation: Acyl Coenzyme A-Ld-Sm-Pool [HC02048[c]] + Sphinganine (m_out) [sphgn[c]]  ->  Coenzyme A [coa[c]] + Dihydroceramide [dhcrm_hs[c]] + Proton [h[c]]
 
-  EC: 2.3.2.4
+  EC: 2.3.1.24
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 3
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -660,10 +712,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nin_1  : ser_L[c] | L-Serine
+  m_Nf_1   : 3dsphgn[c] | (2S)-1-Hydroxy-3-Oxooctadecan-2-Aminium
+  m_Nd_1   : sphgn[c] | Sphinganine
+  m_Nf_2   : dhcrm_hs[c] | Dihydroceramide
+  m_out    : crm_hs[c] | N-Acylsphingosine
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -800,7 +853,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -813,7 +866,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -839,7 +892,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -857,101 +910,122 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
 
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1717
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + Sodium [na1[e]] + L-Serine [ser_L[e]]  ->  Glycine [gly[e]] + Sodium [na1[c]] + L-Serine (m_Nin_1) [ser_L[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: ser_L[e] -> ser_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
+
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: PRAGSr
-  Name: Phosphoribosylglycinamide Synthase
+  ID: HMR_1834
+  Name: Glycodeoxycholate Amidohydrolase
   Direction: +1 relative to model.S
-  Resolved EC: 6.4.1.3
+  Resolved EC: 3.5.1.24
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction PRAGSr
-  Equation: Adenosine Triphosphate [atp[c]] + Glycine (m_c) [gly[c]] + 5-Phospho-Beta-D-Ribosylamine [pram[c]]  ->  Adenosine Diphosphate [adp[c]] + N1-(5-Phospho-D-Ribosyl)Glycinamide [gar[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  EC annotation reference: model reaction HMR_1834
+  Equation: Deoxycholate [dchac[c]] + Glycine (m_c) [gly[c]] + Proton [h[c]]  ->  Glycodeoxycholic Acid [M01989[c]] + Water [h2o[c]]
 
-  EC: 6.4.1.3
+  EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: SERPT
+  Name: Serine C-Palmitoyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.3.1.50
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction SERPT
+  Equation: Proton [h[c]] + Palmitoyl Coenzyme A (N-C16:0 Coenzyme A) [pmtcoa[c]] + L-Serine (m_Nin_1) [ser_L[c]]  ->  (2S)-1-Hydroxy-3-Oxooctadecan-2-Aminium (m_Nf_1) [3dsphgn[c]] + Carbon Dioxide [co2[c]] + Coenzyme A [coa[c]]
 
-  EC: 6.3.2.3
+  EC: 2.3.1.50
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: 3DSPHR
+  Name: 3-Dehydrosphinganine Reductase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 1.1.1.102
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction 3DSPHR
+  Equation: (2S)-1-Hydroxy-3-Oxooctadecan-2-Aminium (m_Nf_1) [3dsphgn[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]  ->  Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]] + Sphinganine (m_Nd_1) [sphgn[c]]
 
-  EC: 1.8.4.4
+  EC: 1.1.1.102
 
 r_Nr_1
-  ID: r0027
-  Name: NADPH:Coa-Glutathione Oxidoreductase
+  ID: HMR_0750
+  Name: Sphingosine N-Acyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.1.9
+  Resolved EC: 2.3.1.24
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction r0027
-  Equation: 2 L-Cysteine (m_Nd_1) [cys_L[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  L-Cystine [Lcystin[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
+  EC annotation reference: model reaction HMR_0750
+  Equation: Acyl Coenzyme A-Ld-Sm-Pool [HC02048[c]] + Sphinganine (m_Nd_1) [sphgn[c]]  ->  Coenzyme A [coa[c]] + Dihydroceramide (m_Nf_2) [dhcrm_hs[c]] + Proton [h[c]]
 
-  EC: 1.8.1.9
+  EC: 2.3.1.24
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: DSAT
+  Name: Dihydrosphingosine N-Acyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 4.1.1.33
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction DSAT
+  Equation: R Total Coenzyme A [Rtotalcoa[c]] + Sphinganine (m_Nd_1) [sphgn[c]]  ->  Coenzyme A [coa[c]] + Dihydroceramide (m_Nf_2) [dhcrm_hs[c]] + Proton [h[c]]
 
-  EC: 2.6.1.3
+  EC: 4.1.1.33
 
 r_Nd_2
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: RE2675C2
+  Name: Re2675C2
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.7.1.91
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RE2675C2
+  Equation: Dihydroceramide (m_Nf_2) [dhcrm_hs[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  N-Acylsphingosine (m_out) [crm_hs[c]] + 2 Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
 
-  EC: 6.3.2.2
+  EC: 2.7.1.91
 
 r_Nr_2
-  ID: r0568
-  Name: (5-L-Glutamyl)-L-Amino-Acid 5-Glutamyltransferase (Cyclizing)
+  ID: SMS
+  Name: Sphingomyelin Synthase (Homo Sapiens)
   Direction: +1 relative to model.S
-  Resolved EC: 2.3.2.4
+  Resolved EC: 3.2.1.18
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction r0568
-  Equation: Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]]  ->  5-Oxoprolinate [5oxpro[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]
+  EC annotation reference: model reaction SMS
+  Equation: N-Acylsphingosine (m_out) [crm_hs[c]] + Phosphatidylcholine [pchol_hs[c]]  ->  Diglyceride [dag_hs[c]] + Sphingomyelin  [sphmyln_hs[c]]
 
-  EC: 2.3.2.4
+  EC: 3.2.1.18
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 4
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -960,10 +1034,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nin_1  : ser_L[c] | L-Serine
+  m_Nf_1   : 3dsphgn[c] | (2S)-1-Hydroxy-3-Oxooctadecan-2-Aminium
+  m_Nd_1   : sphgn[c] | Sphinganine
+  m_Nf_2   : dhcrm_hs[c] | Dihydroceramide
+  m_out    : crm_hs[c] | N-Acylsphingosine
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -1100,7 +1175,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -1113,7 +1188,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -1139,7 +1214,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -1157,101 +1232,122 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
 
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1717
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + Sodium [na1[e]] + L-Serine [ser_L[e]]  ->  Glycine [gly[e]] + Sodium [na1[c]] + L-Serine (m_Nin_1) [ser_L[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: ser_L[e] -> ser_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
+
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: PRAGSr
-  Name: Phosphoribosylglycinamide Synthase
+  ID: HMR_1834
+  Name: Glycodeoxycholate Amidohydrolase
   Direction: +1 relative to model.S
-  Resolved EC: 6.4.1.3
+  Resolved EC: 3.5.1.24
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction PRAGSr
-  Equation: Adenosine Triphosphate [atp[c]] + Glycine (m_c) [gly[c]] + 5-Phospho-Beta-D-Ribosylamine [pram[c]]  ->  Adenosine Diphosphate [adp[c]] + N1-(5-Phospho-D-Ribosyl)Glycinamide [gar[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  EC annotation reference: model reaction HMR_1834
+  Equation: Deoxycholate [dchac[c]] + Glycine (m_c) [gly[c]] + Proton [h[c]]  ->  Glycodeoxycholic Acid [M01989[c]] + Water [h2o[c]]
 
-  EC: 6.4.1.3
+  EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: SERPT
+  Name: Serine C-Palmitoyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.3.1.50
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction SERPT
+  Equation: Proton [h[c]] + Palmitoyl Coenzyme A (N-C16:0 Coenzyme A) [pmtcoa[c]] + L-Serine (m_Nin_1) [ser_L[c]]  ->  (2S)-1-Hydroxy-3-Oxooctadecan-2-Aminium (m_Nf_1) [3dsphgn[c]] + Carbon Dioxide [co2[c]] + Coenzyme A [coa[c]]
 
-  EC: 6.3.2.3
+  EC: 2.3.1.50
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: 3DSPHR
+  Name: 3-Dehydrosphinganine Reductase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 1.1.1.102
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction 3DSPHR
+  Equation: (2S)-1-Hydroxy-3-Oxooctadecan-2-Aminium (m_Nf_1) [3dsphgn[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]  ->  Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]] + Sphinganine (m_Nd_1) [sphgn[c]]
 
-  EC: 1.8.4.4
+  EC: 1.1.1.102
 
 r_Nr_1
-  ID: RE1915C
-  Name: RE1915C
+  ID: DSAT
+  Name: Dihydrosphingosine N-Acyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 1.1.1.184
+  Resolved EC: 4.1.1.33
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction RE1915C
-  Equation: L-Cysteine (m_Nd_1) [cys_L[c]] + L-Dopaquinone [dopaqn[c]]  ->  5-S-Cysteinyldopa [CE1261[c]]
+  EC annotation reference: model reaction DSAT
+  Equation: R Total Coenzyme A [Rtotalcoa[c]] + Sphinganine (m_Nd_1) [sphgn[c]]  ->  Coenzyme A [coa[c]] + Dihydroceramide (m_Nf_2) [dhcrm_hs[c]] + Proton [h[c]]
 
-  EC: 1.1.1.184
+  EC: 4.1.1.33
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: HMR_0750
+  Name: Sphingosine N-Acyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 2.3.1.24
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction HMR_0750
+  Equation: Acyl Coenzyme A-Ld-Sm-Pool [HC02048[c]] + Sphinganine (m_Nd_1) [sphgn[c]]  ->  Coenzyme A [coa[c]] + Dihydroceramide (m_Nf_2) [dhcrm_hs[c]] + Proton [h[c]]
 
-  EC: 2.6.1.3
+  EC: 2.3.1.24
 
 r_Nd_2
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: RE2675C2
+  Name: Re2675C2
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.7.1.91
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction RE2675C2
+  Equation: Dihydroceramide (m_Nf_2) [dhcrm_hs[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]] + Oxygen [o2[c]]  ->  N-Acylsphingosine (m_out) [crm_hs[c]] + 2 Water [h2o[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]
 
-  EC: 6.3.2.2
+  EC: 2.7.1.91
 
 r_Nr_2
-  ID: r0568
-  Name: (5-L-Glutamyl)-L-Amino-Acid 5-Glutamyltransferase (Cyclizing)
+  ID: SMS
+  Name: Sphingomyelin Synthase (Homo Sapiens)
   Direction: +1 relative to model.S
-  Resolved EC: 2.3.2.4
+  Resolved EC: 3.2.1.18
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction r0568
-  Equation: Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]]  ->  5-Oxoprolinate [5oxpro[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]
+  EC annotation reference: model reaction SMS
+  Equation: N-Acylsphingosine (m_out) [crm_hs[c]] + Phosphatidylcholine [pchol_hs[c]]  ->  Diglyceride [dag_hs[c]] + Sphingomyelin  [sphmyln_hs[c]]
 
-  EC: 2.3.2.4
+  EC: 3.2.1.18
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 5
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -1260,10 +1356,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nin_1  : met_L[c] | L-Methionine
+  m_Nf_1   : amet[c] | S-Adenosyl-L-Methionine
+  m_Nd_1   : ametam[c] | S-Adenosylmethioninamine
+  m_Nf_2   : spmd[c] | Spermidine
+  m_out    : 4abutn[c] | 4-Aminobutanal
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -1400,7 +1497,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -1413,7 +1510,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -1439,7 +1536,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -1457,101 +1554,122 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
 
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1732
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + L-Methionine [met_L[e]] + Sodium [na1[e]]  ->  Glycine [gly[e]] + L-Methionine (m_Nin_1) [met_L[c]] + Sodium [na1[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: met_L[e] -> met_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
+
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: PHACGLYc
-  Name: Glycine N-Acyltransferase, Phenylacetate
+  ID: HMR_1834
+  Name: Glycodeoxycholate Amidohydrolase
   Direction: +1 relative to model.S
-  Resolved EC: 2.3.1.13
+  Resolved EC: 3.5.1.24
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction PHACGLYc
-  Equation: Glycine (m_c) [gly[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + Proton [h[c]] + Phenylacetylglycine [phacgly[c]]
+  EC annotation reference: model reaction HMR_1834
+  Equation: Deoxycholate [dchac[c]] + Glycine (m_c) [gly[c]] + Proton [h[c]]  ->  Glycodeoxycholic Acid [M01989[c]] + Water [h2o[c]]
 
-  EC: 2.3.1.13
+  EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: METAT
+  Name: Methionine Adenosyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 1.1.1.40
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction METAT
+  Equation: Adenosine Triphosphate [atp[c]] + Water [h2o[c]] + L-Methionine (m_Nin_1) [met_L[c]]  ->  S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Orthophosphate [pi[c]] + Diphosphate [ppi[c]]
 
-  EC: 6.3.2.3
+  EC: 1.1.1.40
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: ADMDC
+  Name: Adenosylmethionine Decarboxylase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 4.1.1.50
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction ADMDC
+  Equation: S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Proton [h[c]]  ->  S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Carbon Dioxide [co2[c]]
 
-  EC: 1.8.4.4
+  EC: 4.1.1.50
 
 r_Nr_1
-  ID: r0027
-  Name: NADPH:Coa-Glutathione Oxidoreductase
+  ID: SPRMS
+  Name: Spermine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.1.9
+  Resolved EC: 2.5.1.22
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction r0027
-  Equation: 2 L-Cysteine (m_Nd_1) [cys_L[c]] + Nicotinamide Adenine Dinucleotide Phosphate [nadp[c]]  ->  L-Cystine [Lcystin[c]] + Proton [h[c]] + Nicotinamide Adenine Dinucleotide Phosphate - Reduced [nadph[c]]
+  EC annotation reference: model reaction SPRMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermine [sprm[c]]
 
-  EC: 1.8.1.9
+  EC: 2.5.1.22
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: SPMS
+  Name: Spermidine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 2.5.1.16
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction SPMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Putrescine [ptrc[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermidine (m_Nf_2) [spmd[c]]
 
-  EC: 2.6.1.3
+  EC: 2.5.1.16
 
 r_Nd_2
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: SPMDOX
+  Name: Spermidine: (Acceptor) Oxidoreductase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 1.5.99.6
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction SPMDOX
+  Equation: Water [h2o[c]] + Oxygen [o2[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  Trimethylenediaminium [13dampp[c]] + 4-Aminobutanal (m_out) [4abutn[c]] + Hydrogen Peroxide [h2o2[c]]
 
-  EC: 6.3.2.2
+  EC: 1.5.99.6
 
 r_Nr_2
-  ID: r0568
-  Name: (5-L-Glutamyl)-L-Amino-Acid 5-Glutamyltransferase (Cyclizing)
+  ID: ABUTD
+  Name: Aminobutyraldehyde Dehydrogenase
   Direction: +1 relative to model.S
-  Resolved EC: 2.3.2.4
+  Resolved EC: 1.2.1.19
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction r0568
-  Equation: Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]]  ->  5-Oxoprolinate [5oxpro[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]
+  EC annotation reference: model reaction ABUTD
+  Equation: 4-Aminobutanal (m_out) [4abutn[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide [nad[c]]  ->  4-Aminobutanoate [4abut[c]] + 2 Proton [h[c]] + Nicotinamide Adenine Dinucleotide - Reduced [nadh[c]]
 
-  EC: 2.3.2.4
+  EC: 1.2.1.19
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 6
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -1560,10 +1678,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : glucys[c] | Gamma-L-Glutamyl-L-Cysteine
+  m_Nin_1  : met_L[c] | L-Methionine
+  m_Nf_1   : amet[c] | S-Adenosyl-L-Methionine
+  m_Nd_1   : ametam[c] | S-Adenosylmethioninamine
+  m_Nf_2   : spmd[c] | Spermidine
+  m_out    : 4abutn[c] | 4-Aminobutanal
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -1700,7 +1819,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -1713,7 +1832,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -1739,7 +1858,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -1757,101 +1876,122 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
 
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1732
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + L-Methionine [met_L[e]] + Sodium [na1[e]]  ->  Glycine [gly[e]] + L-Methionine (m_Nin_1) [met_L[c]] + Sodium [na1[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: met_L[e] -> met_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
+
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
-  ID: PHACGLYc
-  Name: Glycine N-Acyltransferase, Phenylacetate
+  ID: HMR_1834
+  Name: Glycodeoxycholate Amidohydrolase
   Direction: +1 relative to model.S
-  Resolved EC: 2.3.1.13
+  Resolved EC: 3.5.1.24
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction PHACGLYc
-  Equation: Glycine (m_c) [gly[c]] + Phenylacetyl Coenzyme A [phaccoa[c]]  ->  Coenzyme A [coa[c]] + Proton [h[c]] + Phenylacetylglycine [phacgly[c]]
+  EC annotation reference: model reaction HMR_1834
+  Equation: Deoxycholate [dchac[c]] + Glycine (m_c) [gly[c]] + Proton [h[c]]  ->  Glycodeoxycholic Acid [M01989[c]] + Water [h2o[c]]
 
-  EC: 2.3.1.13
+  EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: METAT
+  Name: Methionine Adenosyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 1.1.1.40
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction METAT
+  Equation: Adenosine Triphosphate [atp[c]] + Water [h2o[c]] + L-Methionine (m_Nin_1) [met_L[c]]  ->  S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Orthophosphate [pi[c]] + Diphosphate [ppi[c]]
 
-  EC: 6.3.2.3
+  EC: 1.1.1.40
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: ADMDC
+  Name: Adenosylmethionine Decarboxylase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 4.1.1.50
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction ADMDC
+  Equation: S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Proton [h[c]]  ->  S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Carbon Dioxide [co2[c]]
 
-  EC: 1.8.4.4
+  EC: 4.1.1.50
 
 r_Nr_1
-  ID: RE1915C
-  Name: RE1915C
+  ID: SPRMS
+  Name: Spermine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 1.1.1.184
+  Resolved EC: 2.5.1.22
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction RE1915C
-  Equation: L-Cysteine (m_Nd_1) [cys_L[c]] + L-Dopaquinone [dopaqn[c]]  ->  5-S-Cysteinyldopa [CE1261[c]]
+  EC annotation reference: model reaction SPRMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermine [sprm[c]]
 
-  EC: 1.1.1.184
+  EC: 2.5.1.22
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: SPMS
+  Name: Spermidine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 2.5.1.16
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction SPMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Putrescine [ptrc[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermidine (m_Nf_2) [spmd[c]]
 
-  EC: 2.6.1.3
+  EC: 2.5.1.16
 
 r_Nd_2
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: SPMDOX
+  Name: Spermidine: (Acceptor) Oxidoreductase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 1.5.99.6
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction SPMDOX
+  Equation: Water [h2o[c]] + Oxygen [o2[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  Trimethylenediaminium [13dampp[c]] + 4-Aminobutanal (m_out) [4abutn[c]] + Hydrogen Peroxide [h2o2[c]]
 
-  EC: 6.3.2.2
+  EC: 1.5.99.6
 
 r_Nr_2
-  ID: r0568
-  Name: (5-L-Glutamyl)-L-Amino-Acid 5-Glutamyltransferase (Cyclizing)
+  ID: RE0691C
+  Name: RE0691C
   Direction: +1 relative to model.S
-  Resolved EC: 2.3.2.4
-  EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction r0568
-  Equation: Gamma-L-Glutamyl-L-Cysteine (m_out) [glucys[c]]  ->  5-Oxoprolinate [5oxpro[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]
+  Resolved EC: 2.6.1.82
+  EC annotation source: BiGG exact reaction-ID annotation
+  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/RE0691C
+  Equation: 4-Aminobutanal (m_out) [4abutn[c]]  ->  1-Pyrroline [CE1944[c]] + Water [h2o[c]]
 
-  EC: 2.3.2.4
+  EC: 2.6.1.82
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 7
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -1860,10 +2000,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : akg[c] | 2-Oxoglutarate
+  m_Nin_1  : met_L[c] | L-Methionine
+  m_Nf_1   : amet[c] | S-Adenosyl-L-Methionine
+  m_Nd_1   : ametam[c] | S-Adenosylmethioninamine
+  m_Nf_2   : spmd[c] | Spermidine
+  m_out    : h2o2[c] | Hydrogen Peroxide
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -2000,7 +2141,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -2013,7 +2154,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -2039,7 +2180,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -2057,16 +2198,36 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
+
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1732
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + L-Methionine [met_L[e]] + Sodium [na1[e]]  ->  Glycine [gly[e]] + L-Methionine (m_Nin_1) [met_L[c]] + Sodium [na1[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: met_L[e] -> met_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
@@ -2081,77 +2242,78 @@ r_cr
   EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: METAT
+  Name: Methionine Adenosyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 1.1.1.40
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction METAT
+  Equation: Adenosine Triphosphate [atp[c]] + Water [h2o[c]] + L-Methionine (m_Nin_1) [met_L[c]]  ->  S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Orthophosphate [pi[c]] + Diphosphate [ppi[c]]
 
-  EC: 6.3.2.3
+  EC: 1.1.1.40
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: ADMDC
+  Name: Adenosylmethionine Decarboxylase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 4.1.1.50
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction ADMDC
+  Equation: S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Proton [h[c]]  ->  S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Carbon Dioxide [co2[c]]
 
-  EC: 1.8.4.4
+  EC: 4.1.1.50
 
 r_Nr_1
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: SPRMS
+  Name: Spermine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.5.1.22
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction SPRMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermine [sprm[c]]
 
-  EC: 6.3.2.2
+  EC: 2.5.1.22
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: SPMS
+  Name: Spermidine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 2.5.1.16
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate (m_out) [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction SPMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Putrescine [ptrc[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermidine (m_Nf_2) [spmd[c]]
 
-  EC: 2.6.1.3
+  EC: 2.5.1.16
 
 r_Nd_2
-  ID: PSERT
-  Name: Phosphoserine Transaminase
+  ID: SPMDOX
+  Name: Spermidine: (Acceptor) Oxidoreductase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.52
+  Resolved EC: 1.5.99.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction PSERT
-  Equation: 3-Phosphonatooxypyruvate [3php[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  2-Oxoglutarate (m_out) [akg[c]] + O-Phospho-L-Serine [pser_L[c]]
+  EC annotation reference: model reaction SPMDOX
+  Equation: Water [h2o[c]] + Oxygen [o2[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  Trimethylenediaminium [13dampp[c]] + 4-Aminobutanal [4abutn[c]] + Hydrogen Peroxide (m_out) [h2o2[c]]
 
-  EC: 2.6.1.52
+  EC: 1.5.99.6
 
 r_Nr_2
-  ID: ASPTA
-  Name: Aspartate Transaminase
+  ID: GTHP
+  Name: Glutathione Peroxidase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.1
+  Resolved EC: 1.11.1.9
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction ASPTA
-  Equation: 2-Oxoglutarate (m_out) [akg[c]] + L-Aspartate [asp_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Oxaloacetate [oaa[c]]
+  EC annotation reference: model reaction GTHP
+  Equation: 2 Reduced Glutathione [gthrd[c]] + Hydrogen Peroxide (m_out) [h2o2[c]]  ->  Glutathione Disulfide (Oxidized Glutathione) [gthox[c]] + 2 Water [h2o[c]]
 
-  EC: 2.6.1.1
+  EC: 1.11.1.9
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 8
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -2160,10 +2322,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : akg[c] | 2-Oxoglutarate
+  m_Nin_1  : met_L[c] | L-Methionine
+  m_Nf_1   : amet[c] | S-Adenosyl-L-Methionine
+  m_Nd_1   : ametam[c] | S-Adenosylmethioninamine
+  m_Nf_2   : spmd[c] | Spermidine
+  m_out    : h2o2[c] | Hydrogen Peroxide
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -2300,7 +2463,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -2313,7 +2476,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -2339,7 +2502,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -2357,16 +2520,36 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
+
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1732
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + L-Methionine [met_L[e]] + Sodium [na1[e]]  ->  Glycine [gly[e]] + L-Methionine (m_Nin_1) [met_L[c]] + Sodium [na1[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: met_L[e] -> met_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
@@ -2381,77 +2564,78 @@ r_cr
   EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: METAT
+  Name: Methionine Adenosyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 1.1.1.40
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction METAT
+  Equation: Adenosine Triphosphate [atp[c]] + Water [h2o[c]] + L-Methionine (m_Nin_1) [met_L[c]]  ->  S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Orthophosphate [pi[c]] + Diphosphate [ppi[c]]
 
-  EC: 6.3.2.3
+  EC: 1.1.1.40
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: ADMDC
+  Name: Adenosylmethionine Decarboxylase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 4.1.1.50
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction ADMDC
+  Equation: S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Proton [h[c]]  ->  S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Carbon Dioxide [co2[c]]
 
-  EC: 1.8.4.4
+  EC: 4.1.1.50
 
 r_Nr_1
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: SPRMS
+  Name: Spermine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.5.1.22
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction SPRMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermine [sprm[c]]
 
-  EC: 6.3.2.2
+  EC: 2.5.1.22
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: SPMS
+  Name: Spermidine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 2.5.1.16
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate (m_out) [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction SPMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Putrescine [ptrc[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermidine (m_Nf_2) [spmd[c]]
 
-  EC: 2.6.1.3
+  EC: 2.5.1.16
 
 r_Nd_2
-  ID: PSERT
-  Name: Phosphoserine Transaminase
+  ID: SPMDOX
+  Name: Spermidine: (Acceptor) Oxidoreductase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.52
+  Resolved EC: 1.5.99.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction PSERT
-  Equation: 3-Phosphonatooxypyruvate [3php[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  2-Oxoglutarate (m_out) [akg[c]] + O-Phospho-L-Serine [pser_L[c]]
+  EC annotation reference: model reaction SPMDOX
+  Equation: Water [h2o[c]] + Oxygen [o2[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  Trimethylenediaminium [13dampp[c]] + 4-Aminobutanal [4abutn[c]] + Hydrogen Peroxide (m_out) [h2o2[c]]
 
-  EC: 2.6.1.52
+  EC: 1.5.99.6
 
 r_Nr_2
-  ID: HMR_4776
-  Name: L-Proline, 2-Oxoglutarate:Oxygen Oxidoreductase (4-Hydroxylating)
+  ID: PRDX
+  Name: Peroxidase (Multiple Substrates)
   Direction: +1 relative to model.S
-  Resolved EC: 1.14.11.2
+  Resolved EC: 1.11.1.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction HMR_4776
-  Equation: 2-Oxoglutarate (m_out) [akg[c]] + Oxygen [o2[c]] + L-Proline [pro_L[c]]  ->  Trans-4-Hydroxy-L-Proline [4hpro_LT[c]] + Carbon Dioxide [co2[c]] + Succinate [succ[c]]
+  EC annotation reference: model reaction PRDX
+  Equation: Hydrogen Peroxide (m_out) [h2o2[c]] + Methanol [meoh[c]]  ->  Formaldehyde [fald[c]] + 2 Water [h2o[c]]
 
-  EC: 1.14.11.2
+  EC: 1.11.1.7
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 9
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -2460,10 +2644,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : akg[c] | 2-Oxoglutarate
+  m_Nin_1  : met_L[c] | L-Methionine
+  m_Nf_1   : amet[c] | S-Adenosyl-L-Methionine
+  m_Nd_1   : ametam[c] | S-Adenosylmethioninamine
+  m_Nf_2   : spmd[c] | Spermidine
+  m_out    : h2o2[c] | Hydrogen Peroxide
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -2600,7 +2785,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -2613,7 +2798,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -2639,7 +2824,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -2657,16 +2842,36 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
+
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1732
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + L-Methionine [met_L[e]] + Sodium [na1[e]]  ->  Glycine [gly[e]] + L-Methionine (m_Nin_1) [met_L[c]] + Sodium [na1[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: met_L[e] -> met_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
@@ -2681,77 +2886,78 @@ r_cr
   EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: METAT
+  Name: Methionine Adenosyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 1.1.1.40
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction METAT
+  Equation: Adenosine Triphosphate [atp[c]] + Water [h2o[c]] + L-Methionine (m_Nin_1) [met_L[c]]  ->  S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Orthophosphate [pi[c]] + Diphosphate [ppi[c]]
 
-  EC: 6.3.2.3
+  EC: 1.1.1.40
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: ADMDC
+  Name: Adenosylmethionine Decarboxylase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 4.1.1.50
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction ADMDC
+  Equation: S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Proton [h[c]]  ->  S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Carbon Dioxide [co2[c]]
 
-  EC: 1.8.4.4
+  EC: 4.1.1.50
 
 r_Nr_1
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: SPRMS
+  Name: Spermine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.5.1.22
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction SPRMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermine [sprm[c]]
 
-  EC: 6.3.2.2
+  EC: 2.5.1.22
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: SPMS
+  Name: Spermidine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 2.5.1.16
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate (m_out) [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction SPMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Putrescine [ptrc[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermidine (m_Nf_2) [spmd[c]]
 
-  EC: 2.6.1.3
+  EC: 2.5.1.16
 
 r_Nd_2
-  ID: PSERT
-  Name: Phosphoserine Transaminase
+  ID: SPMDOX
+  Name: Spermidine: (Acceptor) Oxidoreductase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.52
+  Resolved EC: 1.5.99.6
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction PSERT
-  Equation: 3-Phosphonatooxypyruvate [3php[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  2-Oxoglutarate (m_out) [akg[c]] + O-Phospho-L-Serine [pser_L[c]]
+  EC annotation reference: model reaction SPMDOX
+  Equation: Water [h2o[c]] + Oxygen [o2[c]] + Spermidine (m_Nf_2) [spmd[c]]  ->  Trimethylenediaminium [13dampp[c]] + 4-Aminobutanal [4abutn[c]] + Hydrogen Peroxide (m_out) [h2o2[c]]
 
-  EC: 2.6.1.52
+  EC: 1.5.99.6
 
 r_Nr_2
-  ID: 3SALATAi
-  Name: 3-Sulfino-Alanine Transaminase (Irreversible)
+  ID: RE3095C
+  Name: Peroxidase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.1
+  Resolved EC: 1.11.1.7
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction 3SALATAi
-  Equation: 3-Sulfino-L-Alanine [3sala[c]] + 2-Oxoglutarate (m_out) [akg[c]] + Proton [h[c]]  ->  3-Sulfinopyruvate [3snpyr[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction RE3095C
+  Equation: Dopamine [dopa[c]] + Hydrogen Peroxide (m_out) [h2o2[c]]  ->  Dopamine O-Quinone [CE5276[c]] + 2 Water [h2o[c]]
 
-  EC: 2.6.1.1
+  EC: 1.11.1.7
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
 ============================================================
 CANDIDATE 10
 m_Sd-to-counter distance: 0 reaction(s) | cAMP-to-m_in distance: 7 reaction(s) | D1 parent rank: 1
+m_c-to-r_T_2 distance: 0 intracellular reaction(s)
 ============================================================
 SIGNAL METABOLITE MAP
   m_in     : f6p[c] | D-Fructose 6-Phosphate
@@ -2760,10 +2966,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : glu_L[c] | L-Glutamate
   m_Sd     : gln_L[c] | L-Glutamine
   m_c      : gly[c] | Glycine
-  m_Nf_1   : gthrd[c] | Reduced Glutathione
-  m_Nd_1   : cys_L[c] | L-Cysteine
-  m_Nf_2   : glu_L[c] | L-Glutamate
-  m_out    : akg[c] | 2-Oxoglutarate
+  m_Nin_1  : met_L[c] | L-Methionine
+  m_Nf_1   : amet[c] | S-Adenosyl-L-Methionine
+  m_Nd_1   : ametam[c] | S-Adenosylmethioninamine
+  m_Nf_2   : sprm[c] | Spermine
+  m_out    : bamppald[c] | Beta-Aminopropion Aldehyde
   r_Nr_1 and r_Nr_2 are removal REACTIONS; there is no m_Nr state in the supplied dynamics.
 
 ============================================================
@@ -2900,7 +3107,7 @@ r_Sf
   Resolved EC: 2.6.1.16
   EC annotation source: model.rxnECNumbers
   EC annotation reference: model reaction GF6PTA
-  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  Equation: D-Fructose 6-Phosphate (m_in) [f6p[c]] + L-Glutamine (m_Sd) [gln_L[c]]  ->  D-Glucosamine-6-Phosphate [gam6p[c]] + L-Glutamate (m_Sf) [glu_L[c]]
 
   EC: 2.6.1.16
   GPR: ( (2673) | (9945) )
@@ -2913,7 +3120,7 @@ r_Sd
   Resolved EC: 6.3.1.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLNS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + Ammonium [nh4[c]]  ->  Adenosine Diphosphate [adp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.1.2
   GPR: ( (2752) | (51557) )
@@ -2939,7 +3146,7 @@ r_I
   Resolved EC: 6.3.4.2
   EC annotation source: BiGG exact reaction-ID annotation
   EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/CTPS2
-  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
+  Equation: Adenosine Triphosphate [atp[c]] + L-Glutamine (m_Sd) [gln_L[c]] + Water [h2o[c]] + Uridine-5'-TrIphosphate (m_Fd) [utp[c]]  ->  Adenosine Diphosphate [adp[c]] + Cytidine-5'-Triphosphate [ctp[c]] + L-Glutamate (m_Sf) [glu_L[c]] + 2 Proton [h[c]] + Orthophosphate [pi[c]]
 
   EC: 6.3.4.2
   GPR: ( (1503) | (56474) )
@@ -2957,16 +3164,36 @@ TRANSPORT CONTROL: STOICHIOMETRIC EXCHANGE
   Transporter GPR: (9057)
   Transporter abundance is treated as pre-existing; no protein-path or transcription step is modeled.
 
-MEMBRANE TRANSPORT: r_T (production of m_c)
+FIRST MEMBRANE TRANSPORT: r_T (differentiator to counter; production of m_c)
   ID: r1673
   Name: Y+Lat2 Utilized Transport
   Direction: +1 relative to model.S
   Resolved EC: 
   EC annotation source: 
   EC annotation reference: 
-  EC requirement: exempt for r_T only; transporter GPR is reported separately.
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
   Equation: L-Glutamine (m_Sd) [gln_L[c]] + Glycine [gly[e]] + Sodium [na1[e]]  ->  L-Glutamine [gln_L[e]] + Glycine (m_c) [gly[c]] + Sodium [na1[c]]
 
+
+SECOND MEMBRANE TRANSPORT: r_T_2 (counter to neuron 1)
+  Intracellular path from m_c (0 reactions): gly[c]
+  Direct connection: m_c is the exported counter-substrate of r_T_2.
+r_T_2
+  ID: r1732
+  Name: Y+Lat2 Utilized Transport
+  Direction: +1 relative to model.S
+  Resolved EC: 
+  EC annotation source: 
+  EC annotation reference: 
+  EC requirement: exempt for selected r_T/r_T_2 transport role; transporter GPR is reported separately.
+  Equation: Glycine (m_c) [gly[c]] + L-Methionine [met_L[e]] + Sodium [na1[e]]  ->  Glycine [gly[e]] + L-Methionine (m_Nin_1) [met_L[c]] + Sodium [na1[c]]
+
+  Export: gly[c] -> gly[e]; stoichiometry 1
+  Import: met_L[e] -> met_L[c] (m_Nin_1); stoichiometry 1
+  Transporter GPR: (9057)
+  Transporter genes: 9057
+  Interface check: PASS. Neuron 1 consumes m_Nin_1; no direct m_c consumption by neuron reactions.
+  Model compartments are [e] and [c]; extracellular species are reservoir participants in the isolation check.
 
 COUNTER LOSS AND TWO CONSUMING NEURONS
 r_cr
@@ -2981,71 +3208,71 @@ r_cr
   EC: 3.5.1.24
 
 r_Nf_1
-  ID: GTHS
-  Name: Glutathione Synthetase
+  ID: METAT
+  Name: Methionine Adenosyltransferase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.3
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GTHS
-  Equation: Adenosine Triphosphate [atp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Glycine (m_c) [gly[c]]  ->  Adenosine Diphosphate [adp[c]] + Reduced Glutathione (m_Nf_1) [gthrd[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 1.1.1.40
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction METAT
+  Equation: Adenosine Triphosphate [atp[c]] + Water [h2o[c]] + L-Methionine (m_Nin_1) [met_L[c]]  ->  S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Orthophosphate [pi[c]] + Diphosphate [ppi[c]]
 
-  EC: 6.3.2.3
+  EC: 1.1.1.40
 
 r_Nd_1
-  ID: CYSGLTH
-  Name: Glutathione:Cystine Oxidoreductase
+  ID: ADMDC
+  Name: Adenosylmethionine Decarboxylase
   Direction: +1 relative to model.S
-  Resolved EC: 1.8.4.4
+  Resolved EC: 4.1.1.50
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSGLTH
-  Equation: L-Cystine [Lcystin[c]] + 2 Reduced Glutathione (m_Nf_1) [gthrd[c]]  ->  2 L-Cysteine (m_Nd_1) [cys_L[c]] + Glutathione Disulfide (Oxidized Glutathione) [gthox[c]]
+  EC annotation reference: model reaction ADMDC
+  Equation: S-Adenosyl-L-Methionine (m_Nf_1) [amet[c]] + Proton [h[c]]  ->  S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Carbon Dioxide [co2[c]]
 
-  EC: 1.8.4.4
+  EC: 4.1.1.50
 
 r_Nr_1
-  ID: GLUCYS
-  Name: Gamma-Glutamylcysteine Synthetase
+  ID: SPMS
+  Name: Spermidine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 6.3.2.2
-  EC annotation source: BiGG exact reaction-ID annotation
-  EC annotation reference: https://bigg.ucsd.edu/api/v2/universal/reactions/GLUCYS
-  Equation: Adenosine Triphosphate [atp[c]] + L-Cysteine (m_Nd_1) [cys_L[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  Adenosine Diphosphate [adp[c]] + Gamma-L-Glutamyl-L-Cysteine [glucys[c]] + Proton [h[c]] + Orthophosphate [pi[c]]
+  Resolved EC: 2.5.1.16
+  EC annotation source: model.rxnECNumbers
+  EC annotation reference: model reaction SPMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Putrescine [ptrc[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermidine [spmd[c]]
 
-  EC: 6.3.2.2
+  EC: 2.5.1.16
 
 r_Nf_2
-  ID: CYSTA
-  Name: Cysteine Transaminase
+  ID: SPRMS
+  Name: Spermine Synthase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.3
+  Resolved EC: 2.5.1.22
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction CYSTA
-  Equation: 2-Oxoglutarate (m_out) [akg[c]] + L-Cysteine (m_Nd_1) [cys_L[c]]  ->  L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]] + 3-Mercaptopyruvate [mercppyr[c]]
+  EC annotation reference: model reaction SPRMS
+  Equation: S-Adenosylmethioninamine (m_Nd_1) [ametam[c]] + Spermidine [spmd[c]]  ->  5-Methylthioadenosine [5mta[c]] + Proton [h[c]] + Spermine (m_Nf_2) [sprm[c]]
 
-  EC: 2.6.1.3
+  EC: 2.5.1.22
 
 r_Nd_2
-  ID: PSERT
-  Name: Phosphoserine Transaminase
+  ID: HMR_4078
+  Name: Non-Specific Polyamine Oxidase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.52
+  Resolved EC: 1.5.3.17
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction PSERT
-  Equation: 3-Phosphonatooxypyruvate [3php[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]  ->  2-Oxoglutarate (m_out) [akg[c]] + O-Phospho-L-Serine [pser_L[c]]
+  EC annotation reference: model reaction HMR_4078
+  Equation: Water [h2o[c]] + Oxygen [o2[c]] + Spermine (m_Nf_2) [sprm[c]]  ->  Beta-Aminopropion Aldehyde (m_out) [bamppald[c]] + Hydrogen Peroxide [h2o2[c]] + Spermidine [spmd[c]]
 
-  EC: 2.6.1.52
+  EC: 1.5.3.17
 
 r_Nr_2
-  ID: LCYSTAT
-  Name: L-Cysteate:2-Oxoglutarate Aminotransferase
+  ID: BAMPPALDOX
+  Name: Beta-Aminopropion Aldehyde:NAD+ Oxidoreductase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.1
+  Resolved EC: 1.2.1.36
   EC annotation source: model.rxnECNumbers
-  EC annotation reference: model reaction LCYSTAT
-  Equation: L-Cysteic Acid [Lcyst[c]] + 2-Oxoglutarate (m_out) [akg[c]]  ->  3-Sulfonatopyruvate [3spyr[c]] + L-Glutamate (m_Sf, m_Nf_2) [glu_L[c]]
+  EC annotation reference: model reaction BAMPPALDOX
+  Equation: Beta-Aminopropion Aldehyde (m_out) [bamppald[c]] + Water [h2o[c]] + Nicotinamide Adenine Dinucleotide [nad[c]]  ->  Beta-Alanine [ala_B[c]] + 2 Proton [h[c]] + Nicotinamide Adenine Dinucleotide - Reduced [nadh[c]]
 
-  EC: 2.6.1.1
+  EC: 1.2.1.36
 
-MODEL REQUIREMENTS: r_Nf consumes m_c; r_Nf_2 consumes m_Nd.
+MODEL REQUIREMENTS: r_T_2 consumes the counter-substrate; r_Nf_1 consumes imported m_Nin_1; r_Nf_2 consumes m_Nd_1.
 WARNING: no flux feasibility, kinetic differentiation, or validated transporter regulation.
 
