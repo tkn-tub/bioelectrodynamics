@@ -1,18 +1,31 @@
 BLOCK 0 -> FAST/SLOW BRANCHES -> ANDERSON CANCELLER -> CONSUMING COUNTER -> ONE CONSUMING NEURON
-Code revision: minimum_production_layers_2026_11_16.
+Code revision: direct_intracellular_consuming_neuron_chains_2026_11_16.
 Direction policy: model-bound orientations; reverse steps included only when allowReverse and the lower bound permit them.
 allowReverse=1; counterMode=consume_I; EC map is partial and source/signature checked.
-Neuron layout: m_c -> m_Nf_1 -> m_Nd_1, with m_out = m_Nd_1 and a separate removal reaction r_Nr_1.
-The single neuron consumes m_c, adding a loss term to the counter.
+Neuron layout: m_c = m_Nin_1 is consumed directly inside the counter compartment; no exporter or external input pool is required.
+The first product is m_Nf_1; optional intermediate products are m_Nmid_1_XX; the last product is m_Nd_1 = m_out. An independent r_Nr_1 removes that output.
+Neuron conversion-chain depth=2..6; state cap=2000; test cap=50000; independent output removal is required.
+Search scope: one compartment, existing bound-permitted gross reactions, EC-annotated steps, noncurrency connectors with one primitive consumed/produced copy; all side participants are retained.
+Chemical consuming paths can exist but fail isolation. I interaction, upstream reaction reuse, side-participant overlap and EC/gene conflicts remain excluded from valid neuron candidates.
+Rejected-chain diagnostics enabled=1; separate diagnostic state/test caps=500/5000. Diagnostic chains NEVER count as isolated neurons or complete circuits.
+m_out = m_Nd_1. Adapter/export interfaces and neuron-only candidates are retained independently of Block 0 completion.
+The neuron input is consumed as a substrate; transporter or enzyme activation is not inferred.
 Block 0 always starts at exact intracellular cAMP and stops at the exact m_in used by both branches.
 All substrates and products are checked for cross-talk; currency may be buffered but cannot carry a path connection.
-Block 0 shares only m_in with the complete downstream circuit; no reaction reuse, intermediate recycling or nonadjacent noncurrency overlap.
-The neuron shares only its intended input with preceding chemistry; regenerating I is excluded.
-New Block 0 and neuron roles require complete ECs. Existing canceller roles are retained with any unresolved annotations explicitly shown.
+Block 0 shares only m_in with downstream noncurrency chemistry and reuses no downstream reaction. G3P and every other selected downstream participant remain forbidden, even if net-cancelled.
+Block 0 uses a separate net-consumption/production graph that permits nonunit coefficients and balanced sharing of its own internal side intermediates. Neuron matching is unchanged.
+Each Block 0 module has positive stoichiometric weights normalized to one cAMP consumed; shared internal noncurrency intermediates cancel. All selected reactions must be substrate-reachable from cAMP, additional feeds and buffered currencies.
+A Block 0 output reachable without cAMP in the selected module is rejected. These are local stoichiometry/reachability checks, not kinetic or atom-tracing validation.
+Scope: bounded simple connector traces with balanced supports; arbitrary branched reaction sets are not exhaustively enumerated.
+16_Block0_Alternatives.csv retains parent-stage alternatives even without a neuron; full circuits recheck Block 0 against the selected neuron and transport.
+16_Block0_Coverage.csv separates qualified/structural passes, module rejections, unresolved flux solves and every cap. 16_Block0_Filter_Audit.csv summarizes first-match reaction exclusions with example IDs.
+Accepted neurons share only their intended input with preceding selected chemistry; return to selected upstream I pools is excluded. Rejected diagnostic paths are labelled separately.
+New Block 0, adapter and neuron roles require complete ECs. Existing canceller roles retain any unresolved annotations explicitly shown.
 Distinct EC assignment for controlled branch/counter/neuron/Block0 roles=1; known shared-gene rejection=1.
 An EC does not establish a protein identity, KM, kcat, first-order kinetics or independent biochemical control.
 Upstream S/F gate interfaces remain hypotheses unless their supplied evidence matches; a structural extension does not validate those controls.
-Block 0 caps: depth=12; path states=50000; expansions=100000. Neuron caps: tests/call=50000; rails/call=2000; candidate tests=100000.
+Block 0 caps: depth=20; path states=50000; expansions=100000. Neuron caps: tests/call=50000; rails/call=2000; candidate tests=100000.
+Block 0 alternatives retained per search=10; maximum gross participants/reaction=16.
 A reached budget is unresolved search coverage, not evidence of biochemical impossibility.
 
 ============================================================
@@ -41,11 +54,15 @@ A minimum applies to production alone. Longer modules may be needed to satisfy d
 SEARCH COUNTS: FOUND VERSUS PRINTED
 ============================================================
 Branch-canceller-counter parents available: 192; examined: 192.
+EC-qualified isolated neuron candidates, without requiring Block 0: 0. See 15_Transported_Neuron_Candidates.csv.
+Isolated-search path states=192; diagnostic path states=384; diagnostic budget-limited calls=0; consuming-path inventory rows=192.
+15_Consuming_Neuron_Chains.csv separates clean prefixes from flagged feedback/overlap diagnostics; 15_Isolated_Neuron_Candidates.csv contains only qualified neurons.
+15_Neuron_Chain_Coverage.csv records both search passes. A reached state, depth or test limit is incomplete coverage.
 Parents with an EC-qualified isolated cAMP-to-m_in connector: 0.
 Parents with an isolated structural connector awaiting EC qualification: 0.
 Single-neuron rails passing current policies: 0; neuron candidates tested: 0.
 Distinct complete motifs found: 0; complete motifs printed: 0.
-Limits reached: parent=0; neuron calls=0; neuron candidate tests=0; complete retention=0; parent Block0 budget-limited calls=0.
+Limits reached: parent=0; neuron calls=0; neuron candidate tests=0; complete retention=0; parent Block0 budget-limited calls=192.
 Complete counts require one neuron and a Block 0 connector rechecked against all downstream reactions and EC assignments.
 Partial parents and rejected diagnostic paths never contribute to the complete count. Printing does not determine search limits.
 No whole-cell flux, atom-transfer, thermodynamic or kinetic validation is claimed. Additional co-substrates remain required.
@@ -54,7 +71,7 @@ No whole-cell flux, atom-transfer, thermodynamic or kinetic validation is claime
 NEURON ENTRY REJECTIONS
 ============================================================
   entry_would_regenerate_I: 192
-  no_consuming_reaction_in_model: 96
+  no_consuming_reaction_in_neuron_compartment: 96
 
 No complete motif passed. Printing 10 of 192 PARTIAL parents with all known reactions and explicit missing roles.
 
@@ -79,13 +96,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -130,6 +148,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -425,14 +445,13 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Counter-consuming reactions examined (rejected entries, not neuron assignments):
+  UNASSIGNED: no accepted single-neuron extension.
 REJECTED_r_Nf_1_ENTRY
   ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
@@ -455,8 +474,45 @@ REJECTED_r_Nf_1_ENTRY
   GPR: 
   Resolved genes: 
 
-  See 14_Neuron_Entry_Audit.csv for exact feedback/overlap/EC rejection reasons.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+
+============================================================
+CONSUMING PATHS: DIAGNOSTICS, NOT ACCEPTED NEURONS
+============================================================
+These paths show model-recorded consumption. Feedback/overlap/control conflicts or missing output removal prevent their use as isolated neurons.
+  Path 1: AUXOSCSfglutth[u] -> AUXOSCfald[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=1; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCfald[u];AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh[u] + AUXOSCnadh[u] -> AUXOSCfald[u] + AUXOSCgthrd[u] + AUXOSCnad[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSFALDH
+  Name: R_formaldehyde_dehydrogenase
+  Direction: -1 relative to model.S
+  Resolved EC: 1.1.1.284;1.2.1.1
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] -> M_Formaldehyde_CH2O (m_diag_01) [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+  Path 2: AUXOSCSfglutth[u] -> AUXOSCfor[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=0; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh2o[u] -> AUXOSCfor[u] + AUXOSCgthrd[u] + AUXOSCh[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSSFGTH
+  Name: R_S_Formylglutathione_hydralase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.2.12
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/models/iCHOv1/reactions/SFGTHi
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Formate_CH1O2 (m_diag_01) [AUXOSCfor[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+Full path inventory and flags: 15_Consuming_Neuron_Chains.csv. These rows never contribute to the complete-circuit count.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
 ============================================================
@@ -480,13 +536,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -531,6 +588,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -826,14 +885,13 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Counter-consuming reactions examined (rejected entries, not neuron assignments):
+  UNASSIGNED: no accepted single-neuron extension.
 REJECTED_r_Nf_1_ENTRY
   ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
@@ -856,8 +914,45 @@ REJECTED_r_Nf_1_ENTRY
   GPR: 
   Resolved genes: 
 
-  See 14_Neuron_Entry_Audit.csv for exact feedback/overlap/EC rejection reasons.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+
+============================================================
+CONSUMING PATHS: DIAGNOSTICS, NOT ACCEPTED NEURONS
+============================================================
+These paths show model-recorded consumption. Feedback/overlap/control conflicts or missing output removal prevent their use as isolated neurons.
+  Path 1: AUXOSCSfglutth[u] -> AUXOSCfald[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=1; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCfald[u];AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh[u] + AUXOSCnadh[u] -> AUXOSCfald[u] + AUXOSCgthrd[u] + AUXOSCnad[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSFALDH
+  Name: R_formaldehyde_dehydrogenase
+  Direction: -1 relative to model.S
+  Resolved EC: 1.1.1.284;1.2.1.1
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] -> M_Formaldehyde_CH2O (m_diag_01) [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+  Path 2: AUXOSCSfglutth[u] -> AUXOSCfor[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=0; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh2o[u] -> AUXOSCfor[u] + AUXOSCgthrd[u] + AUXOSCh[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSSFGTH
+  Name: R_S_Formylglutathione_hydralase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.2.12
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/models/iCHOv1/reactions/SFGTHi
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Formate_CH1O2 (m_diag_01) [AUXOSCfor[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+Full path inventory and flags: 15_Consuming_Neuron_Chains.csv. These rows never contribute to the complete-circuit count.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
 ============================================================
@@ -881,13 +976,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -932,6 +1028,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -1227,14 +1325,13 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Counter-consuming reactions examined (rejected entries, not neuron assignments):
+  UNASSIGNED: no accepted single-neuron extension.
 REJECTED_r_Nf_1_ENTRY
   ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
@@ -1257,8 +1354,45 @@ REJECTED_r_Nf_1_ENTRY
   GPR: 
   Resolved genes: 
 
-  See 14_Neuron_Entry_Audit.csv for exact feedback/overlap/EC rejection reasons.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+
+============================================================
+CONSUMING PATHS: DIAGNOSTICS, NOT ACCEPTED NEURONS
+============================================================
+These paths show model-recorded consumption. Feedback/overlap/control conflicts or missing output removal prevent their use as isolated neurons.
+  Path 1: AUXOSCSfglutth[u] -> AUXOSCfald[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=0; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh[u] + AUXOSCnadh[u] -> AUXOSCfald[u] + AUXOSCgthrd[u] + AUXOSCnad[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSFALDH
+  Name: R_formaldehyde_dehydrogenase
+  Direction: -1 relative to model.S
+  Resolved EC: 1.1.1.284;1.2.1.1
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] -> M_Formaldehyde_CH2O (m_diag_01) [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+  Path 2: AUXOSCSfglutth[u] -> AUXOSCfor[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=1; EC/gene assignment passed=0.
+  Shared upstream states: AUXOSCfor[u];AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh2o[u] -> AUXOSCfor[u] + AUXOSCgthrd[u] + AUXOSCh[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSSFGTH
+  Name: R_S_Formylglutathione_hydralase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.2.12
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/models/iCHOv1/reactions/SFGTHi
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Formate_CH1O2 (m_diag_01) [AUXOSCfor[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+Full path inventory and flags: 15_Consuming_Neuron_Chains.csv. These rows never contribute to the complete-circuit count.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
 ============================================================
@@ -1282,13 +1416,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -1333,6 +1468,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -1628,14 +1765,13 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Counter-consuming reactions examined (rejected entries, not neuron assignments):
+  UNASSIGNED: no accepted single-neuron extension.
 REJECTED_r_Nf_1_ENTRY
   ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
@@ -1658,8 +1794,45 @@ REJECTED_r_Nf_1_ENTRY
   GPR: 
   Resolved genes: 
 
-  See 14_Neuron_Entry_Audit.csv for exact feedback/overlap/EC rejection reasons.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+
+============================================================
+CONSUMING PATHS: DIAGNOSTICS, NOT ACCEPTED NEURONS
+============================================================
+These paths show model-recorded consumption. Feedback/overlap/control conflicts or missing output removal prevent their use as isolated neurons.
+  Path 1: AUXOSCSfglutth[u] -> AUXOSCfald[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=0; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh[u] + AUXOSCnadh[u] -> AUXOSCfald[u] + AUXOSCgthrd[u] + AUXOSCnad[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSFALDH
+  Name: R_formaldehyde_dehydrogenase
+  Direction: -1 relative to model.S
+  Resolved EC: 1.1.1.284;1.2.1.1
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] -> M_Formaldehyde_CH2O (m_diag_01) [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+  Path 2: AUXOSCSfglutth[u] -> AUXOSCfor[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=1; EC/gene assignment passed=0.
+  Shared upstream states: AUXOSCfor[u];AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh2o[u] -> AUXOSCfor[u] + AUXOSCgthrd[u] + AUXOSCh[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSSFGTH
+  Name: R_S_Formylglutathione_hydralase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.2.12
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/models/iCHOv1/reactions/SFGTHi
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Formate_CH1O2 (m_diag_01) [AUXOSCfor[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+Full path inventory and flags: 15_Consuming_Neuron_Chains.csv. These rows never contribute to the complete-circuit count.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
 ============================================================
@@ -1683,13 +1856,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -1734,6 +1908,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -2029,15 +2205,14 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Bottleneck: the counter product has no intracellular consuming reaction in this model.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+  UNASSIGNED: no accepted single-neuron extension.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
 ============================================================
@@ -2061,13 +2236,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -2112,6 +2288,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -2407,15 +2585,14 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Bottleneck: the counter product has no intracellular consuming reaction in this model.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+  UNASSIGNED: no accepted single-neuron extension.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
 ============================================================
@@ -2439,13 +2616,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -2490,6 +2668,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -2785,15 +2965,14 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Bottleneck: the counter product has no intracellular consuming reaction in this model.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+  UNASSIGNED: no accepted single-neuron extension.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
 ============================================================
@@ -2817,13 +2996,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -2868,6 +3048,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -3163,15 +3345,14 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Bottleneck: the counter product has no intracellular consuming reaction in this model.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+  UNASSIGNED: no accepted single-neuron extension.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
 ============================================================
@@ -3195,13 +3376,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -3246,6 +3428,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -3541,14 +3725,13 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Counter-consuming reactions examined (rejected entries, not neuron assignments):
+  UNASSIGNED: no accepted single-neuron extension.
 REJECTED_r_Nf_1_ENTRY
   ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
@@ -3571,8 +3754,45 @@ REJECTED_r_Nf_1_ENTRY
   GPR: 
   Resolved genes: 
 
-  See 14_Neuron_Entry_Audit.csv for exact feedback/overlap/EC rejection reasons.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+
+============================================================
+CONSUMING PATHS: DIAGNOSTICS, NOT ACCEPTED NEURONS
+============================================================
+These paths show model-recorded consumption. Feedback/overlap/control conflicts or missing output removal prevent their use as isolated neurons.
+  Path 1: AUXOSCSfglutth[u] -> AUXOSCfald[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=1; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCfald[u];AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh[u] + AUXOSCnadh[u] -> AUXOSCfald[u] + AUXOSCgthrd[u] + AUXOSCnad[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSFALDH
+  Name: R_formaldehyde_dehydrogenase
+  Direction: -1 relative to model.S
+  Resolved EC: 1.1.1.284;1.2.1.1
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] -> M_Formaldehyde_CH2O (m_diag_01) [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+  Path 2: AUXOSCSfglutth[u] -> AUXOSCfor[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=0; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh2o[u] -> AUXOSCfor[u] + AUXOSCgthrd[u] + AUXOSCh[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSSFGTH
+  Name: R_S_Formylglutathione_hydralase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.2.12
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/models/iCHOv1/reactions/SFGTHi
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Formate_CH1O2 (m_diag_01) [AUXOSCfor[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+Full path inventory and flags: 15_Consuming_Neuron_Chains.csv. These rows never contribute to the complete-circuit count.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
 ============================================================
@@ -3596,13 +3816,14 @@ SIGNAL METABOLITE MAP
 ============================================================
 BLOCK 0: cAMP TO m_in
 ============================================================
-  Connection status: no_isolated_path_within_configured_search
+  Connection status: no_accepted_Block0_disconnected_after_downstream_and_annotation_filters
+  Search termination: disconnected_after_downstream_and_annotation_filters
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
   No isolated cAMP-to-m_in connector accepted within the configured search.
-  Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
   Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
   Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
 r_CAMP_DIAGNOSTIC_1
   ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
@@ -3647,6 +3868,8 @@ r_CAMP_DIAGNOSTIC_4
   GPR: 
   Resolved genes: 
 
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
 
 ============================================================
 FAST AND SLOW BRANCHES (SIX REACTIONS)
@@ -3942,14 +4165,13 @@ r_c
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
   UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
-  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
 r_Nf_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nd_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
+  UNASSIGNED: no accepted single-neuron extension.
 r_Nr_1
-  UNASSIGNED: no accepted consuming single-neuron extension.
-  Counter-consuming reactions examined (rejected entries, not neuron assignments):
+  UNASSIGNED: no accepted single-neuron extension.
 REJECTED_r_Nf_1_ENTRY
   ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
@@ -3972,6 +4194,43 @@ REJECTED_r_Nf_1_ENTRY
   GPR: 
   Resolved genes: 
 
-  See 14_Neuron_Entry_Audit.csv for exact feedback/overlap/EC rejection reasons.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+
+============================================================
+CONSUMING PATHS: DIAGNOSTICS, NOT ACCEPTED NEURONS
+============================================================
+These paths show model-recorded consumption. Feedback/overlap/control conflicts or missing output removal prevent their use as isolated neurons.
+  Path 1: AUXOSCSfglutth[u] -> AUXOSCfald[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=1; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCfald[u];AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh[u] + AUXOSCnadh[u] -> AUXOSCfald[u] + AUXOSCgthrd[u] + AUXOSCnad[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSFALDH
+  Name: R_formaldehyde_dehydrogenase
+  Direction: -1 relative to model.S
+  Resolved EC: 1.1.1.284;1.2.1.1
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] -> M_Formaldehyde_CH2O (m_diag_01) [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+  Path 2: AUXOSCSfglutth[u] -> AUXOSCfor[u] | diagnostic_feedback_overlap_or_control_conflict
+  Conversions=1; net m_c/input change=-1; net I change=1; I interaction=1; upstream reaction reuse=0; EC/gene assignment passed=1.
+  Shared upstream states: AUXOSCgthrd[u]
+  Repeated nonadjacent states: 
+  Net path equation: AUXOSCSfglutth[u] + AUXOSCh2o[u] -> AUXOSCfor[u] + AUXOSCgthrd[u] + AUXOSCh[u]
+DIAGNOSTIC_r_Npath_01
+  ID: AUXOSSFGTH
+  Name: R_S_Formylglutathione_hydralase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.2.12
+  EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/models/iCHOv1/reactions/SFGTHi
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Formate_CH1O2 (m_diag_01) [AUXOSCfor[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+Full path inventory and flags: 15_Consuming_Neuron_Chains.csv. These rows never contribute to the complete-circuit count.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.

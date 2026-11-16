@@ -7,6 +7,11 @@ function results = A_Master(modelInput, userOptions)
 %   R = A_Master(model, struct('productionMode',"single_reaction"));
 %   R = A_Master(model, struct('productionMinimumOnly',true));
 %   A_Master('selftest') % no COBRA/model/network needed
+%   R = A_Master(model, struct('block0MaxAlternatives',10,'block0MaxDepth',20));
+% Block 0 enumerates alternative balanced cAMP-to-m_in modules. It permits
+% nonunit stoichiometry and shared INTERNAL intermediates, while excluding
+% every downstream noncurrency participant except the intended m_in output.
+% Alternative enumeration is bounded; a zero count is not an impossibility proof.
 %
 % Target architecture:
 %   S controls a membrane protein (evidence separate from stoichiometry)
@@ -45,7 +50,21 @@ function results = A_Master(modelInput, userOptions)
 % Formation-only accumulators and counters with a separate C-removal step
 % are reported separately. C-removal must not regenerate I.
 % Optional counterMode="membrane" retains the earlier I-gated cargo search.
-% Step 2: one consuming neuron (C -> Nf1 -> Nd1, plus Nd1 removal),
+% Step 2 default: the neuron consumes m_c directly in its inside compartment.
+% Search 2..neuronChainMaxDepth conversion steps plus an independent output
+% removal. All selected reactions and intermediate metabolites are reported.
+% Rejected consuming chains are reported as DIAGNOSTICS ONLY, separately
+% from isolated neuron candidates; I-feedback checks are never bypassed.
+% neuronPlacement="outside" retains the optional adapter/export search.
+% Up to neuronAdapterMaxDepth intracellular conversions may first turn m_c
+% into an exportable m_exp. Adapter paths retain every co-participant and
+% need EC evidence, distinct controlled-role ECs and full isolation from I.
+% A zero-step adapter retains the original direct-export possibility.
+% Extracellular I is allowed only when it has no selected upstream pool
+% overlap; external GSH feeding the existing I importer is rejected.
+% Only model-recorded export and extracellular reactions are searched;
+% no extracellular species, transporter or enzyme relocation is invented.
+% One consuming neuron (m_Nin_1 -> Nf1 -> Nd1, plus Nd1 removal),
 % with output m_out = m_Nd_1. A constrained Block 0 starts at
 % exact intracellular cAMP and ends at branch input m_in. Every added
 % metabolic step requires an EC. Reports distinguish partial from complete.
@@ -124,6 +143,17 @@ function results = A_Master(modelInput, userOptions)
 % MINIMUM PRODUCTION: 02_Production_Depth_Coverage.csv;
 % 02_Minimum_Production_Modules.csv; 03_Minimum_Import_Production_Pairs.csv;
 % Minimum_Production_Report.txt. The importer is not counted as a core step.
+% EXTERNAL NEURON: 14_Neuron_Export_Audit.csv;
+% 15_Transported_Neuron_Candidates.csv; 16_Neuron_Compartment_Audit.csv.
+% Export and neuron-only matches are separate from complete Block0 circuits.
+% DIRECT CONSUMPTION: 15_Consuming_Neuron_Chains.csv records actual model
+% paths, including clearly flagged feedback diagnostics. Only
+% 15_Isolated_Neuron_Candidates.csv contributes isolated neuron candidates.
+% 15_Neuron_Chain_Coverage.csv records separate clean/diagnostic budgets.
+% ADAPTER: 14_Counter_Adapter_Audit.csv; 14_Counter_Adapter_Coverage.csv;
+% 14_Counter_Adapter_Export_Links.csv. m_A1, m_A2, ... label adapter
+% intermediates, m_exp is the final intracellular export cargo, and r_A_N1_XX
+% identify the connecting reactions. No I-return relaxation is applied.
 % Each pair reports transporter ID, I_out/I_in, R1 ID/direction, gross
 % equation, module equation, X substrates, W products, atom/gate status.
 % Step_2_Results.txt includes upstream counts and the first empty stage.
@@ -401,7 +431,7 @@ end
 % Extend current consuming-counter parents; preserve existing search stages.
 [step2EC,step2ECAudit]=resolveStep2EC(model,baseMet,counterEC,codeRoot,cfg);
 circuitContext=struct('model',model,'base',baseMet,'comp',comp,'currency',currency, ...
-    'R',Rgross,'P',Pgross,'O',oriented,'T',transport,'C',connected,'D',details, ...
+    'R',Rgross,'P',Pgross,'grossKnown',grossKnown,'O',oriented,'T',transport,'C',connected,'D',details, ...
     'cores',cores,'L',linearRemoval,'Q',quadraticRemoval,'M',branchModules, ...
     'rails',branchRails,'X',counterConnections,'F',counterComponents,'Y',counterWiring, ...
     'XP',{counterConnectionParts},'E',step2EC);
@@ -423,11 +453,23 @@ upstreamCoverage=cellTable({ ...
 circuitContext.upstreamCoverage=upstreamCoverage;
 circuitContext.productionCoverage=statsTable;
 circuitContext.directProductionAudit=directProductionAudit;
-step2=searchStep2Circuit(circuitContext,cfg);
+[step2,circuitContext]=searchStep2Circuit(circuitContext,cfg);
 writetable(upstreamCoverage,fullfile(cfg.outputDir,'12_Upstream_Search_Coverage.csv'));
 writetable(step2ECAudit,fullfile(cfg.outputDir,'12_Step2_EC_Annotation_Audit.csv'));
 writetable(step2.parents,fullfile(cfg.outputDir,'13_Step2_Parent_Coverage.csv'));
 writetable(step2.entryAudit,fullfile(cfg.outputDir,'14_Neuron_Entry_Audit.csv'));
+writetable(step2.transportAudit,fullfile(cfg.outputDir,'14_Neuron_Export_Audit.csv'));
+writetable(step2.adapterAudit,fullfile(cfg.outputDir,'14_Counter_Adapter_Audit.csv'));
+writetable(step2.adapterCoverage,fullfile(cfg.outputDir,'14_Counter_Adapter_Coverage.csv'));
+writetable(step2.adapterLinks,fullfile(cfg.outputDir,'14_Counter_Adapter_Export_Links.csv'));
+writetable(step2.neuronCandidates,fullfile(cfg.outputDir,'15_Transported_Neuron_Candidates.csv'));
+writetable(step2.neuronCandidates,fullfile(cfg.outputDir,'15_Isolated_Neuron_Candidates.csv'));
+writetable(step2.consumingChains,fullfile(cfg.outputDir,'15_Consuming_Neuron_Chains.csv'));
+writetable(step2.chainCoverage,fullfile(cfg.outputDir,'15_Neuron_Chain_Coverage.csv'));
+writetable(step2.compartmentAudit,fullfile(cfg.outputDir,'16_Neuron_Compartment_Audit.csv'));
+writetable(step2.block0Alternatives,fullfile(cfg.outputDir,'16_Block0_Alternatives.csv'));
+writetable(step2.block0Coverage,fullfile(cfg.outputDir,'16_Block0_Coverage.csv'));
+writetable(step2.block0FilterAudit,fullfile(cfg.outputDir,'16_Block0_Filter_Audit.csv'));
 writetable(step2.complete,fullfile(cfg.outputDir,'15_Complete_Step2_Circuits.csv'));
 writeStep2Report(fullfile(cfg.outputDir,'Step_2_Results.txt'),step2,circuitContext,cfg);
 
@@ -545,10 +587,18 @@ cfg = struct('outputDir',fullfile(pwd,'Anderson_Transport_Production_Results'), 
     'counterMaxConnectionTests',200000,'counterMaxConnections',10000, ...
     'counterMaxWiringTests',200000,'counterMaxWiring',20000, ...
     'connectStep2',true,'step2UseVerifiedSeedMap',true,'step2ECFile','Step2_EC_Evidence.tsv', ...
+    'neuronPlacement',"inside",'neuronCompartment',"auto", ...
+    'neuronChainMinDepth',2,'neuronChainMaxDepth',6,'neuronChainMaxStates',2000, ...
+    'neuronDiagnoseRejectedChains',true,'neuronDiagnosticMaxStates',500, ...
+    'neuronDiagnosticMaxTests',5000,'neuronChainPrintTop',3, ...
+    'neuronTransportRequireGPR',false,'neuronTransportMaxTests',100000, ...
+    'neuronTransportMaxLinksPerParent',1000, ...
+    'neuronAdapterMaxDepth',3,'neuronAdapterMaxStates',2000,'neuronAdapterMaxExpansions',20000, ...
     'step2DistinctECs',true,'step2PrintTop',10,'step2PrintPartialWhenEmpty',true, ...
     'step2MaxParents',1000,'step2MaxParticipants',16,'neuronMaxTestsPerRail',50000, ...
     'neuronMaxRails',2000,'step2MaxNeuronTests',100000,'step2MaxCompleteMotifs',1000, ...
-    'block0MaxDepth',12,'block0MaxStates',50000,'block0MaxExpansions',100000, ...
+    'block0MaxDepth',20,'block0MaxStates',50000,'block0MaxExpansions',100000, ...
+    'block0MaxAlternatives',10,'block0MaxParticipants',16, ...
     'currencyBaseIDs',block0DefaultCurrencyIDs());
 end
 
@@ -560,12 +610,25 @@ for key={'maxCoreReactions','maxStatesPerI','printTop','maxECLookups','maxProduc
         'counterMaxComponents','counterMaxConnectionTests','counterMaxConnections', ...
         'counterMaxWiringTests','counterMaxWiring','step2PrintTop','step2MaxParents', ...
         'step2MaxParticipants','neuronMaxTestsPerRail','neuronMaxRails','step2MaxNeuronTests', ...
-        'step2MaxCompleteMotifs','block0MaxDepth','block0MaxStates','block0MaxExpansions'}
+        'step2MaxCompleteMotifs','block0MaxDepth','block0MaxStates','block0MaxExpansions', ...
+        'block0MaxAlternatives','block0MaxParticipants', ...
+        'neuronTransportMaxTests','neuronTransportMaxLinksPerParent', ...
+        'neuronAdapterMaxStates','neuronAdapterMaxExpansions','neuronChainMinDepth', ...
+        'neuronChainMaxDepth','neuronChainMaxStates','neuronDiagnosticMaxStates', ...
+        'neuronDiagnosticMaxTests','neuronChainPrintTop'}
     x=c.(key{1});
     assert(isnumeric(x) && isscalar(x) && x>=1 && (isinf(x)||x==floor(x)), ...
         'Anderson:Option','%s must be a positive integer or Inf.',key{1});
 end
 assert(isfinite(c.maxCoreReactions),'Anderson:Depth','maxCoreReactions must be finite.');
+assert(isfinite(c.block0MaxDepth),'Anderson:Block0Depth','block0MaxDepth must be finite.');
+assert(isfinite(c.neuronChainMaxDepth)&&c.neuronChainMinDepth>=2 ...
+    &&c.neuronChainMinDepth<=c.neuronChainMaxDepth,'Anderson:NeuronDepth', ...
+    'Neuron conversion depths must satisfy 2 <= neuronChainMinDepth <= finite neuronChainMaxDepth.');
+assert(isnumeric(c.neuronAdapterMaxDepth)&&isscalar(c.neuronAdapterMaxDepth) ...
+    &&isfinite(c.neuronAdapterMaxDepth)&&c.neuronAdapterMaxDepth>=0 ...
+    &&c.neuronAdapterMaxDepth==floor(c.neuronAdapterMaxDepth), ...
+    'Anderson:AdapterDepth','neuronAdapterMaxDepth must be a nonnegative finite integer.');
 assert(~isempty(string(c.insideCompartment)) && isscalar(string(c.outsideCompartment)) ...
     && all(string(c.insideCompartment(:))~=string(c.outsideCompartment)),'Anderson:Compartments', ...
     'Inside labels must be nonempty and distinct from the outside compartment.');
@@ -578,7 +641,8 @@ for key={'allowReverse','requireTransportGPR','requireCoreEC','onlineEC', ...
         'counterRequireIsolation','counterDistinctECFromBranches','counterRequireBoundaryFeed', ...
         'counterRequireFormationEC','counterRequireRemoval','connectStep2','step2UseVerifiedSeedMap', ...
         'step2DistinctECs','step2PrintPartialWhenEmpty','rejectAtomImbalancedProduction', ...
-        'requireResolvedProductionAtomBalance','productionMinimumOnly'}
+        'requireResolvedProductionAtomBalance','productionMinimumOnly','neuronTransportRequireGPR', ...
+        'neuronDiagnoseRejectedChains'}
     assert(islogical(c.(key{1})) && isscalar(c.(key{1})), ...
         'Anderson:Flag','%s must be a logical scalar.',key{1});
 end
@@ -586,6 +650,15 @@ assert(isscalar(string(c.counterMode))&&ismember(string(c.counterMode),["consume
     'Anderson:CounterMode','counterMode must be consume_I or membrane.');
 assert(isscalar(string(c.productionMode))&&ismember(string(c.productionMode),["single_reaction","multi_reaction"]), ...
     'Anderson:ProductionMode','productionMode must be single_reaction or multi_reaction.');
+assert(isscalar(string(c.neuronPlacement))&&ismember(string(c.neuronPlacement),["outside","inside"]), ...
+    'Anderson:NeuronPlacement','neuronPlacement must be outside or inside.');
+assert(isscalar(string(c.neuronCompartment))&&strlength(string(c.neuronCompartment))>0, ...
+    'Anderson:NeuronCompartment','neuronCompartment must be one compartment label or auto.');
+if c.neuronPlacement=="outside"
+    target=step2NeuronCompartment(c);
+    assert(~ismember(target,string(c.insideCompartment)), ...
+        'Anderson:NeuronCompartment','The outside neuron compartment must differ from every inside compartment.');
+end
 end
 
 function root = addCodeParent()
@@ -1387,7 +1460,9 @@ valid=true;
 end
 
 function [v,solved] = positiveFlux(A,b)
-% Exact accounting: sum gross I consumption=1, gross I production=2.
+% Solve the caller's exact positive-flux accounting constraints A*v=b.
+% Production uses gross I consumption=1/production=2; Block 0 instead
+% fixes cAMP consumption=1 and balances its shared internal intermediates.
 % Use the unique linear solution where possible, else LP. Flux multipliers
 % are stoichiometric weights, NOT physiological rates or fitted constants.
 tol=1e-8; n=size(A,2); v=[];solved=true;
@@ -2500,6 +2575,251 @@ rows={ ...
 T=cellTable(rows,{'SourceReactionID','EC','ChemicalSignature','Reference'},repmat({'string'},1,4));
 end
 
+function target = step2NeuronCompartment(cfg)
+target=string(cfg.neuronCompartment);
+if target=="auto",target=string(cfg.outsideCompartment);end
+end
+
+function [ctx,A] = prepareStep2NeuronCompartment(ctx,cfg)
+% Append actual outside-only orientations. Preserve every upstream O index.
+rows=cell(0,5);
+if cfg.neuronPlacement=="outside"
+    target=step2NeuronCompartment(cfg);tol=1e-8;
+    assert(~ismember(target,string(cfg.insideCompartment)), ...
+        'Anderson:NeuronCompartment','The neuron must be outside the upstream inside compartments.');
+    for j=1:numel(ctx.model.rxns)
+        parts=find(ctx.R(:,j)+ctx.P(:,j)>tol);
+        if ~any(ctx.comp(parts)==target),continue;end
+        dirs=[];if ctx.model.ub(j)>0,dirs=1;end
+        if cfg.allowReverse&&ctx.model.lb(j)<0,dirs=[dirs -1];end %#ok<AGROW>
+        for direction=dirs
+            a=ctx.R(:,j);b=ctx.P(:,j);if direction<0,tmp=a;a=b;b=tmp;end
+            status="outside_reaction_crosses_compartments";
+            if all(ctx.comp(parts)==target)
+                status="outside_reaction_has_no_conversion_products";
+                if any(a>tol)&&any(b>tol)
+                    status="outside_orientation_admitted";
+                    if ~any(ctx.O.rxn==j&ctx.O.direction==direction)
+                        o=numel(ctx.O.rxn)+1;
+                        ctx.O.rxn(o)=j;ctx.O.direction(o)=direction;
+                        ctx.O.R(:,o)=a;ctx.O.P(:,o)=b;ctx.O.N(:,o)=b-a;
+                        known=false;
+                        if isfield(ctx,'grossKnown'),known=ctx.grossKnown(j);end
+                        ctx.O.grossKnown(o)=known;
+                        for i=reshape(find(a>tol),1,[]),ctx.O.consumers{i}(end+1)=o;end
+                    end
+                end
+            end
+            rows(end+1,:)={string(ctx.model.rxns{j}),direction,target, ...
+                joinText(unique(ctx.comp(parts)),';'),status}; %#ok<AGROW>
+        end
+    end
+end
+A=cellTable(rows,{'ReactionID','Direction','NeuronCompartment','ParticipantCompartments','Status'}, ...
+    {'string','double','string','string','string'});
+end
+
+function link = makeStep2ExportLink(rx,direction,counter,input,parts,coefficient,reverseAllowed)
+link=struct('rx',rx,'direction',direction,'counter',counter,'input',input,'parts',parts, ...
+    'cargoCoefficient',coefficient,'reverseAllowed',reverseAllowed,'cargo',counter, ...
+    'adapterO',[],'adapterMets',counter,'adapterRx',[],'adapterFlux',[],'adapterParts',[]);
+end
+
+function links = emptyStep2Exports()
+link=makeStep2ExportLink(0,0,0,0,[],0,false);links=link([]);
+end
+
+function A = step2ExportAuditTable(rows)
+A=cellTable(rows,{'ParentID','ExportCargoID','TargetCompartment','ReactionID','Direction', ...
+    'NeuronInputID','HasGPR','ReverseAllowed','ExportCoefficient','ImportCoefficient', ...
+    'SharedNoncurrency','Status','Equation'}, ...
+    {'double','string','string','string','double','string','logical','logical', ...
+    'double','double','string','string','string'});
+end
+
+function [links,A,stats] = findStep2Exports(parent,counter,seed,prefixRx,prefixParts,ctx,cfg)
+% True export: same canonical chemical, different existing compartment state.
+% This function never relabels a conversion or an exchange sink as transport.
+links=emptyStep2Exports();rows=cell(0,13);tol=1e-8;
+stats=struct('tests',0,'testLimitReached',false,'linkLimitReached',false);
+target=step2NeuronCompartment(cfg);outside=find(ctx.base==ctx.base(counter)&ctx.comp==target);
+if isempty(outside)
+    rows={parent,string(ctx.model.mets{counter}),target,"",0,"",false,false,NaN,NaN,"", ...
+        "no_matching_counter_state_in_target_compartment",""};
+    A=step2ExportAuditTable(rows);return;
+end
+stop=false;
+for j=reshape(find(ctx.R(counter,:)+ctx.P(counter,:)>tol),1,[])
+    dirs=[];if ctx.model.ub(j)>0,dirs=1;end
+    if cfg.allowReverse&&ctx.model.lb(j)<0,dirs=[dirs -1];end %#ok<AGROW>
+    for direction=dirs
+        if stats.tests>=cfg.neuronTransportMaxTests,stats.testLimitReached=true;stop=true;break;end
+        stats.tests=stats.tests+1;a=ctx.R(:,j);b=ctx.P(:,j);
+        if direction<0,tmp=a;a=b;b=tmp;end
+        net=b-a;parts=find(a+b>tol);cargo=outside(net(outside)>tol);
+        input=0;ci=NaN;if numel(cargo)==1,input=cargo;ci=full(net(input));end
+        ce=-full(net(counter));shared=step2Overlap(parts,prefixParts,counter,ctx.currency);
+        [gpr,~,~]=decodeGPR(string(ctx.model.grRules{j}),string(ctx.model.rules{j}),string(ctx.model.genes));
+        reverseAllowed=(direction==1&&cfg.allowReverse&&ctx.model.lb(j)<0) ...
+            ||(direction==-1&&ctx.model.ub(j)>0);
+        status="accepted_counter_export";
+        if ismember(j,prefixRx),status="export_reuses_upstream_reaction";
+        elseif ce<=tol||b(counter)>tol,status="reaction_does_not_export_counter";
+        elseif numel(cargo)~=1,status="no_unique_same_chemical_external_product";
+        elseif abs(ce-ci)>tol*max([1 ce ci])||a(input)>tol,status="cargo_copies_not_conserved";
+        elseif any(~ismember(ctx.comp(parts),[ctx.comp(counter);target]))
+            status="export_crosses_an_additional_compartment";
+        elseif any(ctx.base(parts)==ctx.base(counter)&~ismember(parts,[counter;input]))
+            status="export_has_additional_counter_pools";
+        elseif any(ctx.base(parts)==ctx.base(seed)),status="export_itself_couples_to_I";
+        elseif ~isempty(shared),status="export_shares_other_upstream_noncurrency_states";
+        elseif cfg.neuronTransportRequireGPR&&strlength(gpr)==0,status="export_GPR_required_but_missing";
+        elseif ~step2TransportGenesOK(j,prefixRx,ctx,cfg),status="export_shares_known_upstream_genes";
+        end
+        inputID="";if input>0,inputID=string(ctx.model.mets{input});end
+        rows(end+1,:)={parent,string(ctx.model.mets{counter}),target,string(ctx.model.rxns{j}), ...
+            direction,inputID,strlength(gpr)>0,reverseAllowed,ce,ci, ...
+            joinText(string(ctx.model.mets(shared)),';'),status,equation(a,b,ctx.model)}; %#ok<AGROW>
+        if status~="accepted_counter_export",continue;end
+        links(end+1)=makeStep2ExportLink(j,direction,counter,input,parts,ce,reverseAllowed); %#ok<AGROW>
+        if numel(links)>=cfg.neuronTransportMaxLinksPerParent,stats.linkLimitReached=true;stop=true;break;end
+    end
+    if stop,break;end
+end
+if isempty(rows)
+    rows={parent,string(ctx.model.mets{counter}),target,"",0,"",false,false,NaN,NaN,"", ...
+        "no_bound_allowed_counter_reaction",""};
+end
+A=step2ExportAuditTable(rows);
+end
+
+function A = step2AdapterAuditTable(rows)
+A=cellTable(rows,{'ParentID','AdapterDepth','FromID','ToID','ReactionID','Direction', ...
+    'ECResolved','SharedUpstream','SharedAdapter','IStateIDs','Status'}, ...
+    {'double','double','string','string','string','double','logical','string','string','string','string'});
+end
+
+function [links,TA,AA,stats] = findStep2AdapterExports(parent,counter,seed,prefixRx,prefixParts,control,ctx,G,cfg)
+% Breadth-first path STATES preserve full side-participant history. Each
+% adapter stays in the counter compartment; only the existing exporter crosses
+% the membrane. The exported species need not be the original m_c chemical.
+links=emptyStep2Exports();TA=step2ExportAuditTable(cell(0,13));rows=cell(0,11);
+stats=struct('tests',0,'testLimitReached',false,'linkLimitReached',false,'states',0, ...
+    'expansions',0,'stateLimitReached',false,'expansionLimitReached',false, ...
+    'depthLimitReached',false,'maxDepthReached',0);
+queue=struct('node',counter,'path',[],'mets',counter,'parts',[]);head=1;tol=1e-8;
+seen=containers.Map('KeyType','char','ValueType','logical');stop=false;O=ctx.O;
+while head<=numel(queue)
+    if stats.states>=cfg.neuronAdapterMaxStates,stats.stateLimitReached=true;break;end
+    state=queue(head);head=head+1;stats.states=stats.states+1;depth=numel(state.path);
+    stats.maxDepthReached=max(stats.maxDepthReached,depth);
+    adapterRx=O.rxn(state.path);fullRx=unique([prefixRx adapterRx],'stable');
+    fullParts=union(prefixParts,state.parts);
+    remaining=cfg.neuronTransportMaxTests-stats.tests;
+    if remaining<=0,stats.testLimitReached=true;break;end
+    localCfg=cfg;localCfg.neuronTransportMaxTests=remaining;
+    localCfg.neuronTransportMaxLinksPerParent=cfg.neuronTransportMaxLinksPerParent-numel(links);
+    [found,a,ts]=findStep2Exports(parent,state.node,seed,fullRx,fullParts,ctx,localCfg);
+    TA=[TA;a];stats.tests=stats.tests+ts.tests; %#ok<AGROW>
+    stats.testLimitReached=stats.testLimitReached||ts.testLimitReached;
+    for k=1:numel(found)
+        found(k).counter=counter;found(k).cargo=state.node;
+        found(k).adapterO=state.path;found(k).adapterMets=state.mets;
+        found(k).adapterRx=adapterRx;found(k).adapterFlux=G.scale(state.path);
+        found(k).adapterParts=state.parts;found(k).parts=union(found(k).parts,state.parts);
+        links(end+1)=found(k); %#ok<AGROW>
+    end
+    if numel(links)>=cfg.neuronTransportMaxLinksPerParent,stats.linkLimitReached=true;break;end
+    if stats.testLimitReached,break;end
+    if depth>=cfg.neuronAdapterMaxDepth
+        stats.depthLimitReached=stats.depthLimitReached||~isempty(O.consumers{state.node});continue;
+    end
+    allowed=[];if depth==0,allowed=counter;end
+    for o=reshape(O.consumers{state.node},1,[])
+        if stats.expansions>=cfg.neuronAdapterMaxExpansions
+            stats.expansionLimitReached=true;stop=true;break;
+        end
+        stats.expansions=stats.expansions+1;j=O.rxn(o);parts=G.parts{o};
+        sharedUp=step2Overlap(parts,prefixParts,allowed,ctx.currency);
+        sharedPath=step2Overlap(parts,state.parts,state.node,ctx.currency);
+        iParts=parts(ctx.base(parts)==ctx.base(seed));
+        edges=G.byFrom{state.node};edges=edges(G.o(edges)==o);
+        status="accepted_adapter_step";
+        if ismember(j,fullRx),status="adapter_reuses_upstream_or_adapter_reaction";
+        elseif any(ctx.comp(parts)~=ctx.comp(counter)),status="adapter_leaves_counter_compartment";
+        elseif step2NeuronIForbidden(parts,seed,prefixParts,ctx,cfg),status="adapter_couples_to_I_pool";
+        elseif ~isempty(sharedUp),status="adapter_shares_other_upstream_noncurrency_states";
+        elseif ~isempty(sharedPath),status="adapter_reuses_nonadjacent_noncurrency_state";
+        elseif ~G.eligible(o),status="adapter_gross_primitive_or_size_policy_failed";
+        elseif ~G.ecKnown(o),status="adapter_EC_unresolved";
+        elseif isempty(edges),status="adapter_not_a_unit_consuming_conversion";
+        else
+            [~,ok]=step2AssignEC([control adapterRx j],ctx,cfg);
+            if ~ok,status="adapter_EC_or_known_gene_assignment_conflict";end
+        end
+        if status~="accepted_adapter_step"
+            rows(end+1,:)={parent,depth+1,string(ctx.model.mets{state.node}),"", ...
+                string(ctx.model.rxns{j}),O.direction(o),G.ecKnown(o), ...
+                joinText(string(ctx.model.mets(sharedUp)),';'),joinText(string(ctx.model.mets(sharedPath)),';'), ...
+                joinText(string(ctx.model.mets(iParts)),';'),status}; %#ok<AGROW>
+            continue;
+        end
+        for e=reshape(edges,1,[])
+            node=G.to(e);chosen=[state.path o];key=sprintf('%d,',[node sort(chosen)]);
+            reason="accepted_adapter_step";
+            if isKey(seen,key),reason="duplicate_adapter_state";
+            elseif numel(queue)>=cfg.neuronAdapterMaxStates
+                reason="adapter_state_retention_budget_reached";stats.stateLimitReached=true;
+            else
+                seen(key)=true;queue(end+1)=struct('node',node,'path',chosen, ...
+                    'mets',[state.mets node],'parts',union(state.parts,parts)); %#ok<AGROW>
+            end
+            rows(end+1,:)={parent,depth+1,string(ctx.model.mets{state.node}),string(ctx.model.mets{node}), ...
+                string(ctx.model.rxns{j}),O.direction(o),G.ecKnown(o),"","", ...
+                joinText(string(ctx.model.mets(iParts)),';'),reason}; %#ok<AGROW>
+        end
+    end
+    if stop,break;end
+end
+AA=step2AdapterAuditTable(rows);
+end
+
+function T = describeStep2AdapterLinks(links,parents,ctx)
+rows=cell(0,12);
+for k=1:numel(links)
+    v=links(k);rows(end+1,:)={k,parents(k),string(ctx.model.mets{v.counter}), ...
+        string(ctx.model.mets{v.cargo}),string(ctx.model.mets{v.input}),numel(v.adapterO), ...
+        joinText(string(ctx.model.rxns(v.adapterRx)),';'),joinText(string(ctx.O.direction(v.adapterO)),';'), ...
+        joinText(string(ctx.model.mets(v.adapterMets)),' -> '),string(ctx.model.rxns{v.rx}), ...
+        v.direction,v.reverseAllowed}; %#ok<AGROW>
+end
+T=cellTable(rows,{'InterfaceID','ParentID','CounterID','ExportCargoID','NeuronInputID', ...
+    'AdapterReactionCount','AdapterReactionIDs','AdapterDirections','AdapterMetabolitePath', ...
+    'ExportReactionID','ExportDirection','ExportReverseAllowed'}, ...
+    {'double','double','string','string','string','double','string','string','string','string','double','logical'});
+end
+
+function ok = step2TransportGenesOK(j,otherRx,ctx,cfg)
+ok=true;if j==0||~cfg.branchRejectSharedKnownGenes,return;end
+[~,value,~]=decodeGPR(string(ctx.model.grRules{j}),string(ctx.model.rules{j}),string(ctx.model.genes));
+genes=split(value,';');genes=genes(genes~="");if isempty(genes),return;end
+for k=reshape(unique(otherRx),1,[])
+    [~,value,~]=decodeGPR(string(ctx.model.grRules{k}),string(ctx.model.rules{k}),string(ctx.model.genes));
+    others=split(value,';');if ~isempty(intersect(genes,others(others~=""))),ok=false;return;end
+end
+end
+
+function blocked = step2NeuronIForbidden(parts,seed,prefixParts,ctx,cfg)
+same=ctx.base(parts)==ctx.base(seed);
+if cfg.neuronPlacement=="outside"
+    % Distinct compartments can isolate I. Another spelling of the same
+    % chemical in the same outside compartment cannot bypass an I importer.
+    upstreamI=prefixParts(ctx.base(prefixParts)==ctx.base(seed));
+    same=same&ismember(ctx.comp(parts),unique(ctx.comp(upstreamI)));
+end
+blocked=any(same);
+end
+
 function G = buildStep2Graph(ctx,cfg)
 O=ctx.O;m=numel(ctx.model.mets);n=numel(O.rxn);tol=1e-8;
 G=struct('o',[],'from',[],'to',[],'byFrom',{cell(m,1)},'byTo',{cell(m,1)}, ...
@@ -2552,81 +2872,220 @@ if cfg.branchRejectSharedKnownGenes
 end
 end
 
-function A = step2EntryRows(parent,input,seed,prefixRx,prefixParts,ctx,G)
-rows=cell(0,8);os=ctx.O.consumers{input};
-if isempty(os),rows={parent,string(ctx.model.mets{input}),"",0,false,false,"","no_consuming_reaction_in_model"};end
+function A = step2EntryRows(parent,input,seed,prefixRx,prefixParts,ctx,G,cfg)
+rows=cell(0,10);os=ctx.O.consumers{input};
+if isempty(os)
+    rows={parent,string(ctx.model.mets{input}),"",0,false,false,"", ...
+        "no_consuming_reaction_in_neuron_compartment",ctx.comp(input),""};
+end
 for o=reshape(os,1,[])
     j=ctx.O.rxn(o);parts=G.parts{o};shared=step2Overlap(parts,prefixParts,input,ctx.currency);
-    regenerated=any(ctx.O.P(ctx.base==ctx.base(seed),o)>1e-8);status="eligible_entry_for_neuron_search";
-    if regenerated,status="entry_would_regenerate_I";
-    elseif any(ctx.base(parts)==ctx.base(seed)),status="I_participates_in_neuron_chemistry";
+    madeI=find(ctx.base==ctx.base(seed)&ctx.O.P(:,o)>1e-8);
+    regenerated=~isempty(madeI);status="eligible_entry_for_neuron_search";
+    if cfg.neuronPlacement=="outside"&&step2NeuronIForbidden(madeI,seed,prefixParts,ctx,cfg)
+        status="entry_external_I_feeds_existing_upstream_pool";
+    elseif step2NeuronIForbidden(parts,seed,prefixParts,ctx,cfg)
+        if regenerated,status="entry_would_regenerate_I";
+        else,status="I_participates_in_neuron_chemistry";end
     elseif ismember(j,prefixRx),status="entry_reuses_upstream_reaction";
-    elseif ~isempty(shared),status="entry_shares_noncurrency_outside_counter_input";
+    elseif ~isempty(shared),status="entry_shares_noncurrency_outside_neuron_input";
     elseif ~G.eligible(o),status="entry_gross_primitive_or_size_policy_failed";
     elseif ~G.ecKnown(o),status="entry_EC_unresolved";
     end
     rows(end+1,:)={parent,string(ctx.model.mets{input}),string(ctx.model.rxns{j}),ctx.O.direction(o), ...
-        G.ecKnown(o),regenerated,joinText(string(ctx.model.mets(shared)),';'),status}; %#ok<AGROW>
+        G.ecKnown(o),regenerated,joinText(string(ctx.model.mets(shared)),';'),status, ...
+        ctx.comp(input),joinText(string(ctx.model.mets(madeI)),';')}; %#ok<AGROW>
 end
 A=rows;
 end
 
-function [rails,stats] = findStep2NeuronRails(input,seed,prefixRx,prefixParts,ctx,G,cfg)
-rails=struct('input',{},'mid',{},'output',{},'o',{},'rx',{},'parts',{});
-stats=struct('tests',0,'testLimitReached',false,'railLimitReached',false);stop=false;O=ctx.O;tol=1e-8;
-for e1=reshape(G.byFrom{input},1,[])
-    o1=G.o(e1);mid=G.to(e1);p1=G.parts{o1};
-    if ~G.ecKnown(o1)||ismember(O.rxn(o1),prefixRx)||any(ctx.base(p1)==ctx.base(seed)) ...
-            ||~isempty(step2Overlap(p1,prefixParts,input,ctx.currency)),continue;end
-    for e2=reshape(G.byFrom{mid},1,[])
-        o2=G.o(e2);out=G.to(e2);p2=G.parts{o2};
-        if ~G.ecKnown(o2)||ismember(O.rxn(o2),[prefixRx O.rxn(o1)])||out==input ...
-                ||any(ctx.base(p2)==ctx.base(seed))||ismember(out,p1)||ismember(input,p2) ...
-                ||~isempty(step2Overlap(p2,prefixParts,[],ctx.currency)) ...
-                ||~isempty(step2Overlap(p1,p2,mid,ctx.currency)),continue;end
-        for o3=reshape(O.consumers{out},1,[])
-            if stats.tests>=cfg.neuronMaxTestsPerRail,stats.testLimitReached=true;stop=true;break;end
-            stats.tests=stats.tests+1;p3=G.parts{o3};
-            if ~G.eligible(o3)||~G.ecKnown(o3)||ismember(O.rxn(o3),[prefixRx O.rxn([o1 o2])]) ...
-                    ||abs(full(O.R(out,o3))*G.scale(o3)-1)>tol||O.P(out,o3)>tol ...
-                    ||any(ctx.base(p3)==ctx.base(seed))||~isempty(step2Overlap(p3,prefixParts,[],ctx.currency)) ...
-                    ||~isempty(step2Overlap(p1,p3,[],ctx.currency)) ...
-                    ||~isempty(step2Overlap(p2,p3,out,ctx.currency)),continue;end
-            rx=O.rxn([o1 o2 o3]);[~,ok]=step2AssignEC(rx,ctx,cfg);if ~ok,continue;end
-            rails(end+1)=struct('input',input,'mid',mid,'output',out,'o',[o1 o2 o3], ...
-                'rx',rx,'parts',union(p1,union(p2,p3))); %#ok<AGROW>
-            if numel(rails)>=cfg.neuronMaxRails,stats.railLimitReached=true;stop=true;break;end
+function rails = emptyStep2NeuronChains()
+rails=struct('input',{},'mid',{},'output',{},'o',{},'rx',{},'parts',{}, ...
+    'mets',{},'conversionO',{},'removalO',{});
+end
+
+function T = step2ConsumingChainTable(rows)
+T=cellTable(rows,{'InputID','OutputID','NeuronCompartment','ConversionCount','ReactionIDs', ...
+    'Directions','OrientationIndices','MetabolitePath','NetInputChange','NetIChange', ...
+    'IInteraction','ReusesUpstreamReaction','SharedUpstreamIDs','NonadjacentSharedIDs', ...
+    'ECGeneAssignmentPassed','IndependentRemovalCount','Classification','NetEquation','SearchPass'}, ...
+    {'string','string','string','double','string','string','string','string','double','double', ...
+    'logical','logical','string','string','logical','double','string','string','string'});
+end
+
+function [rails,stats,T] = findStep2NeuronRails(input,seed,prefixRx,prefixParts,ctx,G,cfg,control)
+if nargin<8,control=[];end
+[rails,stats,T]=scanStep2NeuronChains(input,seed,prefixRx,prefixParts,control,ctx,G,cfg,true);
+stats.diagnosticStates=0;stats.diagnosticTests=0;stats.diagnosticLimitReached=false;
+if isempty(rails)&&cfg.neuronDiagnoseRejectedChains
+    % A separate budget prevents feedback routes from displacing a valid
+    % isolated-neuron search. Diagnostics never enter rails or full motifs.
+    diagnosticCfg=cfg;diagnosticCfg.neuronChainMaxStates=cfg.neuronDiagnosticMaxStates;
+    diagnosticCfg.neuronMaxTestsPerRail=cfg.neuronDiagnosticMaxTests;
+    [~,d,DT]=scanStep2NeuronChains(input,seed,prefixRx,prefixParts,control,ctx,G,diagnosticCfg,false);
+    T=[T;DT];stats.diagnosticStates=d.states;stats.diagnosticTests=d.tests;
+    stats.diagnosticLimitReached=d.stateLimitReached||d.testLimitReached;
+end
+end
+
+function [rails,stats,T] = scanStep2NeuronChains(input,seed,prefixRx,prefixParts,control,ctx,G,cfg,strict)
+% Paths stay in the input compartment and consume the exact input state.
+% Every substrate/product contributes to overlap checks. I can be a side
+% product in a DIAGNOSTIC, but is never used as a neuron path connector.
+rails=emptyStep2NeuronChains();rows=cell(0,19);O=ctx.O;tol=1e-8;
+stats=struct('tests',0,'states',0,'testLimitReached',false,'railLimitReached',false, ...
+    'stateLimitReached',false,'depthLimitReached',false);
+queue=struct('node',input,'path',[],'mets',input,'parts',[], ...
+    'sharedUp',[],'sharedHistory',[]);head=1;stop=false;
+seen=containers.Map('KeyType','char','ValueType','logical');
+while head<=numel(queue)
+    if stats.states>=cfg.neuronChainMaxStates,stats.stateLimitReached=true;break;end
+    state=queue(head);head=head+1;stats.states=stats.states+1;depth=numel(state.path);
+    rx=O.rxn(state.path);iConflict=step2NeuronIForbidden(state.parts,seed,prefixParts,ctx,cfg);
+    reuse=any(ismember(rx,prefixRx));[~,ecOK]=step2AssignEC([control rx],ctx,cfg);
+    clean=~iConflict&&~reuse&&isempty(state.sharedUp)&&isempty(state.sharedHistory)&&ecOK;
+    removals=0;
+    if depth>0
+        weights=reshape(G.scale(state.path),[],1);net=O.N(:,state.path)*weights;
+        if strict&&clean&&depth>=cfg.neuronChainMinDepth&&net(input)<-tol
+            for o=reshape(O.consumers{state.node},1,[])
+                if stats.tests>=cfg.neuronMaxTestsPerRail,stats.testLimitReached=true;stop=true;break;end
+                stats.tests=stats.tests+1;parts=G.parts{o};j=O.rxn(o);
+                if ~G.eligible(o)||~G.ecKnown(o)||ismember(j,[prefixRx rx]) ...
+                    ||any(ctx.comp(parts)~=ctx.comp(input)) ...
+                    ||abs(full(O.R(state.node,o))*G.scale(o)-1)>tol||O.P(state.node,o)>tol ...
+                    ||step2NeuronIForbidden(parts,seed,prefixParts,ctx,cfg) ...
+                    ||~isempty(step2Overlap(parts,prefixParts,[],ctx.currency)) ...
+                    ||~isempty(step2Overlap(parts,state.parts,state.node,ctx.currency)),continue;end
+                [~,ok]=step2AssignEC([control rx j],ctx,cfg);if ~ok,continue;end
+                removals=removals+1;
+                rails(end+1)=struct('input',input,'mid',state.mets(2),'output',state.node, ...
+                    'o',[state.path o],'rx',[rx j],'parts',union(state.parts,parts), ...
+                    'mets',state.mets,'conversionO',state.path,'removalO',o); %#ok<AGROW>
+                if numel(rails)>=cfg.neuronMaxRails,stats.railLimitReached=true;stop=true;break;end
+            end
         end
-        if stop,break;end
+        classification="diagnostic_feedback_overlap_or_control_conflict";
+        if clean
+            classification="isolated_chain_without_independent_output_removal";
+            if depth<cfg.neuronChainMinDepth,classification="consuming_prefix_below_minimum_neuron_depth";end
+            if removals>0,classification="isolated_neuron_with_independent_output_removal";end
+        end
+        if clean&&~strict,classification="diagnostic_clean_chain_removal_not_evaluated";end
+        if strict&&clean&&removals==0&&stats.testLimitReached
+            classification="isolated_chain_removal_search_budget_reached";
+        end
+        if net(input)>=-tol,classification="diagnostic_input_recycled_or_not_net_consumed";end
+        pass="diagnostic_only";if strict,pass="isolated_search";end
+        rows(end+1,:)={string(ctx.model.mets{input}),string(ctx.model.mets{state.node}),ctx.comp(input), ...
+            depth,joinText(string(ctx.model.rxns(rx)),';'),joinText(string(O.direction(state.path)),';'), ...
+            joinText(string(state.path),';'),joinText(string(ctx.model.mets(state.mets)),' -> '), ...
+            full(net(input)),full(sum(net(ctx.base==ctx.base(seed)))),iConflict,reuse, ...
+            joinText(string(ctx.model.mets(state.sharedUp)),';'), ...
+            joinText(string(ctx.model.mets(state.sharedHistory)),';'),ecOK,removals,classification, ...
+            equation(max(-net,0),max(net,0),ctx.model),pass}; %#ok<AGROW>
     end
     if stop,break;end
+    if depth>=cfg.neuronChainMaxDepth
+        stats.depthLimitReached=stats.depthLimitReached||~isempty(O.consumers{state.node});continue;
+    end
+    allowed=[];if depth==0,allowed=input;end
+    for o=reshape(O.consumers{state.node},1,[])
+        if stats.tests>=cfg.neuronMaxTestsPerRail,stats.testLimitReached=true;stop=true;break;end
+        stats.tests=stats.tests+1;parts=G.parts{o};j=O.rxn(o);
+        if ~G.eligible(o)||~G.ecKnown(o)||ismember(j,rx)||any(ctx.comp(parts)~=ctx.comp(input)),continue;end
+        sharedUp=union(state.sharedUp,step2Overlap(parts,prefixParts,allowed,ctx.currency));
+        sharedHistory=union(state.sharedHistory,step2Overlap(parts,state.parts,state.node,ctx.currency));
+        chosen=[state.path o];
+        if strict
+            if ismember(j,prefixRx)||step2NeuronIForbidden(parts,seed,prefixParts,ctx,cfg) ...
+                ||~isempty(sharedUp)||~isempty(sharedHistory),continue;end
+            [~,ok]=step2AssignEC([control O.rxn(chosen)],ctx,cfg);if ~ok,continue;end
+        end
+        edges=G.byFrom{state.node};edges=edges(G.o(edges)==o);
+        for e=reshape(edges,1,[])
+            node=G.to(e);
+            if ismember(node,state.mets)||ctx.base(node)==ctx.base(seed),continue;end
+            key=sprintf('%d,',[node chosen]);if isKey(seen,key),continue;end
+            if numel(queue)>=cfg.neuronChainMaxStates,stats.stateLimitReached=true;continue;end
+            seen(key)=true;queue(end+1)=struct('node',node,'path',chosen, ...
+                'mets',[state.mets node],'parts',union(state.parts,parts), ...
+                'sharedUp',sharedUp,'sharedHistory',sharedHistory); %#ok<AGROW>
+        end
+    end
+    if stop,break;end
+end
+T=step2ConsumingChainTable(rows);
+end
+
+function G = buildStep2Block0Graph(ctx,cfg)
+% A separate graph leaves the neuron's primitive one-copy policy unchanged.
+% Edges identify net-consumed/net-produced connectors; full gross sides are
+% retained for isolation, positive-flux balance and substrate-startup checks.
+O=ctx.O;m=numel(ctx.model.mets);n=numel(O.rxn);tol=1e-8;
+G=struct('o',[],'from',[],'to',[],'byFrom',{cell(m,1)},'byTo',{cell(m,1)}, ...
+    'parts',{cell(n,1)},'eligible',false(1,n),'ecKnown',false(1,n));
+for o=1:n
+    parts=find(O.R(:,o)+O.P(:,o)>tol);G.parts{o}=parts;
+    codes=completeECTokens(ctx.E.codes(O.rxn(o)));G.ecKnown(o)=~isempty(codes);
+    if ~O.grossKnown(o)||numel(parts)>cfg.block0MaxParticipants ...
+            ||any(ismember(codes,cfg.excludedECs)),continue;end
+    net=O.P(:,o)-O.R(:,o);G.eligible(o)=true;
+    from=find(net < -tol&~ctx.currency);to=find(net > tol&~ctx.currency);
+    for u=reshape(from,1,[])
+        for v=reshape(to,1,[])
+            if ctx.comp(u)~=ctx.comp(v),continue;end
+            e=numel(G.o)+1;G.o(e)=o;G.from(e)=u;G.to(e)=v;
+            G.byFrom{u}(end+1)=e;G.byTo{v}(end+1)=e;
+        end
+    end
 end
 end
 
 function result = emptyStep2Path(target)
 result=struct('found',false,'mets',[],'o',[],'target',target,'distance',Inf, ...
     'status',"no_isolated_path_within_configured_search",'states',0,'expansions',0, ...
-    'stateLimitReached',false,'expansionLimitReached',false,'depthLimitReached',false,'ECComplete',false);
+    'stateLimitReached',false,'expansionLimitReached',false,'depthLimitReached',false,'ECComplete',false, ...
+    'alternativeLimitReached',false,'topologyReachable',false,'searchStatus',"not_started", ...
+    'moduleTests',0,'balanceRejected',0,'startupRejected',0,'seedIndependentRejected',0,'solverUnresolved',0, ...
+    'flux',[],'net',[],'feed',[],'waste',[],'internal',[],'buffered',[]);
 end
 
-function result = findStep2Block0(target,prefixRx,prefixParts,controlRx,ctx,G,cfg,requireEC)
-% Breadth-first PATH STATES retain side-participant history. Currency cannot
-% carry edges; target is an output only. Compartments/states are never merged.
-result=emptyStep2Path(target);O=ctx.O;
+function [result,alternatives,audit] = findStep2Block0(target,prefixRx,prefixParts,controlRx,ctx,G,cfg,requireEC)
+% Enumerate bounded simple connector traces, then balance their reaction
+% supports. Internal side intermediates may cancel. This is not exhaustive
+% enumeration of arbitrary branched hypernetworks or a whole-cell flux test.
+result=emptyStep2Path(target);alternatives=repmat(result,1,0);O=ctx.O;
+audit=cellTable(cell(0,4),{'Reason','OrientationCount','SharedStateIDs','ExampleReactionIDs'}, ...
+    {'string','double','string','string'});
 starts=find(ctx.base=="camp"&ctx.comp==ctx.comp(target)&~ctx.currency);
 if isempty(starts),result.status="intracellular_cAMP_anchor_missing";return;end
 if ctx.currency(target),result.status="m_in_is_currency";return;end
-allowed=G.eligible;
-for o=reshape(find(allowed),1,[])
-    if ismember(O.rxn(o),prefixRx)||(~G.ecKnown(o)&&requireEC)||O.R(target,o)>1e-8 ...
-            ||~isempty(step2Overlap(G.parts{o},prefixParts,target,ctx.currency))
-        allowed(o)=false;
+reasons=strings(1,numel(O.rxn));sharedIDs=cell(1,numel(O.rxn));
+for o=1:numel(O.rxn)
+    shared=step2Overlap(G.parts{o},prefixParts,target,ctx.currency);sharedIDs{o}=shared;
+    if ~G.eligible(o),reasons(o)="gross_unknown_participant_cap_or_excluded_EC";
+    elseif ismember(O.rxn(o),prefixRx),reasons(o)="reuses_downstream_reaction";
+    elseif ~isempty(shared),reasons(o)="shares_downstream_noncurrency";
+    elseif any(ctx.comp(G.parts{o}(~ctx.currency(G.parts{o})))~=ctx.comp(target))
+        reasons(o)="noncurrency_participant_in_other_compartment";
+    elseif O.R(target,o)>1e-8,reasons(o)="consumes_m_in";
+    elseif ~G.ecKnown(o)&&requireEC,reasons(o)="missing_complete_EC";
     end
 end
+for reason=reshape(unique(reasons(reasons~=""),'stable'),1,[])
+    os=find(reasons==reason);shared=[];
+    for o=reshape(os,1,[]),shared=union(shared,sharedIDs{o});end
+    examples=unique(O.rxn(os),'stable');examples=examples(1:min(5,numel(examples)));
+    audit(end+1,:)={reason,numel(os),joinText(string(ctx.model.mets(shared)),';'), ...
+        joinText(string(ctx.model.rxns(examples)),';')}; %#ok<AGROW>
+end
+allowed=reasons=="";
 if requireEC
     [~,ok]=step2AssignEC(controlRx,ctx,cfg);
     if ~ok,result.status="downstream_control_EC_or_known_gene_conflict";return;end
 end
+seenSupports=containers.Map('KeyType','char','ValueType','logical');stop=false;
 for start=reshape(starts,1,[])
     if start==target||ismember(start,prefixParts),continue;end
     permitted=allowed&full(O.P(start,:)<1e-8);
@@ -2640,38 +3099,110 @@ for start=reshape(starts,1,[])
         end
     end
     if ~isfinite(remaining(start)),continue;end
+    result.topologyReachable=true;
     if remaining(start)>cfg.block0MaxDepth,result.depthLimitReached=true;continue;end
-    stateM={start};stateO={[]};stateUsed={[]};head=1;tail=1;result.states=result.states+1;
+    if result.states>=cfg.block0MaxStates,result.stateLimitReached=true;break;end
+    stateM={start};stateO={[]};head=1;tail=1;result.states=result.states+1;
     while head<=tail
-        mets=stateM{head};path=stateO{head};used=stateUsed{head};
-        stateM{head}=[];stateO{head}=[];stateUsed{head}=[];head=head+1;
+        mets=stateM{head};path=stateO{head};
+        stateM{head}=[];stateO{head}=[];head=head+1;
         u=mets(end);depth=numel(path);
         if depth>=cfg.block0MaxDepth,result.depthLimitReached=true;continue;end
         for e=reshape(G.byFrom{u},1,[])
             o=G.o(e);v=G.to(e);
-            if ~permitted(o)||ismember(v,mets)||~isfinite(remaining(v))||any(O.rxn(path)==O.rxn(o)) ...
-                    ||depth+1+remaining(v)>cfg.block0MaxDepth,continue;end
+            if ~permitted(o)||ismember(v,mets)||~isfinite(remaining(v)) ...
+                    ||any(O.rxn(path)==O.rxn(o)),continue;end
+            if depth+1+remaining(v)>cfg.block0MaxDepth,result.depthLimitReached=true;continue;end
             if result.expansions>=cfg.block0MaxExpansions
-                result.expansionLimitReached=true;result.status="block0_expansion_budget_reached";return;
+                result.expansionLimitReached=true;stop=true;break;
             end
-            result.expansions=result.expansions+1;parts=G.parts{o};shared=intersect(parts,used);
-            if depth>0&&(numel(shared)~=1||shared~=u),continue;end
-            next=[path o];
+            result.expansions=result.expansions+1;next=[path o];
             if requireEC
                 [~,ok]=step2AssignEC([controlRx O.rxn(next)],ctx,cfg);if ~ok,continue;end
             end
             if v==target
-                result.found=true;result.mets=[mets v];result.o=next;result.distance=numel(next);
-                result.ECComplete=all(G.ecKnown(next));result.status="isolated_shortest_path_within_configured_search";return;
+                key=sprintf('%d,',[start sort(next)]);if isKey(seenSupports,key),continue;end
+                seenSupports(key)=true;result.moduleTests=result.moduleTests+1;
+                [candidate,reason]=validateStep2Block0Module(start,target,next,ctx);
+                if reason~="accepted"
+                    result.(char(reason))=result.(char(reason))+1;continue;
+                end
+                candidate.found=true;candidate.mets=[mets v];candidate.o=next;candidate.distance=numel(next);
+                candidate.ECComplete=all(G.ecKnown(next));
+                candidate.status="isolated_balanced_Block0_EC_qualified";
+                if ~requireEC,candidate.status="isolated_structural_path_not_EC_qualified";end
+                alternatives(end+1)=candidate; %#ok<AGROW>
+                if numel(alternatives)>=cfg.block0MaxAlternatives
+                    result.alternativeLimitReached=true;stop=true;break;
+                end
+                continue;
             end
             if result.states>=cfg.block0MaxStates
-                result.stateLimitReached=true;result.status="block0_path_state_budget_reached";return;
+                result.stateLimitReached=true;stop=true;break;
             end
             tail=tail+1;stateM{tail}=[mets v];stateO{tail}=next; %#ok<AGROW>
-            noncurrency=parts(~ctx.currency(parts));stateUsed{tail}=union(used,noncurrency); %#ok<AGROW>
             result.states=result.states+1;
         end
+        if stop,break;end
     end
+    if stop,break;end
+end
+result.searchStatus="bounded_connector_trace_enumeration_completed";
+if ~result.topologyReachable,result.searchStatus="disconnected_after_downstream_and_annotation_filters";end
+if result.depthLimitReached,result.searchStatus="depth_bound_reached";end
+if result.solverUnresolved>0,result.searchStatus="positive_flux_solver_unresolved";end
+if result.stateLimitReached,result.searchStatus="path_state_budget_reached";end
+if result.expansionLimitReached,result.searchStatus="expansion_budget_reached";end
+if result.alternativeLimitReached,result.searchStatus="alternative_retention_limit_reached";end
+if isempty(alternatives),result.status="no_accepted_Block0_"+result.searchStatus;return;end
+[~,order]=sort([alternatives.distance]);alternatives=alternatives(order);
+fields={'states','expansions','stateLimitReached','expansionLimitReached','depthLimitReached', ...
+    'alternativeLimitReached','topologyReachable','searchStatus','moduleTests','balanceRejected', ...
+    'startupRejected','seedIndependentRejected','solverUnresolved'};
+for k=1:numel(alternatives)
+    for j=1:numel(fields),alternatives(k).(fields{j})=result.(fields{j});end
+end
+result=alternatives(1);
+end
+
+function [candidate,reason] = validateStep2Block0Module(start,target,path,ctx)
+candidate=emptyStep2Path(target);reason="balanceRejected";tol=1e-8;
+a=ctx.O.R(:,path);b=ctx.O.P(:,path);N=b-a;
+internal=find(~ctx.currency&any(a>tol,2)&any(b>tol,2));
+internal(ismember(internal,[start target]))=[];
+% Normalize to one cAMP consumed. All shared internal states must cancel.
+A=full([N(internal,:);N(start,:)]);rhs=[zeros(numel(internal),1);-1];
+[v,solved]=positiveFlux(A,rhs);
+if ~solved,reason="solverUnresolved";return;end
+if isempty(v),return;end
+net=N*v;if net(target)<=tol||abs(net(start)+1)>tol,return;end
+feed=find(net < -tol&~ctx.currency);feed(feed==start)=[];
+waste=find(net > tol&~ctx.currency);waste(waste==target)=[];
+buffered=find(ctx.currency&any(a+b>tol,2));available=false(size(N,1),1);
+available([feed;buffered])=true;without=substrateClosure(available,a,b);
+if without(target),reason="seedIndependentRejected";return;end
+available(start)=true;[with,fired]=substrateClosure(available,a,b);
+if ~with(target)||~all(fired),reason="startupRejected";return;end
+candidate.flux=v(:)';candidate.net=net;candidate.feed=feed;candidate.waste=waste;
+candidate.internal=internal;candidate.buffered=buffered;reason="accepted";
+end
+
+function T = step2Block0AlternativeTable(rows)
+T=cellTable(rows,{'ParentID','AlternativeID','ReactionCount','MetaboliteTrace','ReactionIDs', ...
+    'Directions','FluxMultipliers','NetEquation','AdditionalFeedIDs','WasteIDs','InternalIDs', ...
+    'ECQualified','Status'}, ...
+    {'double','double','double','string','string','string','string','string','string','string','string','logical','string'});
+end
+
+function rows = step2Block0AlternativeRows(parent,alternatives,ctx)
+rows=cell(0,13);
+for k=1:numel(alternatives)
+    p=alternatives(k);rows(end+1,:)={parent,k,p.distance, ...
+        joinText(string(ctx.model.mets(p.mets)),' -> '),joinText(string(ctx.model.rxns(ctx.O.rxn(p.o))),';'), ...
+        joinText(string(ctx.O.direction(p.o)),';'),joinText(compose('%.9g',p.flux),';'), ...
+        equation(max(-p.net,0),max(p.net,0),ctx.model),joinText(string(ctx.model.mets(p.feed)),';'), ...
+        joinText(string(ctx.model.mets(p.waste)),';'),joinText(string(ctx.model.mets(p.internal)),';'), ...
+        p.ECComplete&&~contains(p.status,"not_EC"),p.status}; %#ok<AGROW>
 end
 end
 
@@ -2696,13 +3227,24 @@ for start=reshape(starts,1,[])
 end
 end
 
-function step2 = searchStep2Circuit(ctx,cfg)
-G=buildStep2Graph(ctx,cfg);parentRows=cell(0,12);entryRows=cell(0,8);completeRows=cell(0,9);
-details=struct('id',{},'w',{},'x',{},'b',{},'c',{},'rx',{},'parts',{},'controlRx',{},'block0',{},'diagnostic',{},'neuronStatus',{});
-motifs=struct('parentID',{},'n1',{},'block0',{},'controlRx',{},'assignedECs',{});
+function [step2,ctx] = searchStep2Circuit(ctx,cfg)
+[ctx,compartmentAudit]=prepareStep2NeuronCompartment(ctx,cfg);
+G=buildStep2Graph(ctx,cfg);G0=buildStep2Block0Graph(ctx,cfg);
+parentRows=cell(0,12);entryRows=cell(0,10);
+block0Rows=cell(0,13);block0CoverageRows=cell(0,16);block0AuditRows=cell(0,6);
+completeRows=cell(0,9);neuronRows=cell(0,17);transportAudit=step2ExportAuditTable(cell(0,13));
+chainInventory=step2ConsumingChainTable(cell(0,19));chainInventory.ParentID=zeros(0,1);chainCoverageRows=cell(0,10);
+adapterAudit=step2AdapterAuditTable(cell(0,11));adapterCoverageRows=cell(0,10);
+allInterfaces=emptyStep2Exports();interfaceParents=zeros(0,1);
+details=struct('id',{},'w',{},'x',{},'b',{},'c',{},'rx',{},'parts',{},'controlRx',{}, ...
+    'block0',{},'block0Alternatives',{},'diagnostic',{},'neuronStatus',{},'previewNeuron',{},'previewTransport',{});
+motifs=struct('parentID',{},'n1',{},'transport',{},'block0',{},'controlRx',{},'assignedECs',{});
 stats=struct('parentsTested',0,'parentLimitReached',false,'neuron1Rails',0, ...
     'neuronCandidatesTested',0,'neuronBudgetLimitedCalls',0,'neuronTestLimitReached',false,'completeLimitReached',false, ...
-    'parentBlock0Found',0,'parentBlock0StructuralOnly',0,'block0BudgetLimitedCalls',0,'block0Queries',0);
+    'parentBlock0Found',0,'parentBlock0StructuralOnly',0,'block0BudgetLimitedCalls',0,'block0Queries',0, ...
+    'transportTests',0,'exportLinks',0,'exportBudgetLimitedCalls',0,'qualifiedNeuronCandidates',0, ...
+    'adapterStates',0,'adapterExpansions',0,'adapterBudgetLimitedCalls',0, ...
+    'neuronChainStates',0,'neuronDiagnosticStates',0,'neuronDiagnosticLimitCalls',0);
 cache=containers.Map('KeyType','char','ValueType','any');stop=false;
 if cfg.connectStep2&&cfg.counterMode=="consume_I"
 for w=1:height(ctx.Y)
@@ -2710,64 +3252,154 @@ for w=1:height(ctx.Y)
     stats.parentsTested=stats.parentsTested+1;
     [rx,parts,control,b,x,c]=step2Prefix(ctx,w);target=ctx.M.InputIndex(b);
     key=sprintf('%d,',[target sort(rx) 0 sort(control)]);
-    if isKey(cache,key),b0=cache(key);
+    if isKey(cache,key),saved=cache(key);b0=saved.best;b0alts=saved.alternatives;passes=saved.passes;
     else
-        stats.block0Queries=stats.block0Queries+1;b0=findStep2Block0(target,rx,parts,control,ctx,G,cfg,true);
+        stats.block0Queries=stats.block0Queries+1;
+        [b0,b0alts,b0audit]=findStep2Block0(target,rx,parts,control,ctx,G0,cfg,true);
+        passes=struct('mode',"EC_qualified",'result',b0,'retained',numel(b0alts),'audit',b0audit);
         if ~b0.found
-            raw=findStep2Block0(target,rx,parts,[],ctx,G,cfg,false);
-            if raw.found,raw.status="isolated_structural_path_not_EC_qualified";b0=raw;
-            else
-                b0.stateLimitReached=b0.stateLimitReached||raw.stateLimitReached;
-                b0.expansionLimitReached=b0.expansionLimitReached||raw.expansionLimitReached;
-                b0.depthLimitReached=b0.depthLimitReached||raw.depthLimitReached;
-                b0.states=b0.states+raw.states;b0.expansions=b0.expansions+raw.expansions;
-            end
+            [raw,rawalts,rawaudit]=findStep2Block0(target,rx,parts,[],ctx,G0,cfg,false);
+            passes(end+1)=struct('mode',"structural_only",'result',raw,'retained',numel(rawalts),'audit',rawaudit);
+            if raw.found,b0=raw;b0alts=rawalts;end
         end
-        cache(key)=b0;
+        saved=struct('best',b0,'alternatives',b0alts,'passes',passes);cache(key)=saved;
+    end
+    parentID=ctx.Y.CounterWiringID(w);
+    block0Rows=[block0Rows;step2Block0AlternativeRows(parentID,b0alts,ctx)]; %#ok<AGROW>
+    budgetLimited=false;
+    for pass=reshape(passes,1,[])
+        p=pass.result;status=p.searchStatus;if status=="not_started",status=p.status;end
+        block0CoverageRows(end+1,:)={parentID,pass.mode,status,p.states,p.expansions,p.topologyReachable, ...
+            pass.retained,p.moduleTests,p.balanceRejected,p.startupRejected,p.seedIndependentRejected,p.solverUnresolved, ...
+            p.stateLimitReached,p.expansionLimitReached,p.depthLimitReached,p.alternativeLimitReached}; %#ok<AGROW>
+        a=table2cell(pass.audit);
+        block0AuditRows=[block0AuditRows;[repmat({parentID,pass.mode},size(a,1),1) a]]; %#ok<AGROW>
+        budgetLimited=budgetLimited||p.stateLimitReached||p.expansionLimitReached;
     end
     stats.parentBlock0Found=stats.parentBlock0Found+double(b0.found&&b0.ECComplete&&~contains(b0.status,"not_EC"));
     stats.parentBlock0StructuralOnly=stats.parentBlock0StructuralOnly+double(b0.found&&contains(b0.status,"not_EC"));
-    stats.block0BudgetLimitedCalls=stats.block0BudgetLimitedCalls+double(b0.stateLimitReached||b0.expansionLimitReached);
-    f=ctx.X.FormationID(x);input=ctx.F.C_Index(f);seed=ctx.F.I_Index(f);
-    entryRows=[entryRows;step2EntryRows(ctx.Y.CounterWiringID(w),input,seed,rx,parts,ctx,G)]; %#ok<AGROW>
-    [n1,s1]=findStep2NeuronRails(input,seed,rx,parts,ctx,G,cfg);stats.neuron1Rails=stats.neuron1Rails+numel(n1);
-    stats.neuronBudgetLimitedCalls=stats.neuronBudgetLimitedCalls+double(s1.testLimitReached||s1.railLimitReached);
-    neuronTests=0;neuronStatus="no_single_neuron_rail_passed_current_policies";
-    for a=1:numel(n1)
-        if stats.neuronCandidatesTested>=cfg.step2MaxNeuronTests
-            stats.neuronTestLimitReached=true;stop=true;break;
+    stats.block0BudgetLimitedCalls=stats.block0BudgetLimitedCalls+double(budgetLimited);
+    f=ctx.X.FormationID(x);counter=ctx.F.C_Index(f);seed=ctx.F.I_Index(f);
+    if cfg.neuronPlacement=="outside"
+        [links,ta,aa,ts]=findStep2AdapterExports(ctx.Y.CounterWiringID(w),counter,seed,rx,parts,control,ctx,G,cfg);
+        transportAudit=[transportAudit;ta];adapterAudit=[adapterAudit;aa]; %#ok<AGROW>
+        allInterfaces=[allInterfaces links]; %#ok<AGROW>
+        interfaceParents=[interfaceParents;repmat(ctx.Y.CounterWiringID(w),numel(links),1)]; %#ok<AGROW>
+        stats.adapterStates=stats.adapterStates+ts.states;stats.adapterExpansions=stats.adapterExpansions+ts.expansions;
+        stats.adapterBudgetLimitedCalls=stats.adapterBudgetLimitedCalls+double(ts.stateLimitReached||ts.expansionLimitReached);
+        adapterCoverageRows(end+1,:)={ctx.Y.CounterWiringID(w),ts.states,ts.expansions,numel(links), ...
+            ts.maxDepthReached,ts.stateLimitReached,ts.expansionLimitReached,ts.depthLimitReached, ...
+            ts.testLimitReached,ts.linkLimitReached}; %#ok<AGROW>
+        stats.transportTests=stats.transportTests+ts.tests;stats.exportLinks=stats.exportLinks+numel(links);
+        stats.exportBudgetLimitedCalls=stats.exportBudgetLimitedCalls+double(ts.testLimitReached||ts.linkLimitReached);
+    else
+        links=makeStep2ExportLink(0,0,counter,counter,[],0,false);
+    end
+    neuronTests=0;parentRails=0;preview=[];previewTransport=[];
+    if ~isempty(links),previewTransport=links(1);end
+    neuronStatus="no_exported_input_passed_current_policies";
+    if ~isempty(links),neuronStatus="no_single_neuron_rail_passed_current_policies";end
+    for t=1:numel(links)
+        link=links(t);transportRx=link.rx(link.rx>0);prefix=unique([rx link.adapterRx transportRx],'stable');
+        prefixParts=union(parts,link.parts);
+        entryRows=[entryRows;step2EntryRows(ctx.Y.CounterWiringID(w),link.input,seed,prefix,prefixParts,ctx,G,cfg)]; %#ok<AGROW>
+        [n1,s1,chains]=findStep2NeuronRails(link.input,seed,prefix,prefixParts,ctx,G,cfg,[control link.adapterRx]);
+        chains.ParentID=repmat(ctx.Y.CounterWiringID(w),height(chains),1);chainInventory=[chainInventory;chains]; %#ok<AGROW>
+        stats.neuronChainStates=stats.neuronChainStates+s1.states;
+        stats.neuronDiagnosticStates=stats.neuronDiagnosticStates+s1.diagnosticStates;
+        stats.neuronDiagnosticLimitCalls=stats.neuronDiagnosticLimitCalls+double(s1.diagnosticLimitReached);
+        chainCoverageRows(end+1,:)={ctx.Y.CounterWiringID(w),string(ctx.model.mets{link.input}),s1.states, ...
+            s1.tests,s1.stateLimitReached,s1.testLimitReached,s1.depthLimitReached, ...
+            s1.diagnosticStates,s1.diagnosticTests,s1.diagnosticLimitReached}; %#ok<AGROW>
+        stats.neuron1Rails=stats.neuron1Rails+numel(n1);parentRails=parentRails+numel(n1);
+        stats.neuronBudgetLimitedCalls=stats.neuronBudgetLimitedCalls+double(s1.testLimitReached||s1.railLimitReached||s1.stateLimitReached);
+        for a=1:numel(n1)
+            if stats.neuronCandidatesTested>=cfg.step2MaxNeuronTests
+                stats.neuronTestLimitReached=true;stop=true;break;
+            end
+            stats.neuronCandidatesTested=stats.neuronCandidatesTested+1;neuronTests=neuronTests+1;
+            ctrl=[control link.adapterRx n1(a).rx];[~,ok]=step2AssignEC(ctrl,ctx,cfg);
+            if ~ok||~step2TransportGenesOK(link.rx,ctrl,ctx,cfg),continue;end
+            stats.qualifiedNeuronCandidates=stats.qualifiedNeuronCandidates+1;
+            if isempty(preview),preview=n1(a);previewTransport=link;end
+            if ~startsWith(neuronStatus,"complete_")
+                neuronStatus="neuron_found_Block0_or_full_circuit_pending";
+            end
+            exportID="";if link.rx>0,exportID=string(ctx.model.rxns{link.rx});end
+            neuronRows(end+1,:)={size(neuronRows,1)+1,ctx.Y.CounterWiringID(w), ...
+                string(ctx.model.mets{counter}),string(ctx.model.mets{link.input}),ctx.comp(link.input), ...
+                exportID,link.direction,link.reverseAllowed, ...
+                joinText(string(ctx.model.rxns(n1(a).rx)),';'),string(ctx.model.mets{n1(a).mid}), ...
+                string(ctx.model.mets{n1(a).output}),"neuron_only_candidate_not_a_complete_circuit", ...
+                string(ctx.model.mets{link.cargo}),numel(link.adapterO),joinText(string(ctx.model.rxns(link.adapterRx)),';'), ...
+                numel(n1(a).conversionO),joinText(string(ctx.model.mets(n1(a).mets)),' -> ')}; %#ok<AGROW>
+            fullRx=unique([prefix n1(a).rx],'stable');fullParts=union(prefixParts,n1(a).parts);
+            [full0,fullAlternatives]=findStep2Block0(target,fullRx,fullParts,ctrl,ctx,G0,cfg,true);
+            if ~full0.found,continue;end
+            % A transport-gene conflict in the first retained alternative
+            % must not hide a later compatible Block 0 support.
+            ok=false;
+            for z=1:numel(fullAlternatives)
+                chosen=fullAlternatives(z);controlled=[ctrl ctx.O.rxn(chosen.o)];
+                [assigned,compatible]=step2AssignEC(controlled,ctx,cfg);
+                if compatible&&step2TransportGenesOK(link.rx,controlled,ctx,cfg)
+                    full0=chosen;ok=true;break;
+                end
+            end
+            if ~ok,continue;end
+            neuronStatus="complete_single_neuron_circuit_found_controls_and_kinetics_unverified";
+            id=numel(motifs)+1;motifs(id)=struct('parentID',numel(details)+1,'n1',n1(a),'transport',link, ...
+                'block0',full0,'controlRx',ctrl,'assignedECs',assigned); %#ok<AGROW>
+            completeRows(end+1,:)={id,ctx.Y.CounterWiringID(w),ctx.Y.ModuleID(w),ctx.Y.ConnectedID(w), ...
+                ctx.X.CounterConnectionID(x),full0.distance,string(ctx.model.mets{n1(a).output}), ...
+                ctx.Y.UpstreamSFInterfacesMatched(w),neuronStatus}; %#ok<AGROW>
+            if numel(motifs)>=cfg.step2MaxCompleteMotifs,stats.completeLimitReached=true;stop=true;break;end
         end
-        stats.neuronCandidatesTested=stats.neuronCandidatesTested+1;neuronTests=neuronTests+1;
-        ctrl=[control n1(a).rx];
-        [~,ok]=step2AssignEC(ctrl,ctx,cfg);if ~ok,continue;end
-        neuronStatus="single_neuron_found_Block0_or_full_EC_assignment_pending";
-        fullRx=[rx n1(a).rx];fullParts=union(parts,n1(a).parts);
-        full0=findStep2Block0(target,fullRx,fullParts,ctrl,ctx,G,cfg,true);
-        if ~full0.found,continue;end
-        [assigned,ok]=step2AssignEC([ctrl ctx.O.rxn(full0.o)],ctx,cfg);if ~ok,continue;end
-        neuronStatus="complete_single_neuron_circuit_found_controls_and_kinetics_unverified";
-        id=numel(motifs)+1;motifs(id)=struct('parentID',numel(details)+1,'n1',n1(a), ...
-            'block0',full0,'controlRx',ctrl,'assignedECs',assigned); %#ok<AGROW>
-        completeRows(end+1,:)={id,ctx.Y.CounterWiringID(w),ctx.Y.ModuleID(w),ctx.Y.ConnectedID(w), ...
-            ctx.X.CounterConnectionID(x),full0.distance,string(ctx.model.mets{n1(a).output}), ...
-            ctx.Y.UpstreamSFInterfacesMatched(w),neuronStatus}; %#ok<AGROW>
-        if numel(motifs)>=cfg.step2MaxCompleteMotifs,stats.completeLimitReached=true;stop=true;break;end
+        if stop,break;end
     end
     id=numel(details)+1;details(id)=struct('id',ctx.Y.CounterWiringID(w),'w',w,'x',x,'b',b,'c',c, ...
-        'rx',rx,'parts',parts,'controlRx',control,'block0',b0, ...
-        'diagnostic',step2DiagnosticGraphPath(target,ctx,G),'neuronStatus',neuronStatus); %#ok<AGROW>
+        'rx',rx,'parts',parts,'controlRx',control,'block0',b0,'block0Alternatives',b0alts, ...
+        'diagnostic',step2DiagnosticGraphPath(target,ctx,G0),'neuronStatus',neuronStatus, ...
+        'previewNeuron',preview,'previewTransport',previewTransport); %#ok<AGROW>
     parentRows(end+1,:)={ctx.Y.CounterWiringID(w),ctx.X.CounterConnectionID(x),ctx.Y.ModuleID(w), ...
         ctx.Y.ConnectedID(w),ctx.M.InsideCompartment(b),ctx.X.C_ID(x),ctx.M.InputID(b), ...
-        b0.status,b0.distance,numel(n1),neuronTests,neuronStatus}; %#ok<AGROW>
+        b0.status,b0.distance,parentRails,neuronTests,neuronStatus}; %#ok<AGROW>
     if stop,break;end
 end
 end
-step2=struct('stats',stats,'details',details,'motifs',motifs);
+step2=struct('stats',stats,'details',details,'motifs',motifs,'reactionPool',ctx.O);
+step2.block0Alternatives=step2Block0AlternativeTable(block0Rows);
+step2.block0Coverage=cellTable(block0CoverageRows,{'ParentID','Pass','Status','PathStates','Expansions', ...
+    'TopologyReachable','RetainedAlternatives','ModuleTests','BalanceRejected','StartupRejected', ...
+    'SeedIndependentRejected','SolverUnresolved','StateLimitReached','ExpansionLimitReached', ...
+    'DepthBoundReached','AlternativeLimitReached'}, ...
+    {'double','string','string','double','double','logical','double','double','double','double','double','double', ...
+    'logical','logical','logical','logical'});
+step2.block0FilterAudit=cellTable(block0AuditRows,{'ParentID','Pass','Reason','OrientationCount', ...
+    'SharedStateIDs','ExampleReactionIDs'},{'double','string','string','double','string','string'});
 step2.parents=cellTable(parentRows,{'ParentID','CounterConnectionID','ModuleID','ConnectedID','InsideCompartment', ...
     'CounterMetaboliteID','InputID','Block0Status','Block0Distance','Neuron1RailCount','NeuronCandidateCount','Status'}, ...
     {'double','double','double','double','string','string','string','string','double','double','double','string'});
 step2.entryAudit=cellTable(entryRows,{'ParentID','InputID','ReactionID','Direction','ECResolved','WouldRegenerateI', ...
-    'SharedNoncurrencyOutsideInput','Status'},{'double','string','string','double','logical','logical','string','string'});
+    'SharedNoncurrencyOutsideInput','Status','NeuronCompartment','IProductIDs'}, ...
+    {'double','string','string','double','logical','logical','string','string','string','string'});
+step2.transportAudit=transportAudit;step2.compartmentAudit=compartmentAudit;
+ctx.currentExportAudit=transportAudit;ctx.currentAdapterAudit=adapterAudit;
+ctx.currentChainInventory=chainInventory;step2.consumingChains=chainInventory;
+step2.chainCoverage=cellTable(chainCoverageRows,{'ParentID','InputID','PathStates','Tests', ...
+    'StateLimitReached','TestLimitReached','DepthBoundReached','DiagnosticStates','DiagnosticTests','DiagnosticLimitReached'}, ...
+    {'double','string','double','double','logical','logical','logical','double','double','logical'});
+step2.adapterAudit=adapterAudit;step2.adapterLinks=describeStep2AdapterLinks(allInterfaces,interfaceParents,ctx);
+step2.adapterCoverage=cellTable(adapterCoverageRows,{'ParentID','PathStates','ReactionExpansions','ExportLinks', ...
+    'MaxAdapterDepthReached','StateLimitReached','ExpansionLimitReached','DepthBoundReached', ...
+    'TransportBudgetReached','LinkLimitReached'}, ...
+    {'double','double','double','double','double','logical','logical','logical','logical','logical'});
+step2.neuronCandidates=cellTable(neuronRows,{'NeuronCandidateID','ParentID','CounterID','NeuronInputID', ...
+    'NeuronCompartment','ExportReactionID','ExportDirection','ExportReverseAllowed','NeuronReactionIDs', ...
+    'NeuronMidID','NeuronOutputID','Status','ExportCargoID','AdapterReactionCount','AdapterReactionIDs', ...
+    'NeuronConversionCount','NeuronMetabolitePath'}, ...
+    {'double','double','string','string','string','string','double','logical','string','string','string','string', ...
+    'string','double','string','double','string'});
 step2.complete=cellTable(completeRows,{'CandidateID','ParentID','ModuleID','ConnectedID','CounterConnectionID', ...
     'Block0Distance','OutputID','UpstreamSFInterfacesMatched','Status'}, ...
     {'double','double','double','double','double','double','string','logical','string'});
@@ -2823,25 +3455,73 @@ function writeStep2Report(path,S,ctx,cfg)
 fid=fopen(path,'w');assert(fid>0,'Anderson:Step2Report','Cannot write Step_2_Results.txt.');
 cleanup=onCleanup(@()fclose(fid)); %#ok<NASGU>
 report(fid,'BLOCK 0 -> FAST/SLOW BRANCHES -> ANDERSON CANCELLER -> CONSUMING COUNTER -> ONE CONSUMING NEURON');
-report(fid,'Code revision: minimum_production_layers_2026_11_16.');
+report(fid,'Code revision: direct_intracellular_consuming_neuron_chains_2026_11_16.');
+if ~isfield(ctx,'currentChainInventory'),ctx.currentChainInventory=S.consumingChains;end
 report(fid,'Direction policy: model-bound orientations; reverse steps included only when allowReverse and the lower bound permit them.');
 report(fid,sprintf('allowReverse=%d; counterMode=%s; EC map is partial and source/signature checked.',cfg.allowReverse,cfg.counterMode));
-report(fid,'Neuron layout: m_c -> m_Nf_1 -> m_Nd_1, with m_out = m_Nd_1 and a separate removal reaction r_Nr_1.');
-report(fid,'The single neuron consumes m_c, adding a loss term to the counter.');
+if cfg.neuronPlacement=="outside"
+    report(fid,['Neuron compartment: ' char(step2NeuronCompartment(cfg)) '. Existing extracellular reactions only; no reaction relocation is assumed.']);
+    report(fid,'Neuron layout: m_c[inside] -> zero or more adapter steps -> m_exp[inside] --r_T_N1 export--> m_Nin_1[outside] -> m_Nf_1[outside] -> m_Nd_1[outside], plus r_Nr_1 removal.');
+    report(fid,'m_exp and m_Nin_1 are the same chemical in different states; m_c may be a different chemical. The first adapter consumes m_c; a zero-step adapter exports m_c directly.');
+    report(fid,sprintf('Adapter limits per parent: conversions=%g; path states=%g; reaction expansions=%g. Shorter paths are examined first; all co-participants are checked.', ...
+        cfg.neuronAdapterMaxDepth,cfg.neuronAdapterMaxStates,cfg.neuronAdapterMaxExpansions));
+    report(fid,'Every adapter needs EC evidence and distinct controlled-role EC/gene assignments. Any adapter participation in an upstream I pool is rejected, including GSH regeneration in its first reaction.');
+    report(fid,'Extracellular GSH is not intracellular I, but GSH shared with the selected upstream importer is rejected as feedback.');
+    report(fid,'Transport does not require an EC; optional GPR requirements and all allowed directions are audited. A reversible exporter is explicitly flagged.');
+    ids=unique(S.compartmentAudit.ReactionID(S.compartmentAudit.Status=="outside_orientation_admitted"));
+    [~,j]=ismember(ids,string(ctx.model.rxns));j=j(j>0);
+    report(fid,sprintf('Recorded extracellular conversion reaction IDs=%d; with complete EC evidence=%d; target-compartment species=%d.', ...
+        numel(j),nnz(ctx.E.codes(j)~=""),nnz(ctx.comp==step2NeuronCompartment(cfg))));
+    if ~any(ctx.E.codes(j)~="")
+        report(fid,'EXTERNAL NEURON BOTTLENECK: no recorded extracellular conversion has complete EC evidence. Adapter/export interfaces can still be found, but an EC-qualified external neuron cannot pass the present annotation policy.');
+    end
+else
+    report(fid,'Neuron layout: m_c = m_Nin_1 is consumed directly inside the counter compartment; no exporter or external input pool is required.');
+    report(fid,'The first product is m_Nf_1; optional intermediate products are m_Nmid_1_XX; the last product is m_Nd_1 = m_out. An independent r_Nr_1 removes that output.');
+end
+report(fid,sprintf('Neuron conversion-chain depth=%g..%g; state cap=%g; test cap=%g; independent output removal is required.', ...
+    cfg.neuronChainMinDepth,cfg.neuronChainMaxDepth,cfg.neuronChainMaxStates,cfg.neuronMaxTestsPerRail));
+report(fid,'Search scope: one compartment, existing bound-permitted gross reactions, EC-annotated steps, noncurrency connectors with one primitive consumed/produced copy; all side participants are retained.');
+report(fid,'Chemical consuming paths can exist but fail isolation. I interaction, upstream reaction reuse, side-participant overlap and EC/gene conflicts remain excluded from valid neuron candidates.');
+report(fid,sprintf('Rejected-chain diagnostics enabled=%d; separate diagnostic state/test caps=%g/%g. Diagnostic chains NEVER count as isolated neurons or complete circuits.', ...
+    cfg.neuronDiagnoseRejectedChains,cfg.neuronDiagnosticMaxStates,cfg.neuronDiagnosticMaxTests));
+report(fid,'m_out = m_Nd_1. Adapter/export interfaces and neuron-only candidates are retained independently of Block 0 completion.');
+report(fid,'The neuron input is consumed as a substrate; transporter or enzyme activation is not inferred.');
 report(fid,'Block 0 always starts at exact intracellular cAMP and stops at the exact m_in used by both branches.');
 report(fid,'All substrates and products are checked for cross-talk; currency may be buffered but cannot carry a path connection.');
-report(fid,'Block 0 shares only m_in with the complete downstream circuit; no reaction reuse, intermediate recycling or nonadjacent noncurrency overlap.');
-report(fid,'The neuron shares only its intended input with preceding chemistry; regenerating I is excluded.');
-report(fid,'New Block 0 and neuron roles require complete ECs. Existing canceller roles are retained with any unresolved annotations explicitly shown.');
+report(fid,'Block 0 shares only m_in with downstream noncurrency chemistry and reuses no downstream reaction. G3P and every other selected downstream participant remain forbidden, even if net-cancelled.');
+report(fid,'Block 0 uses a separate net-consumption/production graph that permits nonunit coefficients and balanced sharing of its own internal side intermediates. Neuron matching is unchanged.');
+report(fid,'Each Block 0 module has positive stoichiometric weights normalized to one cAMP consumed; shared internal noncurrency intermediates cancel. All selected reactions must be substrate-reachable from cAMP, additional feeds and buffered currencies.');
+report(fid,'A Block 0 output reachable without cAMP in the selected module is rejected. These are local stoichiometry/reachability checks, not kinetic or atom-tracing validation.');
+report(fid,'Scope: bounded simple connector traces with balanced supports; arbitrary branched reaction sets are not exhaustively enumerated.');
+report(fid,'16_Block0_Alternatives.csv retains parent-stage alternatives even without a neuron; full circuits recheck Block 0 against the selected neuron and transport.');
+report(fid,'16_Block0_Coverage.csv separates qualified/structural passes, module rejections, unresolved flux solves and every cap. 16_Block0_Filter_Audit.csv summarizes first-match reaction exclusions with example IDs.');
+report(fid,'Accepted neurons share only their intended input with preceding selected chemistry; return to selected upstream I pools is excluded. Rejected diagnostic paths are labelled separately.');
+report(fid,'New Block 0, adapter and neuron roles require complete ECs. Existing canceller roles retain any unresolved annotations explicitly shown.');
 report(fid,sprintf('Distinct EC assignment for controlled branch/counter/neuron/Block0 roles=%d; known shared-gene rejection=%d.',cfg.step2DistinctECs,cfg.branchRejectSharedKnownGenes));
 report(fid,'An EC does not establish a protein identity, KM, kcat, first-order kinetics or independent biochemical control.');
 report(fid,'Upstream S/F gate interfaces remain hypotheses unless their supplied evidence matches; a structural extension does not validate those controls.');
 report(fid,sprintf('Block 0 caps: depth=%g; path states=%g; expansions=%g. Neuron caps: tests/call=%g; rails/call=%g; candidate tests=%g.', ...
     cfg.block0MaxDepth,cfg.block0MaxStates,cfg.block0MaxExpansions,cfg.neuronMaxTestsPerRail,cfg.neuronMaxRails,cfg.step2MaxNeuronTests));
+report(fid,sprintf('Block 0 alternatives retained per search=%g; maximum gross participants/reaction=%g.', ...
+    cfg.block0MaxAlternatives,cfg.block0MaxParticipants));
 report(fid,'A reached budget is unresolved search coverage, not evidence of biochemical impossibility.');
 writeUpstreamCoverage(fid,ctx,cfg);
 step2Section(fid,'SEARCH COUNTS: FOUND VERSUS PRINTED');
 report(fid,sprintf('Branch-canceller-counter parents available: %d; examined: %d.',height(ctx.Y),S.stats.parentsTested));
+if cfg.neuronPlacement=="outside"
+report(fid,sprintf('Counter-export orientations tested: %d; accepted export links: %d; budget-limited calls: %d.', ...
+    S.stats.transportTests,S.stats.exportLinks,S.stats.exportBudgetLimitedCalls));
+report(fid,sprintf('Intracellular adapter path states=%d; reaction expansions=%d; budget-limited calls=%d; conversion/export interfaces retained=%d.', ...
+    S.stats.adapterStates,S.stats.adapterExpansions,S.stats.adapterBudgetLimitedCalls,height(S.adapterLinks)));
+report(fid,'See 14_Counter_Adapter_Export_Links.csv for interfaces even when no external neuron or Block 0 is available.');
+end
+report(fid,sprintf('EC-qualified isolated neuron candidates, without requiring Block 0: %d. See 15_Transported_Neuron_Candidates.csv.', ...
+    S.stats.qualifiedNeuronCandidates));
+report(fid,sprintf('Isolated-search path states=%d; diagnostic path states=%d; diagnostic budget-limited calls=%d; consuming-path inventory rows=%d.', ...
+    S.stats.neuronChainStates,S.stats.neuronDiagnosticStates,S.stats.neuronDiagnosticLimitCalls,height(S.consumingChains)));
+report(fid,'15_Consuming_Neuron_Chains.csv separates clean prefixes from flagged feedback/overlap diagnostics; 15_Isolated_Neuron_Candidates.csv contains only qualified neurons.');
+report(fid,'15_Neuron_Chain_Coverage.csv records both search passes. A reached state, depth or test limit is incomplete coverage.');
 report(fid,sprintf('Parents with an EC-qualified isolated cAMP-to-m_in connector: %d.',S.stats.parentBlock0Found));
 report(fid,sprintf('Parents with an isolated structural connector awaiting EC qualification: %d.',S.stats.parentBlock0StructuralOnly));
 report(fid,sprintf('Single-neuron rails passing current policies: %d; neuron candidates tested: %d.', ...
@@ -2853,6 +3533,18 @@ report(fid,sprintf('Limits reached: parent=%d; neuron calls=%d; neuron candidate
 report(fid,'Complete counts require one neuron and a Block 0 connector rechecked against all downstream reactions and EC assignments.');
 report(fid,'Partial parents and rejected diagnostic paths never contribute to the complete count. Printing does not determine search limits.');
 report(fid,'No whole-cell flux, atom-transfer, thermodynamic or kinetic validation is claimed. Additional co-substrates remain required.');
+if cfg.neuronPlacement=="outside"
+step2Section(fid,'COUNTER EXPORT REJECTIONS / ACCEPTED LINKS');
+for status=reshape(unique(S.transportAudit.Status,'stable'),1,[])
+    report(fid,sprintf('  %s: %d',status,nnz(S.transportAudit.Status==status)));
+end
+step2Section(fid,'INTRACELLULAR ADAPTER REJECTIONS / ACCEPTED STEPS');
+for status=reshape(unique(S.adapterAudit.Status,'stable'),1,[])
+    report(fid,sprintf('  %s: %d',status,nnz(S.adapterAudit.Status==status)));
+end
+report(fid,'See 14_Counter_Adapter_Audit.csv and 14_Counter_Adapter_Coverage.csv for path decisions and reached limits.');
+report(fid,'See 14_Neuron_Export_Audit.csv for full transporter equations and 16_Neuron_Compartment_Audit.csv for available extracellular chemistry.');
+end
 step2Section(fid,'NEURON ENTRY REJECTIONS');
 for status=reshape(unique(S.entryAudit.Status,'stable'),1,[])
     report(fid,sprintf('  %s: %d',status,nnz(S.entryAudit.Status==status)));
@@ -2873,16 +3565,36 @@ end
 
 function writeStep2Candidate(fid,k,complete,d,motif,ctx,cfg)
 b=d.b;x=d.x;c=d.c;f=ctx.X.FormationID(x);O=ctx.O;model=ctx.model;
-% Candidate-specific signal roles are matched by exact metabolite index.
-% Aliases are retained: C is also the neuron input, and Nd1 is the output.
 signalNames={'m_in','m_Ff','m_Fd','m_Sf','m_Sd','I','m_c'};
 signalIdx=[ctx.M.InputIndex(b),ctx.M.FastMidIndex(b),ctx.M.FastSignalIndex(b), ...
     ctx.M.SlowMidIndex(b),ctx.M.SlowSignalIndex(b),ctx.C.I_Index(c),ctx.F.C_Index(f)];
-ctx.signalIndices=[signalIdx ctx.F.C_Index(f)];
-ctx.signalLabels=[string(signalNames) "m_Nin_1"];
+ctx.signalIndices=signalIdx;ctx.signalLabels=string(signalNames);
+selectedNeuron=[];selectedTransport=[];
 if complete
-    ctx.signalIndices=[ctx.signalIndices motif.n1.mid motif.n1.output motif.n1.output];
+    selectedNeuron=motif.n1;selectedTransport=motif.transport;
+else
+    if isfield(d,'previewNeuron'),selectedNeuron=d.previewNeuron;end
+    if isfield(d,'previewTransport'),selectedTransport=d.previewTransport;end
+end
+if ~isempty(selectedTransport)
+    ctx.signalIndices(end+1)=selectedTransport.input;ctx.signalLabels(end+1)="m_Nin_1";
+    if cfg.neuronPlacement=="outside"
+        ctx.signalIndices(end+1)=selectedTransport.cargo;ctx.signalLabels(end+1)="m_exp";
+        for n=2:numel(selectedTransport.adapterMets)-1
+            ctx.signalIndices(end+1)=selectedTransport.adapterMets(n);
+            ctx.signalLabels(end+1)="m_A"+string(n-1);
+        end
+    end
+elseif cfg.neuronPlacement=="inside"
+    ctx.signalIndices(end+1)=ctx.F.C_Index(f);ctx.signalLabels(end+1)="m_Nin_1";
+end
+if ~isempty(selectedNeuron)
+    ctx.signalIndices=[ctx.signalIndices selectedNeuron.mid selectedNeuron.output selectedNeuron.output];
     ctx.signalLabels=[ctx.signalLabels "m_Nf_1" "m_Nd_1" "m_out"];
+    for n=3:numel(selectedNeuron.mets)-1
+        ctx.signalIndices(end+1)=selectedNeuron.mets(n);
+        ctx.signalLabels(end+1)="m_Nmid_1_"+compose('%02d',n-2);
+    end
 end
 title=sprintf('CANDIDATE %d',k);if ~complete,title=[title ' | PARTIAL PARENT, NOT A COMPLETE CIRCUIT'];end
 step2Section(fid,title);
@@ -2892,10 +3604,26 @@ report(fid,['Neuron status: ' char(d.neuronStatus)]);
 report(fid,sprintf('S/F control interfaces matched: %d.',ctx.Y.UpstreamSFInterfacesMatched(d.w)));
 report(fid,'SIGNAL METABOLITE MAP');
 for n=1:numel(signalIdx),step2Signal(fid,signalNames{n},signalIdx(n),model);end
-step2Signal(fid,'m_Nin_1',ctx.F.C_Index(f),model);
-if complete
-    step2Signal(fid,'m_Nf_1',motif.n1.mid,model);step2Signal(fid,'m_Nd_1',motif.n1.output,model);
-    step2Signal(fid,'m_out',motif.n1.output,model);
+if ~isempty(selectedTransport)
+    step2Signal(fid,'m_Nin_1',selectedTransport.input,model);
+    if cfg.neuronPlacement=="outside"
+        step2Signal(fid,'m_exp',selectedTransport.cargo,model);
+        for n=2:numel(selectedTransport.adapterMets)-1
+            step2Signal(fid,char("m_A"+string(n-1)),selectedTransport.adapterMets(n),model);
+        end
+    end
+elseif cfg.neuronPlacement=="inside"
+    step2Signal(fid,'m_Nin_1',ctx.F.C_Index(f),model);
+else
+    report(fid,'  m_exp, m_Nin_1: UNASSIGNED (no accepted conversion/export interface).');
+end
+if ~isempty(selectedNeuron)
+    step2Signal(fid,'m_Nf_1',selectedNeuron.mid,model);step2Signal(fid,'m_Nd_1',selectedNeuron.output,model);
+    step2Signal(fid,'m_out',selectedNeuron.output,model);
+    for n=3:numel(selectedNeuron.mets)-1
+        step2Signal(fid,sprintf('m_Nmid_1_%02d',n-2),selectedNeuron.mets(n),model);
+    end
+    if ~complete,report(fid,'  Neuron roles below are a NEURON-ONLY candidate; Block 0/full-circuit completion is pending.');end
 else
     report(fid,'  m_Nf_1, m_Nd_1, m_out: UNASSIGNED (no accepted single-neuron extension).');
 end
@@ -2903,14 +3631,14 @@ report(fid,'  r_Nr_1 is the neuron output-removal reaction; it does not introduc
 step2Section(fid,'BLOCK 0: cAMP TO m_in');
 path=d.block0;if complete,path=motif.block0;end
 report(fid,['  Connection status: ' char(path.status)]);
+report(fid,['  Search termination: ' char(path.searchStatus)]);
+report(fid,sprintf('  Limits reached: state=%d; expansion=%d; depth=%d; alternative retention=%d; unresolved flux solves=%d.', ...
+    path.stateLimitReached,path.expansionLimitReached,path.depthLimitReached, ...
+    path.alternativeLimitReached,path.solverUnresolved));
 if path.found
-    report(fid,['  Path: ' char(joinText(string(model.mets(path.mets)),' -> '))]);
-    report(fid,sprintf('  Distance=%d; EC complete=%d; states=%d; expansions=%d.',path.distance,path.ECComplete,path.states,path.expansions));
-    for n=1:numel(path.o),step2PrintOrientation(fid,sprintf('r_CAMP_%d',n),path.o(n),ctx);end
+    step2PrintBlock0Path(fid,path,ctx,'r_CAMP');
 else
     report(fid,'  No isolated cAMP-to-m_in connector accepted within the configured search.');
-    report(fid,sprintf('  Limits reached: state=%d; expansion=%d; depth=%d.', ...
-        path.stateLimitReached,path.expansionLimitReached,path.depthLimitReached));
     if d.diagnostic.found
         diagnostic=d.diagnostic;parts=[];
         for o=reshape(diagnostic.o,1,[]),parts=union(parts,find(O.R(:,o)+O.P(:,o)>1e-8));end
@@ -2918,10 +3646,18 @@ else
         report(fid,'  REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):');
         report(fid,['  Path: ' char(joinText(string(model.mets(diagnostic.mets)),' -> '))]);
         report(fid,['  Shared downstream noncurrency species outside m_in: ' char(joinText(string(model.mets(shared)),'; '))]);
-        report(fid,'  A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.');
+        report(fid,'  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.');
         for n=1:numel(diagnostic.o),step2PrintOrientation(fid,sprintf('r_CAMP_DIAGNOSTIC_%d',n),diagnostic.o(n),ctx);end
     end
 end
+report(fid,sprintf('  Parent-stage Block 0 alternatives retained: %d (before neuron rechecking).',numel(d.block0Alternatives)));
+for z=1:numel(d.block0Alternatives)
+    alternative=d.block0Alternatives(z);
+    report(fid,sprintf('  Alternative %d | %s | %d reactions | %s',z,alternative.status,alternative.distance, ...
+        joinText(string(model.rxns(O.rxn(alternative.o))),'; ')));
+    report(fid,['    Connector trace: ' char(joinText(string(model.mets(alternative.mets)),' -> '))]);
+end
+report(fid,'  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.');
 step2Section(fid,'FAST AND SLOW BRANCHES (SIX REACTIONS)');
 fast=ctx.rails(ctx.M.FastRailIndex(b));slow=ctx.rails(ctx.M.SlowRailIndex(b));
 roles={'r_Ff','r_Fd','r_Fr','r_Sf','r_Sd','r_Sr'};os=[fast.o slow.o];
@@ -2987,25 +3723,115 @@ step2PrintOrientation(fid,'r_c',ctx.F.OrientationIndex(f),ctx);
 report(fid,sprintf('  Counter consumes I; primitive I loss=%g; C gain=%g.',ctx.F.I_LossPerEvent(f),ctx.F.C_GainPerEvent(f)));
 if ctx.X.LeakOrientationIndex(x)>0,step2PrintOrientation(fid,'r_cr',ctx.X.LeakOrientationIndex(x),ctx);
 else,report(fid,'r_cr');report(fid,'  UNASSIGNED: formation-only counter has no selected independent C-removal reaction.');end
-report(fid,'  If connected, r_Nf_1 consumes C and therefore also supplies a counter loss flux.');
-if complete
-    roles={'r_Nf_1','r_Nd_1','r_Nr_1'};os=motif.n1.o;
-    for n=1:3,step2PrintOrientation(fid,roles{n},os(n),ctx);end
-    report(fid,['Assigned distinct controlled-role ECs (branches, counter, neuron, then Block0): ' char(joinText(motif.assignedECs,'; '))]);
+if cfg.neuronPlacement=="outside"
+    if ~isempty(selectedTransport)
+        report(fid,'  Counter-to-neuron interface:');
+        report(fid,['  Intracellular adapter path: ' char(joinText(string(model.mets(selectedTransport.adapterMets)),' -> '))]);
+        if isempty(selectedTransport.adapterO)
+            report(fid,'  Zero-step adapter: m_exp = m_c.');
+        else
+            for n=1:numel(selectedTransport.adapterO)
+                step2PrintOrientation(fid,sprintf('r_A_N1_%02d',n),selectedTransport.adapterO(n),ctx);
+                report(fid,sprintf('  Adapter primitive flux multiplier: %.12g',selectedTransport.adapterFlux(n)));
+            end
+        end
+        step2PrintReaction(fid,'r_T_N1',selectedTransport.rx,selectedTransport.direction,ctx);
+        report(fid,sprintf('  Exported copies per model event=%g; reverse orientation allowed=%d.', ...
+            selectedTransport.cargoCoefficient,selectedTransport.reverseAllowed));
+    else
+        report(fid,'r_T_N1');report(fid,'  UNASSIGNED: no isolated adapter plus bound-permitted cargo exporter was found within the configured limits.');
+    end
+    report(fid,'  The adapter consumes m_c and makes m_exp. Export transfers m_exp; the external neuron consumes m_Nin_1. These roles must not be merged.');
+else
+    report(fid,'  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.');
+end
+if ~isempty(selectedNeuron)
+    report(fid,['  Neuron consuming path: ' char(joinText(string(model.mets(selectedNeuron.mets)),' -> '))]);
+    for n=1:numel(selectedNeuron.conversionO)
+        role='r_Nf_1';
+        if n==numel(selectedNeuron.conversionO),role='r_Nd_1';
+        elseif n>1,role=sprintf('r_Nmid_1_%02d',n-1);end
+        step2PrintOrientation(fid,role,selectedNeuron.conversionO(n),ctx);
+    end
+    step2PrintOrientation(fid,'r_Nr_1',selectedNeuron.removalO,ctx);
+    if complete
+        report(fid,['Assigned distinct controlled-role ECs (branches, counter, neuron, then Block0): ' char(joinText(motif.assignedECs,'; '))]);
+    else
+        report(fid,'  The neuron conversion chain, independent removal and prefix EC assignments passed, but this parent is not a complete circuit.');
+    end
 else
     for role=["r_Nf_1","r_Nd_1","r_Nr_1"]
-        report(fid,char(role));report(fid,'  UNASSIGNED: no accepted consuming single-neuron extension.');
+        report(fid,char(role));report(fid,'  UNASSIGNED: no accepted single-neuron extension.');
     end
-    rows=ctx.O.consumers{ctx.F.C_Index(f)};
-    if isempty(rows),report(fid,'  Bottleneck: the counter product has no intracellular consuming reaction in this model.');
+    if cfg.neuronPlacement=="outside"
+        audit=ctx.currentExportAudit;
+        audit=audit(audit.ParentID==d.id,:);
+        for n=1:min(height(audit),cfg.step2PrintTop)
+            report(fid,sprintf('  Export audit: %s (%+d) | input=%s | %s', ...
+                audit.ReactionID(n),audit.Direction(n),audit.NeuronInputID(n),audit.Status(n)));
+        end
+        aa=ctx.currentAdapterAudit;aa=aa(aa.ParentID==d.id,:);
+        for n=1:min(height(aa),cfg.step2PrintTop)
+            report(fid,sprintf('  Adapter audit: depth=%d | %s (%+d) | %s -> %s | %s | I states=%s', ...
+                aa.AdapterDepth(n),aa.ReactionID(n),aa.Direction(n),aa.FromID(n),aa.ToID(n),aa.Status(n),aa.IStateIDs(n)));
+        end
+        report(fid,'  See 14_Neuron_Export_Audit.csv and 14_Neuron_Entry_Audit.csv; external GSH sharing the selected upstream import pool remains disallowed.');
     else
-        report(fid,'  Counter-consuming reactions examined (rejected entries, not neuron assignments):');
+        rows=ctx.O.consumers{ctx.F.C_Index(f)};
         for o=reshape(rows,1,[]),step2PrintOrientation(fid,'REJECTED_r_Nf_1_ENTRY',o,ctx);end
-        report(fid,'  See 14_Neuron_Entry_Audit.csv for exact feedback/overlap/EC rejection reasons.');
     end
 end
-report(fid,'MODEL REQUIREMENTS: r_Nf_1 consumes m_c; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.');
+if isempty(selectedNeuron),writeStep2ConsumingDiagnostics(fid,d.id,ctx,cfg);end
+report(fid,'MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.');
 report(fid,'STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.');
+end
+
+function writeStep2ConsumingDiagnostics(fid,parent,ctx,cfg)
+if ~isfield(ctx,'currentChainInventory'),return;end
+T=ctx.currentChainInventory;T=T(T.ParentID==parent,:);if isempty(T),return;end
+step2Section(fid,'CONSUMING PATHS: DIAGNOSTICS, NOT ACCEPTED NEURONS');
+report(fid,'These paths show model-recorded consumption. Feedback/overlap/control conflicts or missing output removal prevent their use as isolated neurons.');
+for k=1:min(height(T),cfg.neuronChainPrintTop)
+    report(fid,sprintf('  Path %d: %s | %s',k,T.MetabolitePath(k),T.Classification(k)));
+    report(fid,sprintf('  Conversions=%d; net m_c/input change=%g; net I change=%g; I interaction=%d; upstream reaction reuse=%d; EC/gene assignment passed=%d.', ...
+        T.ConversionCount(k),T.NetInputChange(k),T.NetIChange(k),T.IInteraction(k), ...
+        T.ReusesUpstreamReaction(k),T.ECGeneAssignmentPassed(k)));
+    report(fid,['  Shared upstream states: ' char(T.SharedUpstreamIDs(k))]);
+    report(fid,['  Repeated nonadjacent states: ' char(T.NonadjacentSharedIDs(k))]);
+    report(fid,['  Net path equation: ' char(T.NetEquation(k))]);
+    diagnosticCtx=ctx;ids=split(T.MetabolitePath(k),' -> ');
+    for n=2:numel(ids)
+        i=find(string(ctx.model.mets)==ids(n),1);if isempty(i),continue;end
+        diagnosticCtx.signalIndices(end+1)=i;
+        diagnosticCtx.signalLabels(end+1)="m_diag_"+compose('%02d',n-1);
+    end
+    os=str2double(split(T.OrientationIndices(k),';'));
+    for n=1:numel(os)
+        step2PrintOrientation(fid,sprintf('DIAGNOSTIC_r_Npath_%02d',n),os(n),diagnosticCtx);
+    end
+end
+report(fid,'Full path inventory and flags: 15_Consuming_Neuron_Chains.csv. These rows never contribute to the complete-circuit count.');
+end
+
+function step2PrintBlock0Path(fid,path,ctx,prefix)
+report(fid,['  Connector trace: ' char(joinText(string(ctx.model.mets(path.mets)),' -> '))]);
+report(fid,sprintf('  Reactions=%d; complete EC evidence=%d; states=%d; expansions=%d.', ...
+    path.distance,path.ECComplete,path.states,path.expansions));
+idx=path.mets(2:end-1);labels="m_B0_"+compose('%02d',1:numel(idx));
+side=setdiff(path.internal,path.mets,'stable');idx=[reshape(idx,1,[]) reshape(side,1,[])];
+labels=[reshape(labels,1,[]) "m_B0_side_"+compose('%02d',1:numel(side))];
+ctx.signalIndices=[ctx.signalIndices idx];ctx.signalLabels=[ctx.signalLabels labels];
+step2Signal(fid,'cAMP',path.mets(1),ctx.model);
+for j=1:numel(idx),step2Signal(fid,char(labels(j)),idx(j),ctx.model);end
+report(fid,['  Additional supplied feeds: ' char(joinText(string(ctx.model.mets(path.feed)),'; '))]);
+report(fid,['  Waste products: ' char(joinText(string(ctx.model.mets(path.waste)),'; '))]);
+report(fid,['  Buffered currency participants: ' char(joinText(string(ctx.model.mets(path.buffered)),'; '))]);
+report(fid,['  Module net equation: ' char(step2NamedSide(max(-path.net,0),ctx)+" -> "+step2NamedSide(max(path.net,0),ctx))]);
+report(fid,'  Stoichiometric weights below normalize one cAMP consumed; they are not kinetic rate constants.');
+for n=1:numel(path.o)
+    report(fid,sprintf('  %s_%d module flux multiplier: %.9g',prefix,n,path.flux(n)));
+    step2PrintOrientation(fid,sprintf('%s_%d',prefix,n),path.o(n),ctx);
+end
 end
 
 function step2PrintOrientation(fid,role,o,ctx)
@@ -3463,6 +4289,7 @@ end
 function selfTestAnderson()
 % Meaningful chemistry regressions; no real model/network/toolbox required.
 cfg=defaultOptions();
+selfTestBlock0Alternatives();
 assert(cfg.productionMode=="multi_reaction"&&cfg.maxCoreReactions==10, ...
     'Default search must permit the original multi-step production modules.');
 cfg.maxCoreReactions=3;cfg.maxStatesPerI=Inf;
@@ -4037,8 +4864,66 @@ assert(scaled.PrimitiveScale(sf)==0.5&&scaled.I_LossPerEvent(sf)/scaled.Primitiv
 selfTestStep2Circuit(m,R,P,E,F,X,xp,Y,cfg);
 end
 
+function selfTestBlock0Alternatives()
+% Toy reaction supports only: these are not proposed biochemical reactions.
+cfg=defaultOptions();cfg.insideCompartment="c";cfg.block0MaxDepth=4;
+cfg.block0MaxAlternatives=Inf;cfg.block0MaxStates=1000;cfg.block0MaxExpansions=10000;
+m=struct('mets',{{'camp[c]';'blocked_F[c]';'goal[c]';'a[c]';'b[c]';'x[c]';'w[c]';'q[c]'}}, ...
+    'rxns',{{'bad_first';'bad_last';'nonunit_first';'nonunit_last'; ...
+    'alt_first';'alt_middle';'alt_last';'parallel_first';'parallel_last'}}, ...
+    'S',sparse(8,9),'lb',zeros(9,1),'ub',ones(9,1)*100);
+R=sparse(8,9);P=R;
+R(1,1)=1;P(2,1)=1;R(2,2)=1;P(3,2)=1;
+R([1 6],3)=1;P(4,3)=2;R(4,4)=1;P([3 7],4)=1;
+R(1,5)=1;P(5,5)=1;R(5,6)=1;P(8,6)=1;R(8,7)=1;P(3,7)=1;
+R([1 6],8)=1;P([4 5],8)=1;R([4 5],9)=1;P([3 7],9)=1;
+m.S=P-R;m=normalizeModel(m);m.circuitResolvedEC="1.1.1."+string((1:9)');
+[base,comp]=splitCompartments(string(m.mets));m.circuitCompartment=comp;
+[O,T]=buildPools(m,base,comp,false(8,1),R,P,true(9,1),cfg);
+E=struct('codes',m.circuitResolvedEC,'source',repmat("SYNTHETIC_ONLY",9,1), ...
+    'reference',repmat("NOT_BIOLOGICAL_EVIDENCE",9,1));
+ctx=struct('model',m,'base',base,'comp',comp,'currency',false(8,1),'O',O,'T',T,'E',E);
+G=buildStep2Block0Graph(ctx,cfg);
+[best,alternatives,audit]=findStep2Block0(3,[],[2 3],[],ctx,G,cfg,true);
+assert(best.found&&numel(alternatives)>=3,'Alternative Block 0 enumeration failed.');
+nonunit=false;parallel=false;threeStep=false;
+for k=1:numel(alternatives)
+    p=alternatives(k);parts=find(any(O.R(:,p.o)+O.P(:,p.o)>1e-8,2));
+    assert(~ismember(2,parts),'A forbidden downstream signal survived as a side participant.');
+    assert(all(p.flux>0)&&abs(p.net(1)+1)<1e-8&&all(abs(p.net(p.internal))<1e-8));
+    if isequal(sort(O.rxn(p.o)),[3 4])
+        nonunit=true;assert(norm(p.flux-[1 2],Inf)<1e-8&&abs(p.net(3)-2)<1e-8);
+    end
+    if isequal(sort(O.rxn(p.o)),[8 9])
+        parallel=true;assert(all(ismember([4 5],p.internal)));
+    end
+    if isequal(sort(O.rxn(p.o)),[5 6 7]),threeStep=true;end
+end
+assert(nonunit&&parallel&&threeStep,'Nonunit, shared-internal or longer alternatives were missed.');
+assert(any(audit.Reason=="shares_downstream_noncurrency"),'Cross-talk exclusions were not audited.');
+blocked=findStep2Block0(3,[],[2 3 4 5 8],[],ctx,G,cfg,true);
+assert(~blocked.found&&~blocked.topologyReachable,'Disconnected-after-exclusions status is incorrect.');
+small=cfg;small.block0MaxAlternatives=1;
+limited=findStep2Block0(3,[],[2 3],[],ctx,G,small,true);
+assert(limited.found&&limited.alternativeLimitReached,'Alternative retention coverage was lost.');
+small=cfg;small.block0MaxDepth=1;
+limited=findStep2Block0(3,[],[2 3],[],ctx,G,small,true);
+assert(~limited.found&&limited.depthLimitReached,'A depth-limited search was reported as exhaustive.');
+conflict=ctx;conflict.E.codes(4)=conflict.E.codes(3);
+[~,qualified]=findStep2Block0(3,[],[2 3],[],conflict,G,cfg,true);
+for k=1:numel(qualified),assert(~all(ismember([3 4],O.rxn(qualified(k).o))));end
+[raw,structural]=findStep2Block0(3,[],[2 3],[],conflict,G,cfg,false);
+assert(raw.found&&all(contains([structural.status],"not_EC")), ...
+    'Structural-only alternatives were mislabeled as independently EC-qualified.');
+unsupported=ctx;first=find(O.rxn==3,1);last=find(O.rxn==4,1);
+unsupported.O.R(8,first)=1;unsupported.O.P(8,first)=1;
+[~,reason]=validateStep2Block0Module(1,3,[first last],unsupported);
+assert(reason=="startupRejected",'An unseeded internal catalyst was accepted.');
+end
+
 function selfTestStep2Circuit(previous,oldR,oldP,oldE,F,X,xp,Y,cfg)
 % Synthetic single-neuron/report regressions, run only by explicit selftest.
+cfg.neuronPlacement="inside"; % preserve the earlier direct-neuron regressions
 nm=numel(previous.mets);nr=numel(previous.rxns);a=nm+(1:5);minIndex=find(string(previous.mets)=="u[c]",1);
 assert(~isempty(minIndex));input=find(string(previous.mets)=="counter_total[c]",1);
 R=blkdiag(oldR,sparse(5,5));P=blkdiag(oldP,sparse(5,5));
@@ -4086,6 +4971,155 @@ assert(contains(text,' (m_in) [u[c]]')&&contains(text,' (m_Fd) [') ...
     'Main signal names or same-metabolite aliases are missing from reaction equations.');
 assert(~contains(text,'r_Nf_2')&&~contains(text,'r_Nd_2')&&~contains(text,'r_Nr_2'), ...
     'The single-neuron report still requires a second-neuron role.');
+selfTestDirectConsumingChains(ctx,cfg,input,nr+2,a(2));
+selfTestExternalNeuron(ctx,cfg,input);
+end
+
+function selfTestDirectConsumingChains(ctx,cfg,input,secondStep,oldOutput)
+% Split the two-step toy neuron into THREE conversions, then removal.
+% This distinguishes the new variable-length search from the old fixed motif.
+defaults=defaultOptions();assert(defaults.neuronPlacement=="inside",'The default neuron must consume m_c inside.');
+cfg.neuronPlacement="inside";cfg.neuronChainMinDepth=3;cfg.neuronChainMaxDepth=3;
+nm=numel(ctx.model.mets);nr=numel(ctx.model.rxns);mid=nm+1;j=nr+1;
+R=blkdiag(ctx.R,sparse(1,1));P=blkdiag(ctx.P,sparse(1,1));
+P(oldOutput,secondStep)=0;P(mid,secondStep)=1;R(mid,j)=1;P(oldOutput,j)=1;
+m=ctx.model;m.mets=[m.mets;{'neuron_bridge[c]'}];m.rxns=[m.rxns;{'Neuron_bridge_step'}];
+for key={'rxnNames','grRules','rules'},m.(key{1})=[m.(key{1});{''}];end
+m.S=P-R;m.lb=[m.lb;0];m.ub=[m.ub;100];[base,comp]=splitCompartments(string(m.mets));
+m.circuitCompartment=comp;t=ctx;t.model=m;t.base=base;t.comp=comp;t.R=R;t.P=P;
+t.currency=[ctx.currency;false];t.grossKnown=true(nr+1,1);
+t.E.codes=[ctx.E.codes;"5.4.99.101"];t.E.source=[ctx.E.source;"SYNTHETIC_CHAIN_TEST_ONLY"];
+t.E.reference=[ctx.E.reference;"TEST_ONLY_NOT_BIOLOGICAL_EVIDENCE"];
+t.model.circuitResolvedEC=t.E.codes;
+[t.O,~]=buildPools(t.model,base,comp,t.currency,R,P,t.grossKnown,cfg);
+[result,outctx]=searchStep2Circuit(t,cfg);
+assert(~isempty(result.complete)&&all(result.neuronCandidates.NeuronConversionCount==3), ...
+    'The direct consuming search failed to find a three-conversion neuron.');
+for k=1:numel(result.motifs)
+    v=result.motifs(k);assert(v.n1.input==input&&numel(v.n1.conversionO)==3 ...
+        &&numel(v.n1.o)==4&&v.transport.rx==0);
+end
+short=cfg;short.neuronChainMinDepth=2;short.neuronChainMaxDepth=2;
+bounded=searchStep2Circuit(t,short);
+assert(all(bounded.neuronCandidates.NeuronConversionCount<=2),'The neuron conversion-depth bound was bypassed.');
+feedback=t;first=find(t.O.rxn==secondStep-1,1);assert(~isempty(first));seed=ctx.F.I_Index(1);
+feedback.O.P(seed,first)=1;feedback.O.N=feedback.O.P-feedback.O.R;
+bad=searchStep2Circuit(feedback,cfg);
+assert(isempty(bad.complete)&&isempty(bad.neuronCandidates) ...
+    &&any(bad.consumingChains.IInteraction&bad.consumingChains.SearchPass=="diagnostic_only"), ...
+    'Feedback consuming chains were either hidden or counted as accepted neurons.');
+quiet=cfg;quiet.neuronDiagnoseRejectedChains=false;noDiagnostics=searchStep2Circuit(feedback,quiet);
+assert(~any(noDiagnostics.consumingChains.SearchPass=="diagnostic_only"), ...
+    'Rejected-chain diagnostics ignored their off switch.');
+path=[tempname '.txt'];cleanup=onCleanup(@()delete(path)); %#ok<NASGU>
+writeStep2Report(path,result,outctx,cfg);value=fileread(path);
+assert(contains(value,'r_Nmid_1_01')&&contains(value,' (m_Nmid_1_01) [neuron_bridge[c]]'), ...
+    'Longer-neuron reactions or intermediate signals were left unannotated.');
+end
+
+function selfTestExternalNeuron(ctx,cfg,input)
+% Synthetic outside exporter and three-neuron-reaction fixture only.
+% Never executed during a normal search; no real-model search is run here.
+cfg.neuronPlacement="outside";cfg.neuronCompartment="e";
+nm=numel(ctx.model.mets);nr=numel(ctx.model.rxns);a=nm+(1:4);
+R=blkdiag(ctx.R,sparse(4,4));P=blkdiag(ctx.P,sparse(4,4));
+R(input,nr+1)=1;P(a(1),nr+1)=1;
+R(a(1),nr+2)=1;P(a(2),nr+2)=1;
+R(a(2),nr+3)=1;P(a(3),nr+3)=1;
+R(a(3),nr+4)=1;P(a(4),nr+4)=1;
+m=ctx.model;m.mets=[m.mets;cellstr([ctx.base(input)+"[e]";"external_nf[e]";"external_nd[e]";"external_w[e]"])];
+m.rxns=[m.rxns;{'T_counter_export';'External_Nf';'External_Nd';'External_Nr'}];
+for key={'rxnNames','grRules','rules'},m.(key{1})=[m.(key{1});repmat({''},4,1)];end
+m.S=P-R;m.lb=[m.lb;zeros(4,1)];m.ub=[m.ub;100*ones(4,1)];m=normalizeModel(m);
+[base,comp]=splitCompartments(string(m.mets));m.circuitCompartment=comp;
+t=ctx;t.model=m;t.base=base;t.comp=comp;t.currency=[ctx.currency;false(4,1)];
+t.R=R;t.P=P;t.grossKnown=true(nr+4,1);
+t.O.R=[ctx.O.R;sparse(4,numel(ctx.O.rxn))];
+t.O.P=[ctx.O.P;sparse(4,numel(ctx.O.rxn))];t.O.N=t.O.P-t.O.R;
+t.O.consumers=[ctx.O.consumers;cell(4,1)];
+t.E.codes=[ctx.E.codes;"";"7.1.1.101";"7.1.1.102";"7.1.1.103"];
+t.E.source=[ctx.E.source;repmat("SYNTHETIC_TEST_ONLY",4,1)];
+t.E.reference=[ctx.E.reference;repmat("TEST_ONLY_NOT_BIOLOGICAL_EVIDENCE",4,1)];
+% The old pool remains append-only; preparation adds only outside reactions.
+[result,outctx]=searchStep2Circuit(t,cfg);
+assert(~isempty(result.complete)&&~isempty(result.neuronCandidates)&&result.stats.exportLinks>0, ...
+    'An existing exporter and isolated external neuron were not connected.');
+for k=1:numel(result.motifs)
+    v=result.motifs(k);assert(v.transport.counter==input&&v.transport.input==a(1)&&v.n1.input==a(1));
+    assert(all(comp(v.n1.parts)=="e")&&v.transport.rx==nr+1);
+end
+assert(isequal(outctx.O.rxn(1:numel(ctx.O.rxn)),ctx.O.rxn),'Outside preparation changed an upstream orientation index.');
+noExport=t;noExport.model.ub(nr+1)=0;bad=searchStep2Circuit(noExport,cfg);
+assert(isempty(bad.complete)&&isempty(bad.neuronCandidates),'An external neuron bypassed its mandatory exporter.');
+wrong=t;wrong.P(a(1),nr+1)=2;wrong.model.S=wrong.P-wrong.R;
+bad=searchStep2Circuit(wrong,cfg);
+assert(isempty(bad.complete)&&any(bad.transportAudit.Status=="cargo_copies_not_conserved"), ...
+    'Unequal counter-copy export was accepted as transport.');
+feedback=t;outsideI=find(base==base(ctx.F.I_Index(1))&comp=="e",1);assert(~isempty(outsideI));
+feedback.P(outsideI,nr+2)=1;feedback.model.S=feedback.P-feedback.R;
+bad=searchStep2Circuit(feedback,cfg);
+assert(isempty(bad.complete)&&any(bad.entryAudit.Status=="entry_external_I_feeds_existing_upstream_pool"), ...
+    'Outside I that can feed the existing upstream import pool escaped the feedback check.');
+noBlock=t;noBlock.base(noBlock.base=="camp")="not_cAMP";
+bad=searchStep2Circuit(noBlock,cfg);
+assert(isempty(bad.complete)&&~isempty(bad.neuronCandidates), ...
+    'Missing Block 0 concealed otherwise valid external-neuron candidates.');
+path=[tempname '.txt'];cleanup=onCleanup(@()delete(path)); %#ok<NASGU>
+writeStep2Report(path,result,outctx,cfg);value=fileread(path);
+assert(contains(value,'r_T_N1')&&contains(value,' (m_c / m_exp) [counter_total[c]]') ...
+    &&contains(value,' (m_Nin_1) [counter_total[e]]'), ...
+    'The exported counter and external neuron input were merged or left unannotated.');
+selfTestNeuronAdapter(t,cfg,input,nr+1,nr+2);
+end
+
+function selfTestNeuronAdapter(ctx,cfg,counter,oldExport,externalEntry)
+% A two-reaction adapter is REQUIRED to reach the only enabled exporter.
+% All annotations here are synthetic fixture data, never biological evidence.
+nm=numel(ctx.model.mets);nr=numel(ctx.model.rxns);v=nm+(1:3);j=nr+(1:3);
+R=blkdiag(ctx.R,sparse(3,3));P=blkdiag(ctx.P,sparse(3,3));
+R(counter,j(1))=1;P(v(1),j(1))=1;
+R(v(1),j(2))=1;P(v(2),j(2))=1;
+R(v(2),j(3))=1;P(v(3),j(3))=1;
+R(:,externalEntry)=0;R(v(3),externalEntry)=1;
+m=ctx.model;m.mets=[m.mets;{'adapter_mid[c]';'export_cargo[c]';'export_cargo[e]'}];
+m.rxns=[m.rxns;{'Adapter_first';'Adapter_last';'T_adapter_cargo'}];
+for key={'rxnNames','grRules','rules'},m.(key{1})=[m.(key{1});repmat({''},3,1)];end
+m.S=P-R;m.lb=[m.lb;zeros(3,1)];m.ub=[m.ub;100*ones(3,1)];m.ub(oldExport)=0;
+[base,comp]=splitCompartments(string(m.mets));m.circuitCompartment=comp;
+t=ctx;t.model=m;t.base=base;t.comp=comp;t.R=R;t.P=P;
+t.currency=[ctx.currency;false(3,1)];t.grossKnown=true(nr+3,1);
+t.E.codes=[ctx.E.codes;"6.3.1.201";"6.3.1.202";""];
+t.E.source=[ctx.E.source;repmat("SYNTHETIC_ADAPTER_TEST_ONLY",3,1)];
+t.E.reference=[ctx.E.reference;repmat("TEST_ONLY_NOT_BIOLOGICAL_EVIDENCE",3,1)];
+t.model.circuitResolvedEC=t.E.codes;
+[t.O,~]=buildPools(t.model,base,comp,t.currency,R,P,t.grossKnown,cfg);
+cfg.neuronAdapterMaxDepth=2;
+[result,outctx]=searchStep2Circuit(t,cfg);
+assert(~isempty(result.complete)&&~isempty(result.adapterLinks) ...
+    &&all(result.adapterLinks.AdapterReactionCount==2), ...
+    'The two-reaction adapter failed to reach its existing exporter.');
+for k=1:numel(result.motifs)
+    link=result.motifs(k).transport;
+    assert(link.counter==counter&&link.cargo==v(2)&&link.input==v(3) ...
+        &&isequal(link.adapterRx,j(1:2))&&result.motifs(k).n1.input==v(3));
+end
+short=cfg;short.neuronAdapterMaxDepth=1;bad=searchStep2Circuit(t,short);
+assert(isempty(bad.complete)&&isempty(bad.adapterLinks),'The adapter depth bound was bypassed.');
+feedback=t;seed=ctx.F.I_Index(1);feedback.P(seed,j(1))=1;feedback.model.S=feedback.P-feedback.R;
+[feedback.O,~]=buildPools(feedback.model,base,comp,feedback.currency,feedback.R,feedback.P,feedback.grossKnown,cfg);
+bad=searchStep2Circuit(feedback,cfg);
+assert(isempty(bad.adapterLinks)&&any(bad.adapterAudit.Status=="adapter_couples_to_I_pool"), ...
+    'The adapter was allowed to regenerate the upstream canceller I.');
+missing=t;missing.E.codes(externalEntry)="";bad=searchStep2Circuit(missing,cfg);
+assert(isempty(bad.neuronCandidates)&&~isempty(bad.adapterLinks), ...
+    'An unannotated external neuron concealed valid adapter/export interfaces.');
+path=[tempname '.txt'];cleanup=onCleanup(@()delete(path)); %#ok<NASGU>
+writeStep2Report(path,result,outctx,cfg);value=fileread(path);
+assert(contains(value,'r_A_N1_01')&&contains(value,'r_A_N1_02') ...
+    &&contains(value,' (m_A1) [adapter_mid[c]]') ...
+    &&contains(value,' (m_exp) [export_cargo[c]]') ...
+    &&contains(value,' (m_Nin_1) [export_cargo[e]]'), ...
+    'The adapter intermediates, export cargo and external input were not annotated separately.');
 end
 
 function s = joinText(values,delimiter)
