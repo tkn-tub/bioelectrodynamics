@@ -1,5 +1,5 @@
 BLOCK 0 -> FAST/SLOW BRANCHES -> ANDERSON CANCELLER -> CONSUMING COUNTER -> ONE CONSUMING NEURON
-Code revision: import_autocatalytic_module_2026_11_16_fix1.
+Code revision: minimum_production_layers_2026_11_16.
 Direction policy: model-bound orientations; reverse steps included only when allowReverse and the lower bound permit them.
 allowReverse=1; counterMode=consume_I; EC map is partial and source/signature checked.
 Neuron layout: m_c -> m_Nf_1 -> m_Nd_1, with m_out = m_Nd_1 and a separate removal reaction r_Nr_1.
@@ -23,22 +23,24 @@ Stages enabled: removal=1; branches=1; counter=1; Step2=1. Required supplied imp
   Intracellular reaction orientations: 3272; enabled=1; inspect 00_Reaction_Filter_Audit.csv.
   I import transporters: 274; enabled=1; inspect 01_Import_Transporters.csv.
   Imported I pools: 266; enabled=1; inspect 02_Search_Coverage.csv.
-  Seed-dependent production modules: 542; enabled=1; inspect 02_Autocatalytic_Cores.csv.
-  Import plus production pairs: 664; enabled=1; inspect 03_Production_Candidates.csv.
+  Seed-dependent production modules: 992; enabled=1; inspect 02_Autocatalytic_Cores.csv.
+  Import plus production pairs: 1180; enabled=1; inspect 03_Production_Candidates.csv.
   Linear I-removal candidates: 1016; enabled=1; inspect 05_Linear_Removal_Candidates.csv.
   Pair-loss candidates: 22; enabled=1; inspect 05_Quadratic_Removal_Candidates.csv.
-  Connected Anderson cancellers: 8; enabled=1; inspect 06_Connected_Anderson_Candidates.csv.
+  Connected Anderson cancellers: 118; enabled=1; inspect 06_Connected_Anderson_Candidates.csv.
   EC-qualified fast/slow modules: 4; enabled=1; inspect 07_Branch_Modules.csv.
-  Branch plus canceller connections: 16; enabled=1; inspect 08_Branches_Canceller_Wiring.csv.
-  Counter components: 10; enabled=1; inspect 09_Counter_Components.csv.
-  Canceller plus counter connections: 8; enabled=1; inspect 10_Canceller_Counter_Connections.csv.
-  Branch-canceller-counter parents: 16; enabled=1; inspect 11_Branches_Canceller_Counter_Wiring.csv.
-Production coverage: budget reached for 222 I pools; solver-unresolved closures=476. See 02_Search_Coverage.csv.
+  Branch plus canceller connections: 236; enabled=1; inspect 08_Branches_Canceller_Wiring.csv.
+  Counter components: 24; enabled=1; inspect 09_Counter_Components.csv.
+  Canceller plus counter connections: 96; enabled=1; inspect 10_Canceller_Counter_Connections.csv.
+  Branch-canceller-counter parents: 192; enabled=1; inspect 11_Branches_Canceller_Counter_Wiring.csv.
+Production coverage: budget reached for 224 I pools; solver-unresolved closures=6. See 02_Search_Coverage.csv.
+Production minimum sizes proven within the enumerated search class for 70 I pools. See Minimum_Production_Report.txt.
+A minimum applies to production alone. Longer modules may be needed to satisfy downstream isolation and wiring.
 
 ============================================================
 SEARCH COUNTS: FOUND VERSUS PRINTED
 ============================================================
-Branch-canceller-counter parents available: 16; examined: 16.
+Branch-canceller-counter parents available: 192; examined: 192.
 Parents with an EC-qualified isolated cAMP-to-m_in connector: 0.
 Parents with an isolated structural connector awaiting EC qualification: 0.
 Single-neuron rails passing current policies: 0; neuron candidates tested: 0.
@@ -51,15 +53,15 @@ No whole-cell flux, atom-transfer, thermodynamic or kinetic validation is claime
 ============================================================
 NEURON ENTRY REJECTIONS
 ============================================================
-  entry_would_regenerate_I: 16
-  no_consuming_reaction_in_model: 8
+  entry_would_regenerate_I: 192
+  no_consuming_reaction_in_model: 96
 
-No complete motif passed. Printing 10 of 16 PARTIAL parents with all known reactions and explicit missing roles.
+No complete motif passed. Printing 10 of 192 PARTIAL parents with all known reactions and explicit missing roles.
 
 ============================================================
 CANDIDATE 1 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=1; module=1; canceller=4; counter=1; block=u.
+Parent=1; module=1; canceller=68; counter=1; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -238,6 +240,8 @@ r_T_S
   W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
   R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Valine_C5H11NO2 (X_9) [AUXOSCval_L[u]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [AUXOSC3mob[u]] + 2 M_ADP_C10H12N5O10P2 (W_2) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_3) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_5) [AUXOSCh[u]] + M_H_H (W_6) [AUXOSMh[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
@@ -458,7 +462,7 @@ STATUS: structural topology only; S/F control, buffered feeds, driving forces, f
 ============================================================
 CANDIDATE 2 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=2; module=2; canceller=4; counter=1; block=u.
+Parent=2; module=2; canceller=68; counter=1; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -637,6 +641,8 @@ r_T_S
   W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
   R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Valine_C5H11NO2 (X_9) [AUXOSCval_L[u]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [AUXOSC3mob[u]] + 2 M_ADP_C10H12N5O10P2 (W_2) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_3) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_5) [AUXOSCh[u]] + M_H_H (W_6) [AUXOSMh[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
@@ -857,7 +863,7 @@ STATUS: structural topology only; S/F control, buffered feeds, driving forces, f
 ============================================================
 CANDIDATE 3 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=3; module=1; canceller=4; counter=2; block=u.
+Parent=3; module=1; canceller=68; counter=2; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -1036,6 +1042,8 @@ r_T_S
   W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
   R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Valine_C5H11NO2 (X_9) [AUXOSCval_L[u]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [AUXOSC3mob[u]] + 2 M_ADP_C10H12N5O10P2 (W_2) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_3) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_5) [AUXOSCh[u]] + M_H_H (W_6) [AUXOSMh[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
@@ -1256,7 +1264,7 @@ STATUS: structural topology only; S/F control, buffered feeds, driving forces, f
 ============================================================
 CANDIDATE 4 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=4; module=2; canceller=4; counter=2; block=u.
+Parent=4; module=2; canceller=68; counter=2; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -1435,6 +1443,8 @@ r_T_S
   W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
   R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Valine_C5H11NO2 (X_9) [AUXOSCval_L[u]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [AUXOSC3mob[u]] + 2 M_ADP_C10H12N5O10P2 (W_2) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_3) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_5) [AUXOSCh[u]] + M_H_H (W_6) [AUXOSMh[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
@@ -1655,7 +1665,7 @@ STATUS: structural topology only; S/F control, buffered feeds, driving forces, f
 ============================================================
 CANDIDATE 5 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=5; module=1; canceller=5; counter=3; block=u.
+Parent=5; module=1; canceller=69; counter=3; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -1834,6 +1844,8 @@ r_T_S
   W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
   R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Valine_C5H11NO2 (X_9) [AUXOSCval_L[u]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [AUXOSC3mob[u]] + 2 M_ADP_C10H12N5O10P2 (W_2) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_3) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_5) [AUXOSCh[u]] + M_H_H (W_6) [AUXOSMh[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
@@ -2031,7 +2043,7 @@ STATUS: structural topology only; S/F control, buffered feeds, driving forces, f
 ============================================================
 CANDIDATE 6 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=6; module=2; canceller=5; counter=3; block=u.
+Parent=6; module=2; canceller=69; counter=3; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -2210,6 +2222,8 @@ r_T_S
   W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
   R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Valine_C5H11NO2 (X_9) [AUXOSCval_L[u]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [AUXOSC3mob[u]] + 2 M_ADP_C10H12N5O10P2 (W_2) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_3) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_5) [AUXOSCh[u]] + M_H_H (W_6) [AUXOSMh[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
@@ -2407,7 +2421,7 @@ STATUS: structural topology only; S/F control, buffered feeds, driving forces, f
 ============================================================
 CANDIDATE 7 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=7; module=1; canceller=5; counter=4; block=u.
+Parent=7; module=1; canceller=69; counter=4; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -2586,6 +2600,8 @@ r_T_S
   W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
   R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Valine_C5H11NO2 (X_9) [AUXOSCval_L[u]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [AUXOSC3mob[u]] + 2 M_ADP_C10H12N5O10P2 (W_2) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_3) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_5) [AUXOSCh[u]] + M_H_H (W_6) [AUXOSMh[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
@@ -2783,7 +2799,7 @@ STATUS: structural topology only; S/F control, buffered feeds, driving forces, f
 ============================================================
 CANDIDATE 8 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=8; module=2; canceller=5; counter=4; block=u.
+Parent=8; module=2; canceller=69; counter=4; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -2962,6 +2978,8 @@ r_T_S
   W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
   R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Valine_C5H11NO2 (X_9) [AUXOSCval_L[u]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [AUXOSC3mob[u]] + 2 M_ADP_C10H12N5O10P2 (W_2) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_3) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_5) [AUXOSCh[u]] + M_H_H (W_6) [AUXOSMh[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
@@ -3159,18 +3177,18 @@ STATUS: structural topology only; S/F control, buffered feeds, driving forces, f
 ============================================================
 CANDIDATE 9 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=9; module=3; canceller=7; counter=5; block=x.
+Parent=9; module=1; canceller=70; counter=5; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
-  m_in     : PROTSCf6p[x] | M_D_Fructose_6_phosphate_C6H11O9P
-  m_Ff     : PROTSCfdp[x] | M_D_Fructose_1_6_bisphosphate_C6H10O12P2
-  m_Fd     : PROTSCg3p[x] | M_Glyceraldehyde_3_phosphate_C3H5O6P
-  m_Sf     : PROTSCg6p[x] | M_D_Glucose_6_phosphate_C6H11O9P
-  m_Sd     : PROTSC6pgl[x] | M_6_phospho_D_glucono_1_5_lactone_C6H9O9P
-  I        : PROTSCgthrd[x] | M_Reduced_glutathione_C10H16N3O6S
-  m_c      : PROTSCSfglutth[x] | M_S_Formylglutathione_C11H16N3O7S
-  m_Nin_1  : PROTSCSfglutth[x] | M_S_Formylglutathione_C11H16N3O7S
+  m_in     : AUXOSCf6p[u] | M_D_Fructose_6_phosphate_C6H11O9P
+  m_Ff     : AUXOSCfdp[u] | M_D_Fructose_1_6_bisphosphate_C6H10O12P2
+  m_Fd     : AUXOSCg3p[u] | M_Glyceraldehyde_3_phosphate_C3H5O6P
+  m_Sf     : AUXOSCg6p[u] | M_D_Glucose_6_phosphate_C6H11O9P
+  m_Sd     : AUXOSC6pgl[u] | M_6_phospho_D_glucono_1_5_lactone_C6H9O9P
+  I        : AUXOSCgthrd[u] | M_Reduced_glutathione_C10H16N3O6S
+  m_c      : AUXOSCSfglutth[u] | M_S_Formylglutathione_C11H16N3O7S
+  m_Nin_1  : AUXOSCSfglutth[u] | M_S_Formylglutathione_C11H16N3O7S
   m_Nf_1, m_Nd_1, m_out: UNASSIGNED (no accepted single-neuron extension).
   r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
 
@@ -3181,50 +3199,50 @@ BLOCK 0: cAMP TO m_in
   No isolated cAMP-to-m_in connector accepted within the configured search.
   Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
-  Path: PROTSCcamp[x] -> PROTSCamp[x] -> PROTSCr5p[x] -> PROTSCg3p[x] -> PROTSCf6p[x]
-  Shared downstream noncurrency species outside m_in: PROTSCg3p[x]
+  Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
+  Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
   A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
 r_CAMP_DIAGNOSTIC_1
-  ID: PROTSPDE1
+  ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
   Direction: +1 relative to model.S
   Resolved EC: 3.1.4.17;3.1.4.53
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/models/ic_1306/reactions/PDE1
-  Equation: M_cAMP_C10H11N5O6P [PROTSCcamp[x]] + M_H2O_H2O [PROTSCh2o[x]] -> M_AMP_C10H12N5O7P [PROTSCamp[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_cAMP_C10H11N5O6P [AUXOSCcamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
 r_CAMP_DIAGNOSTIC_2
-  ID: PROTSAMPN
+  ID: AUXOSAMPN
   Name: R_AMP_nucleosidase
   Direction: +1 relative to model.S
   Resolved EC: 3.2.2.4
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://iubmb.qmul.ac.uk/enzyme/EC3/2/2/4.html
-  Equation: M_AMP_C10H12N5O7P [PROTSCamp[x]] + M_H2O_H2O [PROTSCh2o[x]] -> M_Adenine_C5H5N5 [PROTSCade[x]] + M_alpha_D_Ribose_5_phosphate_C5H9O8P [PROTSCr5p[x]]
+  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Adenine_C5H5N5 [AUXOSCade[u]] + M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]]
   GPR: 
   Resolved genes: 
 
 r_CAMP_DIAGNOSTIC_3
-  ID: PROTSTKT1
+  ID: AUXOSTKT1
   Name: R_transketolase
   Direction: +1 relative to model.S
   Resolved EC: 2.2.1.1
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/models/e_coli_core/reactions/TKT1
-  Equation: M_alpha_D_Ribose_5_phosphate_C5H9O8P [PROTSCr5p[x]] + M_D_Xylulose_5_phosphate_C5H9O8P [PROTSCxu5p_D[x]] -> M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [PROTSCg3p[x]] + M_Sedoheptulose_7_phosphate_C7H13O10P [PROTSCs7p[x]]
+  Equation: M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]] + M_D_Xylulose_5_phosphate_C5H9O8P [AUXOSCxu5p_D[u]] -> M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]]
   GPR: 
   Resolved genes: 
 
 r_CAMP_DIAGNOSTIC_4
-  ID: PROTSTALA
+  ID: AUXOSTALA
   Name: R_transaldolase
   Direction: +1 relative to model.S
   Resolved EC: 2.2.1.2
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/TALA
-  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [PROTSCg3p[x]] + M_Sedoheptulose_7_phosphate_C7H13O10P [PROTSCs7p[x]] -> M_D_Erythrose_4_phosphate_C4H7O7P [PROTSCe4p[x]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [PROTSCf6p[x]]
+  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]] -> M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]]
   GPR: 
   Resolved genes: 
 
@@ -3233,68 +3251,68 @@ r_CAMP_DIAGNOSTIC_4
 FAST AND SLOW BRANCHES (SIX REACTIONS)
 ============================================================
 r_Ff
-  ID: PROTSPFK
+  ID: AUXOSPFK
   Name: R_phosphofructokinase
   Direction: +1 relative to model.S
   Resolved EC: 2.7.1.11
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PFK
-  Equation: M_ATP_C10H12N5O13P3 [PROTSCatp[x]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [PROTSCf6p[x]] -> M_ADP_C10H12N5O10P2 [PROTSCadp[x]] + M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Ff) [PROTSCfdp[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Ff) [AUXOSCfdp[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
 r_Fd
-  ID: PROTSFBA
+  ID: AUXOSFBA
   Name: R_fructose_bisphosphate_aldolase
   Direction: +1 relative to model.S
   Resolved EC: 4.1.2.13
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FBA
-  Equation: M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Ff) [PROTSCfdp[x]] -> M_Dihydroxyacetone_phosphate_C3H5O6P [PROTSCdhap[x]] + M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [PROTSCg3p[x]]
+  Equation: M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Ff) [AUXOSCfdp[u]] -> M_Dihydroxyacetone_phosphate_C3H5O6P [AUXOSCdhap[u]] + M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]]
   GPR: 
   Resolved genes: 
 
 r_Fr
-  ID: PROTSGAPD
+  ID: AUXOSGAPD
   Name: R_glyceraldehyde_3_phosphate_dehydrogenase
   Direction: +1 relative to model.S
   Resolved EC: 1.2.1.12;1.2.1.59
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GAPD
-  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [PROTSCg3p[x]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [PROTSCnad[x]] + M_Phosphate_HO4P [PROTSCpi[x]] -> M_3_Phospho_D_glyceroyl_phosphate_C3H4O10P2 [PROTSC13dpg[x]] + M_H_H [PROTSCh[x]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [PROTSCnadh[x]]
+  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] + M_Phosphate_HO4P [AUXOSCpi[u]] -> M_3_Phospho_D_glyceroyl_phosphate_C3H4O10P2 [AUXOSC13dpg[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
   GPR: 
   Resolved genes: 
 
 r_Sf
-  ID: PROTSPGI
+  ID: AUXOSPGI
   Name: R_glucose_6_phosphate_isomerase
   Direction: -1 relative to model.S
   Resolved EC: 5.3.1.9
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGI
-  Equation: M_D_Fructose_6_phosphate_C6H11O9P (m_in) [PROTSCf6p[x]] -> M_D_Glucose_6_phosphate_C6H11O9P (m_Sf) [PROTSCg6p[x]]
+  Equation: M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_D_Glucose_6_phosphate_C6H11O9P (m_Sf) [AUXOSCg6p[u]]
   GPR: 
   Resolved genes: 
 
 r_Sd
-  ID: PROTSG6PDH2
+  ID: AUXOSG6PDH2
   Name: R_glucose_6_phosphate_dehydrogenase
   Direction: +1 relative to model.S
   Resolved EC: 1.1.1.49;1.1.1.363
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/G6PDH2r
-  Equation: M_D_Glucose_6_phosphate_C6H11O9P (m_Sf) [PROTSCg6p[x]] + M_Nicotinamide_adenine_dinucleotide_phosphate_C21H25N7O17P3 [PROTSCnadp[x]] -> M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Sd) [PROTSC6pgl[x]] + M_H_H [PROTSCh[x]] + M_Nicotinamide_adenine_dinucleotide_phosphate___reduced_C21H26N7O17P3 [PROTSCnadph[x]]
+  Equation: M_D_Glucose_6_phosphate_C6H11O9P (m_Sf) [AUXOSCg6p[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate_C21H25N7O17P3 [AUXOSCnadp[u]] -> M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Sd) [AUXOSC6pgl[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate___reduced_C21H26N7O17P3 [AUXOSCnadph[u]]
   GPR: 
   Resolved genes: 
 
 r_Sr
-  ID: PROTSPGL
+  ID: AUXOSPGL
   Name: R_6_phosphogluconolactonase
   Direction: +1 relative to model.S
   Resolved EC: 3.1.1.31
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGL
-  Equation: M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Sd) [PROTSC6pgl[x]] + M_H2O_H2O [PROTSCh2o[x]] -> M_6_Phospho_D_gluconate_C6H10O10P [PROTSC6pgc[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Sd) [AUXOSC6pgl[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_6_Phospho_D_gluconate_C6H10O10P [AUXOSC6pgc[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
@@ -3306,152 +3324,154 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
 ============================================================
-  Proposed S signal: m_Sd = PROTSC6pgl[x]. The transporter-control link is not inferred from stoichiometry.
+  Proposed S signal: m_Sd = AUXOSC6pgl[u]. The transporter-control link is not inferred from stoichiometry.
 r_T_S
-  ID: PROTSGTHRDt2
+  ID: AUXOSGTHRDt2
   Name: R_glutathione_transport
   Direction: +1 relative to model.S
   Resolved EC: UNRESOLVED (no annotation inferred)
   EC annotation source: 
   EC annotation reference: 
-  Equation: M_Reduced_glutathione_C10H16N3O6S [gthrd[e]] -> M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]]
+  Equation: M_Reduced_glutathione_C10H16N3O6S [gthrd[e]] -> M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]]
   GPR: 
   Resolved genes: 
 
   S-dependent opening: supplied-interface status remains separate from cargo transport.
-  X_1      : PROTSCatp[x] | M_ATP_C10H12N5O13P3
-  X_2      : PROTSCcys_L[x] | M_L_Cysteine_C3H7NO2S
-  X_3      : PROTSMficytc[x] | M_Ferricytochrome_c_C42H52FeN8O6S2
-  X_4      : PROTSMglu_L[x] | M_L_Glutamate_C5H8NO4
-  X_5      : PROTSCgly[x] | M_Glycine_C2H5NO2
-  X_6      : PROTSCh2o[x] | M_H2O_H2O
-  X_7      : PROTSCmthgxl[x] | M_Methylglyoxal_C3H4O2
-  X_8      : PROTSCoxag[x] | M_Oxaloglutarate_C7H5O7
-  X_9      : PROTSCval_L[x] | M_L_Valine_C5H11NO2
-  W_1      : PROTSC3mob[x] | M_3_Methyl_2_oxobutanoate_C5H7O3
-  W_2      : PROTSCadp[x] | M_ADP_C10H12N5O10P2
-  W_3      : PROTSMala_L[x] | M_L_Alanine_C3H7NO2
-  W_4      : PROTSMfocytc[x] | M_Ferrocytochrome_c_C42H53FeN8O6S2
-  W_5      : PROTSCh[x] | M_H_H
-  W_6      : PROTSMh[x] | M_H_H
-  W_7      : PROTSMoxag[x] | M_Oxaloglutarate_C7H5O7
-  W_8      : PROTSCpi[x] | M_Phosphate_HO4P
-  R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [PROTSCatp[x]] + M_L_Cysteine_C3H7NO2S (X_2) [PROTSCcys_L[x]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [PROTSMficytc[x]] + M_L_Glutamate_C5H8NO4 (X_4) [PROTSMglu_L[x]] + M_Glycine_C2H5NO2 (X_5) [PROTSCgly[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_H2O_H2O (X_6) [PROTSCh2o[x]] + M_Methylglyoxal_C3H4O2 (X_7) [PROTSCmthgxl[x]] + M_Oxaloglutarate_C7H5O7 (X_8) [PROTSCoxag[x]] + M_L_Valine_C5H11NO2 (X_9) [PROTSCval_L[x]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [PROTSC3mob[x]] + 2 M_ADP_C10H12N5O10P2 (W_2) [PROTSCadp[x]] + M_L_Alanine_C3H7NO2 (W_3) [PROTSMala_L[x]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [PROTSMfocytc[x]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + 2 M_H_H (W_5) [PROTSCh[x]] + M_H_H (W_6) [PROTSMh[x]] + M_Oxaloglutarate_C7H5O7 (W_7) [PROTSMoxag[x]] + 2 M_Phosphate_HO4P (W_8) [PROTSCpi[x]]
+  X_1      : AUXOSCatp[u] | M_ATP_C10H12N5O13P3
+  X_2      : AUXOSCcys_L[u] | M_L_Cysteine_C3H7NO2S
+  X_3      : AUXOSMficytc[u] | M_Ferricytochrome_c_C42H52FeN8O6S2
+  X_4      : AUXOSMglu_L[u] | M_L_Glutamate_C5H8NO4
+  X_5      : AUXOSCgly[u] | M_Glycine_C2H5NO2
+  X_6      : AUXOSCh2o[u] | M_H2O_H2O
+  X_7      : AUXOSCmthgxl[u] | M_Methylglyoxal_C3H4O2
+  X_8      : AUXOSCoxag[u] | M_Oxaloglutarate_C7H5O7
+  X_9      : AUXOSCtrp_L[u] | M_L_Tryptophan_C11H12N2O2
+  W_1      : AUXOSCadp[u] | M_ADP_C10H12N5O10P2
+  W_2      : AUXOSMala_L[u] | M_L_Alanine_C3H7NO2
+  W_3      : AUXOSMfocytc[u] | M_Ferrocytochrome_c_C42H53FeN8O6S2
+  W_4      : AUXOSCh[u] | M_H_H
+  W_5      : AUXOSMh[u] | M_H_H
+  W_6      : AUXOSCindpyr[u] | M_Indolepyruvate_C11H8NO3
+  W_7      : AUXOSMoxag[u] | M_Oxaloglutarate_C7H5O7
+  W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
+  R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Tryptophan_C11H12N2O2 (X_9) [AUXOSCtrp_L[u]] -> 2 M_ADP_C10H12N5O10P2 (W_1) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_2) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_3) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_4) [AUXOSCh[u]] + M_H_H (W_5) [AUXOSMh[u]] + M_Indolepyruvate_C11H8NO3 (W_6) [AUXOSCindpyr[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
-  ID: PROTSLGTHL
+  ID: AUXOSLGTHL
   Name: R_lactoylglutathione_lyase
   Direction: +1 relative to model.S
   Resolved EC: 4.4.1.5
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/LGTHL
-  Equation: M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_Methylglyoxal_C3H4O2 (X_7) [PROTSCmthgxl[x]] -> M__R__S_Lactoylglutathione_C13H20N3O8S [PROTSClgt_S[x]]
+  Equation: M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] -> M__R__S_Lactoylglutathione_C13H20N3O8S [AUXOSClgt_S[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 2 of 9:
 r_I_production_02
-  ID: PROTSGLYOX
+  ID: AUXOSGLYOX
   Name: R_hydroxyacylglutathione_hydrolase
   Direction: +1 relative to model.S
   Resolved EC: 3.1.2.6
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GLYOX
-  Equation: M_H2O_H2O (X_6) [PROTSCh2o[x]] + M__R__S_Lactoylglutathione_C13H20N3O8S [PROTSClgt_S[x]] -> M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_H_H (W_5) [PROTSCh[x]] + M_D_Lactate_C3H5O3 [PROTSClac_D[x]]
+  Equation: M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M__R__S_Lactoylglutathione_C13H20N3O8S [AUXOSClgt_S[u]] -> M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H (W_4) [AUXOSCh[u]] + M_D_Lactate_C3H5O3 [AUXOSClac_D[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 3 of 9:
 r_I_production_03
-  ID: PROTSD_LACtm
+  ID: AUXOSD_LACtm
   Name: R_D_lactate_transport__mitochondrial
   Direction: +1 relative to model.S
   Resolved EC: UNRESOLVED (no annotation inferred)
   EC annotation source: 
   EC annotation reference: 
-  Equation: M_H_H (W_5) [PROTSCh[x]] + M_D_Lactate_C3H5O3 [PROTSClac_D[x]] -> M_H_H (W_6) [PROTSMh[x]] + M_D_Lactate_C3H5O3 [PROTSMlac_D[x]]
+  Equation: M_H_H (W_4) [AUXOSCh[u]] + M_D_Lactate_C3H5O3 [AUXOSClac_D[u]] -> M_H_H (W_5) [AUXOSMh[u]] + M_D_Lactate_C3H5O3 [AUXOSMlac_D[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 4 of 9:
 r_I_production_04
-  ID: PROTSD_LACDm
+  ID: AUXOSD_LACDm
   Name: R_D_lactate_dehydrogenase__mitochondrial
   Direction: +1 relative to model.S
   Resolved EC: 1.1.2.4
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://iubmb.qmul.ac.uk/enzyme/EC1/1/2/4.html
-  Equation: 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [PROTSMficytc[x]] + M_D_Lactate_C3H5O3 [PROTSMlac_D[x]] -> 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [PROTSMfocytc[x]] + M_Pyruvate_C3H3O3 [PROTSMpyr[x]]
+  Equation: 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_D_Lactate_C3H5O3 [AUXOSMlac_D[u]] -> 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_3) [AUXOSMfocytc[u]] + M_Pyruvate_C3H3O3 [AUXOSMpyr[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 5 of 9:
 r_I_production_05
-  ID: PROTSALATA_Lm
+  ID: AUXOSALATA_Lm
   Name: R_L_alanine_transaminase__mitochondrial
   Direction: -1 relative to model.S
   Resolved EC: 2.6.1.2
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://iubmb.qmul.ac.uk/enzyme/EC2/6/1/2.html
-  Equation: M_L_Glutamate_C5H8NO4 (X_4) [PROTSMglu_L[x]] + M_Pyruvate_C3H3O3 [PROTSMpyr[x]] -> M_2_Oxoglutarate_C5H4O5 [PROTSMakg[x]] + M_L_Alanine_C3H7NO2 (W_3) [PROTSMala_L[x]]
+  Equation: M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Pyruvate_C3H3O3 [AUXOSMpyr[u]] -> M_2_Oxoglutarate_C5H4O5 [AUXOSMakg[u]] + M_L_Alanine_C3H7NO2 (W_2) [AUXOSMala_L[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 6 of 9:
 r_I_production_06
-  ID: PROTSOXO2Ctm
+  ID: AUXOSOXO2Ctm
   Name: R_2_oxodicarboylate_transporter__mitochondrial
   Direction: +1 relative to model.S
   Resolved EC: UNRESOLVED (no annotation inferred)
   EC annotation source: 
   EC annotation reference: 
-  Equation: M_2_Oxoglutarate_C5H4O5 [PROTSMakg[x]] + M_Oxaloglutarate_C7H5O7 (X_8) [PROTSCoxag[x]] -> M_2_Oxoglutarate_C5H4O5 [PROTSCakg[x]] + M_Oxaloglutarate_C7H5O7 (W_7) [PROTSMoxag[x]]
+  Equation: M_2_Oxoglutarate_C5H4O5 [AUXOSMakg[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] -> M_2_Oxoglutarate_C5H4O5 [AUXOSCakg[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 7 of 9:
 r_I_production_07
-  ID: PROTSVALTA
-  Name: R_valine_transaminase
+  ID: AUXOSTRPTA
+  Name: R_tryptophan_transaminase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.42;2.6.1.6
-  EC annotation source: partial_primary_source_Step2_seed_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/VALTA
-  Equation: M_2_Oxoglutarate_C5H4O5 [PROTSCakg[x]] + M_L_Valine_C5H11NO2 (X_9) [PROTSCval_L[x]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [PROTSC3mob[x]] + M_L_Glutamate_C5H8NO4 [PROTSCglu_L[x]]
+  Resolved EC: UNRESOLVED (no annotation inferred)
+  EC annotation source: 
+  EC annotation reference: 
+  Equation: M_2_Oxoglutarate_C5H4O5 [AUXOSCakg[u]] + M_L_Tryptophan_C11H12N2O2 (X_9) [AUXOSCtrp_L[u]] -> M_L_Glutamate_C5H8NO4 [AUXOSCglu_L[u]] + M_Indolepyruvate_C11H8NO3 (W_6) [AUXOSCindpyr[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 8 of 9:
 r_I_production_08
-  ID: PROTSGLUCYS
+  ID: AUXOSGLUCYS
   Name: R_gamma_glutamylcysteine_synthetase
   Direction: +1 relative to model.S
   Resolved EC: 6.3.2.2
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GLUCYS
-  Equation: M_ATP_C10H12N5O13P3 (X_1) [PROTSCatp[x]] + M_L_Cysteine_C3H7NO2S (X_2) [PROTSCcys_L[x]] + M_L_Glutamate_C5H8NO4 [PROTSCglu_L[x]] -> M_ADP_C10H12N5O10P2 (W_2) [PROTSCadp[x]] + M_gamma_L_Glutamyl_L_cysteine_C8H13N2O5S [PROTSCglucys[x]] + M_H_H (W_5) [PROTSCh[x]] + M_Phosphate_HO4P (W_8) [PROTSCpi[x]]
+  Equation: M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + M_L_Glutamate_C5H8NO4 [AUXOSCglu_L[u]] -> M_ADP_C10H12N5O10P2 (W_1) [AUXOSCadp[u]] + M_gamma_L_Glutamyl_L_cysteine_C8H13N2O5S [AUXOSCglucys[u]] + M_H_H (W_4) [AUXOSCh[u]] + M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 9 of 9:
 r_I_production_09
-  ID: PROTSGTHS
+  ID: AUXOSGTHS
   Name: R_glutathione_synthetase
   Direction: +1 relative to model.S
   Resolved EC: 6.3.2.3
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GTHS
-  Equation: M_ATP_C10H12N5O13P3 (X_1) [PROTSCatp[x]] + M_gamma_L_Glutamyl_L_cysteine_C8H13N2O5S [PROTSCglucys[x]] + M_Glycine_C2H5NO2 (X_5) [PROTSCgly[x]] -> M_ADP_C10H12N5O10P2 (W_2) [PROTSCadp[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_H_H (W_5) [PROTSCh[x]] + M_Phosphate_HO4P (W_8) [PROTSCpi[x]]
+  Equation: M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_gamma_L_Glutamyl_L_cysteine_C8H13N2O5S [AUXOSCglucys[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] -> M_ADP_C10H12N5O10P2 (W_1) [AUXOSCadp[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H (W_4) [AUXOSCh[u]] + M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
@@ -3463,26 +3483,26 @@ r_I_production_09
 ============================================================
 EQ. BLOCK 2: F-LINKED I REMOVAL
 ============================================================
-  Proposed F signal: m_Fd = PROTSCg3p[x]. A consumed co-substrate is not F.
+  Proposed F signal: m_Fd = AUXOSCg3p[u]. A consumed co-substrate is not F.
 r_I_linear_removal
-  ID: PROTSGTMLT
+  ID: AUXOSGTMLT
   Name: R_g_glutamyltransferase
   Direction: +1 relative to model.S
   Resolved EC: 2.3.2.2
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GTMLT
-  Equation: M_L_Alanine_C3H7NO2 [PROTSCala_L[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] -> M_Cys_Gly_C5H10N2O3S [PROTSCcgly[x]] + M_5_L_Glutamyl_L_alanine_C8H13N2O5 [PROTSCgluala[x]]
+  Equation: M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] -> M_Cys_Gly_C5H10N2O3S [AUXOSCcgly[u]] + M_5_L_Glutamyl_L_alanine_C8H13N2O5 [AUXOSCgluala[u]]
   GPR: 
   Resolved genes: 
 
 r_T_F
-  ID: PROTSALAt2r
+  ID: AUXOSALAt2r
   Name: R_L_alanine_reversible_transport_via_proton_symport
   Direction: +1 relative to model.S
   Resolved EC: UNRESOLVED (no annotation inferred)
   EC annotation source: 
   EC annotation reference: 
-  Equation: M_L_Alanine_C3H7NO2 [ala_L[e]] + M_H_H [h[e]] -> M_L_Alanine_C3H7NO2 [PROTSCala_L[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_L_Alanine_C3H7NO2 [ala_L[e]] + M_H_H [h[e]] -> M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
@@ -3492,13 +3512,13 @@ r_T_F
 EQ. BLOCK 3: I PAIR LOSS
 ============================================================
 r_I_quadratic_removal
-  ID: PROTSGTHP
+  ID: AUXOSGTHP
   Name: R_glutathione_peridoxase
   Direction: +1 relative to model.S
   Resolved EC: 1.11.1.9
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://iubmb.qmul.ac.uk/enzyme/EC1/11/1/9.html
-  Equation: 2 M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_Hydrogen_peroxide_H2O2 [PROTSCh2o2[x]] -> M_Oxidized_glutathione_C20H30N6O12S2 [PROTSCgthox[x]] + 2 M_H2O_H2O [PROTSCh2o[x]]
+  Equation: 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Hydrogen_peroxide_H2O2 [AUXOSCh2o2[u]] -> M_Oxidized_glutathione_C20H30N6O12S2 [AUXOSCgthox[u]] + 2 M_H2O_H2O [AUXOSCh2o[u]]
   GPR: 
   Resolved genes: 
 
@@ -3508,13 +3528,13 @@ r_I_quadratic_removal
 COUNTER AND ONE CONSUMING NEURON
 ============================================================
 r_c
-  ID: PROTSFALDH
+  ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
   Direction: +1 relative to model.S
   Resolved EC: 1.1.1.284;1.2.1.1
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
-  Equation: M_Formaldehyde_CH2O [PROTSCfald[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [PROTSCnad[x]] -> M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [PROTSCSfglutth[x]] + M_H_H [PROTSCh[x]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [PROTSCnadh[x]]
+  Equation: M_Formaldehyde_CH2O [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] -> M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
   GPR: 
   Resolved genes: 
 
@@ -3530,24 +3550,24 @@ r_Nr_1
   UNASSIGNED: no accepted consuming single-neuron extension.
   Counter-consuming reactions examined (rejected entries, not neuron assignments):
 REJECTED_r_Nf_1_ENTRY
-  ID: PROTSFALDH
+  ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
   Direction: -1 relative to model.S
   Resolved EC: 1.1.1.284;1.2.1.1
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
-  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [PROTSCSfglutth[x]] + M_H_H [PROTSCh[x]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [PROTSCnadh[x]] -> M_Formaldehyde_CH2O [PROTSCfald[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [PROTSCnad[x]]
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] -> M_Formaldehyde_CH2O [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
   GPR: 
   Resolved genes: 
 
 REJECTED_r_Nf_1_ENTRY
-  ID: PROTSSFGTH
+  ID: AUXOSSFGTH
   Name: R_S_Formylglutathione_hydralase
   Direction: +1 relative to model.S
   Resolved EC: 3.1.2.12
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/models/iCHOv1/reactions/SFGTHi
-  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [PROTSCSfglutth[x]] + M_H2O_H2O [PROTSCh2o[x]] -> M_Formate_CH1O2 [PROTSCfor[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Formate_CH1O2 [AUXOSCfor[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
@@ -3558,18 +3578,18 @@ STATUS: structural topology only; S/F control, buffered feeds, driving forces, f
 ============================================================
 CANDIDATE 10 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=10; module=4; canceller=7; counter=5; block=x.
+Parent=10; module=2; canceller=70; counter=5; block=u.
 Neuron status: no_single_neuron_rail_passed_current_policies
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
-  m_in     : PROTSCf6p[x] | M_D_Fructose_6_phosphate_C6H11O9P
-  m_Ff     : PROTSCg6p[x] | M_D_Glucose_6_phosphate_C6H11O9P
-  m_Fd     : PROTSC6pgl[x] | M_6_phospho_D_glucono_1_5_lactone_C6H9O9P
-  m_Sf     : PROTSCfdp[x] | M_D_Fructose_1_6_bisphosphate_C6H10O12P2
-  m_Sd     : PROTSCg3p[x] | M_Glyceraldehyde_3_phosphate_C3H5O6P
-  I        : PROTSCgthrd[x] | M_Reduced_glutathione_C10H16N3O6S
-  m_c      : PROTSCSfglutth[x] | M_S_Formylglutathione_C11H16N3O7S
-  m_Nin_1  : PROTSCSfglutth[x] | M_S_Formylglutathione_C11H16N3O7S
+  m_in     : AUXOSCf6p[u] | M_D_Fructose_6_phosphate_C6H11O9P
+  m_Ff     : AUXOSCg6p[u] | M_D_Glucose_6_phosphate_C6H11O9P
+  m_Fd     : AUXOSC6pgl[u] | M_6_phospho_D_glucono_1_5_lactone_C6H9O9P
+  m_Sf     : AUXOSCfdp[u] | M_D_Fructose_1_6_bisphosphate_C6H10O12P2
+  m_Sd     : AUXOSCg3p[u] | M_Glyceraldehyde_3_phosphate_C3H5O6P
+  I        : AUXOSCgthrd[u] | M_Reduced_glutathione_C10H16N3O6S
+  m_c      : AUXOSCSfglutth[u] | M_S_Formylglutathione_C11H16N3O7S
+  m_Nin_1  : AUXOSCSfglutth[u] | M_S_Formylglutathione_C11H16N3O7S
   m_Nf_1, m_Nd_1, m_out: UNASSIGNED (no accepted single-neuron extension).
   r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
 
@@ -3580,50 +3600,50 @@ BLOCK 0: cAMP TO m_in
   No isolated cAMP-to-m_in connector accepted within the configured search.
   Limits reached: state=0; expansion=0; depth=0.
   REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
-  Path: PROTSCcamp[x] -> PROTSCamp[x] -> PROTSCr5p[x] -> PROTSCg3p[x] -> PROTSCf6p[x]
-  Shared downstream noncurrency species outside m_in: PROTSCg3p[x]
+  Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
+  Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
   A graph route may also repeat side participants or EC roles; every accepted connector must pass the full checks.
 r_CAMP_DIAGNOSTIC_1
-  ID: PROTSPDE1
+  ID: AUXOSPDE1
   Name: R_3__5__cyclic_nucleotide_phosphodiesterase
   Direction: +1 relative to model.S
   Resolved EC: 3.1.4.17;3.1.4.53
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/models/ic_1306/reactions/PDE1
-  Equation: M_cAMP_C10H11N5O6P [PROTSCcamp[x]] + M_H2O_H2O [PROTSCh2o[x]] -> M_AMP_C10H12N5O7P [PROTSCamp[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_cAMP_C10H11N5O6P [AUXOSCcamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
 r_CAMP_DIAGNOSTIC_2
-  ID: PROTSAMPN
+  ID: AUXOSAMPN
   Name: R_AMP_nucleosidase
   Direction: +1 relative to model.S
   Resolved EC: 3.2.2.4
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://iubmb.qmul.ac.uk/enzyme/EC3/2/2/4.html
-  Equation: M_AMP_C10H12N5O7P [PROTSCamp[x]] + M_H2O_H2O [PROTSCh2o[x]] -> M_Adenine_C5H5N5 [PROTSCade[x]] + M_alpha_D_Ribose_5_phosphate_C5H9O8P [PROTSCr5p[x]]
+  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Adenine_C5H5N5 [AUXOSCade[u]] + M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]]
   GPR: 
   Resolved genes: 
 
 r_CAMP_DIAGNOSTIC_3
-  ID: PROTSTKT1
+  ID: AUXOSTKT1
   Name: R_transketolase
   Direction: +1 relative to model.S
   Resolved EC: 2.2.1.1
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/models/e_coli_core/reactions/TKT1
-  Equation: M_alpha_D_Ribose_5_phosphate_C5H9O8P [PROTSCr5p[x]] + M_D_Xylulose_5_phosphate_C5H9O8P [PROTSCxu5p_D[x]] -> M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [PROTSCg3p[x]] + M_Sedoheptulose_7_phosphate_C7H13O10P [PROTSCs7p[x]]
+  Equation: M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]] + M_D_Xylulose_5_phosphate_C5H9O8P [AUXOSCxu5p_D[u]] -> M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]]
   GPR: 
   Resolved genes: 
 
 r_CAMP_DIAGNOSTIC_4
-  ID: PROTSTALA
+  ID: AUXOSTALA
   Name: R_transaldolase
   Direction: +1 relative to model.S
   Resolved EC: 2.2.1.2
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/TALA
-  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [PROTSCg3p[x]] + M_Sedoheptulose_7_phosphate_C7H13O10P [PROTSCs7p[x]] -> M_D_Erythrose_4_phosphate_C4H7O7P [PROTSCe4p[x]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [PROTSCf6p[x]]
+  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]] -> M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]]
   GPR: 
   Resolved genes: 
 
@@ -3632,68 +3652,68 @@ r_CAMP_DIAGNOSTIC_4
 FAST AND SLOW BRANCHES (SIX REACTIONS)
 ============================================================
 r_Ff
-  ID: PROTSPGI
+  ID: AUXOSPGI
   Name: R_glucose_6_phosphate_isomerase
   Direction: -1 relative to model.S
   Resolved EC: 5.3.1.9
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGI
-  Equation: M_D_Fructose_6_phosphate_C6H11O9P (m_in) [PROTSCf6p[x]] -> M_D_Glucose_6_phosphate_C6H11O9P (m_Ff) [PROTSCg6p[x]]
+  Equation: M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_D_Glucose_6_phosphate_C6H11O9P (m_Ff) [AUXOSCg6p[u]]
   GPR: 
   Resolved genes: 
 
 r_Fd
-  ID: PROTSG6PDH2
+  ID: AUXOSG6PDH2
   Name: R_glucose_6_phosphate_dehydrogenase
   Direction: +1 relative to model.S
   Resolved EC: 1.1.1.49;1.1.1.363
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/G6PDH2r
-  Equation: M_D_Glucose_6_phosphate_C6H11O9P (m_Ff) [PROTSCg6p[x]] + M_Nicotinamide_adenine_dinucleotide_phosphate_C21H25N7O17P3 [PROTSCnadp[x]] -> M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Fd) [PROTSC6pgl[x]] + M_H_H [PROTSCh[x]] + M_Nicotinamide_adenine_dinucleotide_phosphate___reduced_C21H26N7O17P3 [PROTSCnadph[x]]
+  Equation: M_D_Glucose_6_phosphate_C6H11O9P (m_Ff) [AUXOSCg6p[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate_C21H25N7O17P3 [AUXOSCnadp[u]] -> M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Fd) [AUXOSC6pgl[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate___reduced_C21H26N7O17P3 [AUXOSCnadph[u]]
   GPR: 
   Resolved genes: 
 
 r_Fr
-  ID: PROTSPGL
+  ID: AUXOSPGL
   Name: R_6_phosphogluconolactonase
   Direction: +1 relative to model.S
   Resolved EC: 3.1.1.31
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGL
-  Equation: M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Fd) [PROTSC6pgl[x]] + M_H2O_H2O [PROTSCh2o[x]] -> M_6_Phospho_D_gluconate_C6H10O10P [PROTSC6pgc[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Fd) [AUXOSC6pgl[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_6_Phospho_D_gluconate_C6H10O10P [AUXOSC6pgc[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
 r_Sf
-  ID: PROTSPFK
+  ID: AUXOSPFK
   Name: R_phosphofructokinase
   Direction: +1 relative to model.S
   Resolved EC: 2.7.1.11
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PFK
-  Equation: M_ATP_C10H12N5O13P3 [PROTSCatp[x]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [PROTSCf6p[x]] -> M_ADP_C10H12N5O10P2 [PROTSCadp[x]] + M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Sf) [PROTSCfdp[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Sf) [AUXOSCfdp[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
 r_Sd
-  ID: PROTSFBA
+  ID: AUXOSFBA
   Name: R_fructose_bisphosphate_aldolase
   Direction: +1 relative to model.S
   Resolved EC: 4.1.2.13
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FBA
-  Equation: M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Sf) [PROTSCfdp[x]] -> M_Dihydroxyacetone_phosphate_C3H5O6P [PROTSCdhap[x]] + M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [PROTSCg3p[x]]
+  Equation: M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Sf) [AUXOSCfdp[u]] -> M_Dihydroxyacetone_phosphate_C3H5O6P [AUXOSCdhap[u]] + M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]]
   GPR: 
   Resolved genes: 
 
 r_Sr
-  ID: PROTSGAPD
+  ID: AUXOSGAPD
   Name: R_glyceraldehyde_3_phosphate_dehydrogenase
   Direction: +1 relative to model.S
   Resolved EC: 1.2.1.12;1.2.1.59
   EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GAPD
-  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [PROTSCg3p[x]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [PROTSCnad[x]] + M_Phosphate_HO4P [PROTSCpi[x]] -> M_3_Phospho_D_glyceroyl_phosphate_C3H4O10P2 [PROTSC13dpg[x]] + M_H_H [PROTSCh[x]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [PROTSCnadh[x]]
+  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] + M_Phosphate_HO4P [AUXOSCpi[u]] -> M_3_Phospho_D_glyceroyl_phosphate_C3H4O10P2 [AUXOSC13dpg[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
   GPR: 
   Resolved genes: 
 
@@ -3705,152 +3725,154 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
 ============================================================
-  Proposed S signal: m_Sd = PROTSCg3p[x]. The transporter-control link is not inferred from stoichiometry.
+  Proposed S signal: m_Sd = AUXOSCg3p[u]. The transporter-control link is not inferred from stoichiometry.
 r_T_S
-  ID: PROTSGTHRDt2
+  ID: AUXOSGTHRDt2
   Name: R_glutathione_transport
   Direction: +1 relative to model.S
   Resolved EC: UNRESOLVED (no annotation inferred)
   EC annotation source: 
   EC annotation reference: 
-  Equation: M_Reduced_glutathione_C10H16N3O6S [gthrd[e]] -> M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]]
+  Equation: M_Reduced_glutathione_C10H16N3O6S [gthrd[e]] -> M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]]
   GPR: 
   Resolved genes: 
 
   S-dependent opening: supplied-interface status remains separate from cargo transport.
-  X_1      : PROTSCatp[x] | M_ATP_C10H12N5O13P3
-  X_2      : PROTSCcys_L[x] | M_L_Cysteine_C3H7NO2S
-  X_3      : PROTSMficytc[x] | M_Ferricytochrome_c_C42H52FeN8O6S2
-  X_4      : PROTSMglu_L[x] | M_L_Glutamate_C5H8NO4
-  X_5      : PROTSCgly[x] | M_Glycine_C2H5NO2
-  X_6      : PROTSCh2o[x] | M_H2O_H2O
-  X_7      : PROTSCmthgxl[x] | M_Methylglyoxal_C3H4O2
-  X_8      : PROTSCoxag[x] | M_Oxaloglutarate_C7H5O7
-  X_9      : PROTSCval_L[x] | M_L_Valine_C5H11NO2
-  W_1      : PROTSC3mob[x] | M_3_Methyl_2_oxobutanoate_C5H7O3
-  W_2      : PROTSCadp[x] | M_ADP_C10H12N5O10P2
-  W_3      : PROTSMala_L[x] | M_L_Alanine_C3H7NO2
-  W_4      : PROTSMfocytc[x] | M_Ferrocytochrome_c_C42H53FeN8O6S2
-  W_5      : PROTSCh[x] | M_H_H
-  W_6      : PROTSMh[x] | M_H_H
-  W_7      : PROTSMoxag[x] | M_Oxaloglutarate_C7H5O7
-  W_8      : PROTSCpi[x] | M_Phosphate_HO4P
-  R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [PROTSCatp[x]] + M_L_Cysteine_C3H7NO2S (X_2) [PROTSCcys_L[x]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [PROTSMficytc[x]] + M_L_Glutamate_C5H8NO4 (X_4) [PROTSMglu_L[x]] + M_Glycine_C2H5NO2 (X_5) [PROTSCgly[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_H2O_H2O (X_6) [PROTSCh2o[x]] + M_Methylglyoxal_C3H4O2 (X_7) [PROTSCmthgxl[x]] + M_Oxaloglutarate_C7H5O7 (X_8) [PROTSCoxag[x]] + M_L_Valine_C5H11NO2 (X_9) [PROTSCval_L[x]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [PROTSC3mob[x]] + 2 M_ADP_C10H12N5O10P2 (W_2) [PROTSCadp[x]] + M_L_Alanine_C3H7NO2 (W_3) [PROTSMala_L[x]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [PROTSMfocytc[x]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + 2 M_H_H (W_5) [PROTSCh[x]] + M_H_H (W_6) [PROTSMh[x]] + M_Oxaloglutarate_C7H5O7 (W_7) [PROTSMoxag[x]] + 2 M_Phosphate_HO4P (W_8) [PROTSCpi[x]]
+  X_1      : AUXOSCatp[u] | M_ATP_C10H12N5O13P3
+  X_2      : AUXOSCcys_L[u] | M_L_Cysteine_C3H7NO2S
+  X_3      : AUXOSMficytc[u] | M_Ferricytochrome_c_C42H52FeN8O6S2
+  X_4      : AUXOSMglu_L[u] | M_L_Glutamate_C5H8NO4
+  X_5      : AUXOSCgly[u] | M_Glycine_C2H5NO2
+  X_6      : AUXOSCh2o[u] | M_H2O_H2O
+  X_7      : AUXOSCmthgxl[u] | M_Methylglyoxal_C3H4O2
+  X_8      : AUXOSCoxag[u] | M_Oxaloglutarate_C7H5O7
+  X_9      : AUXOSCtrp_L[u] | M_L_Tryptophan_C11H12N2O2
+  W_1      : AUXOSCadp[u] | M_ADP_C10H12N5O10P2
+  W_2      : AUXOSMala_L[u] | M_L_Alanine_C3H7NO2
+  W_3      : AUXOSMfocytc[u] | M_Ferrocytochrome_c_C42H53FeN8O6S2
+  W_4      : AUXOSCh[u] | M_H_H
+  W_5      : AUXOSMh[u] | M_H_H
+  W_6      : AUXOSCindpyr[u] | M_Indolepyruvate_C11H8NO3
+  W_7      : AUXOSMoxag[u] | M_Oxaloglutarate_C7H5O7
+  W_8      : AUXOSCpi[u] | M_Phosphate_HO4P
+  R1 effective module equation (non-I intermediates cancelled): 2 M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] + M_L_Tryptophan_C11H12N2O2 (X_9) [AUXOSCtrp_L[u]] -> 2 M_ADP_C10H12N5O10P2 (W_1) [AUXOSCadp[u]] + M_L_Alanine_C3H7NO2 (W_2) [AUXOSMala_L[u]] + 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_3) [AUXOSMfocytc[u]] + 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + 2 M_H_H (W_4) [AUXOSCh[u]] + M_H_H (W_5) [AUXOSMh[u]] + M_Indolepyruvate_C11H8NO3 (W_6) [AUXOSCindpyr[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]] + 2 M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   Actual I accounting: 1 consumed -> 2 produced across 9 reaction(s).
+  Smallest production module found for this I: 8 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
   R1 is the effective production role, implemented by the following recorded reactions.
   Eq. Block 1 / R1 module step 1 of 9:
 r_I_production_01
-  ID: PROTSLGTHL
+  ID: AUXOSLGTHL
   Name: R_lactoylglutathione_lyase
   Direction: +1 relative to model.S
   Resolved EC: 4.4.1.5
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/LGTHL
-  Equation: M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_Methylglyoxal_C3H4O2 (X_7) [PROTSCmthgxl[x]] -> M__R__S_Lactoylglutathione_C13H20N3O8S [PROTSClgt_S[x]]
+  Equation: M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Methylglyoxal_C3H4O2 (X_7) [AUXOSCmthgxl[u]] -> M__R__S_Lactoylglutathione_C13H20N3O8S [AUXOSClgt_S[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 2 of 9:
 r_I_production_02
-  ID: PROTSGLYOX
+  ID: AUXOSGLYOX
   Name: R_hydroxyacylglutathione_hydrolase
   Direction: +1 relative to model.S
   Resolved EC: 3.1.2.6
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GLYOX
-  Equation: M_H2O_H2O (X_6) [PROTSCh2o[x]] + M__R__S_Lactoylglutathione_C13H20N3O8S [PROTSClgt_S[x]] -> M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_H_H (W_5) [PROTSCh[x]] + M_D_Lactate_C3H5O3 [PROTSClac_D[x]]
+  Equation: M_H2O_H2O (X_6) [AUXOSCh2o[u]] + M__R__S_Lactoylglutathione_C13H20N3O8S [AUXOSClgt_S[u]] -> M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H (W_4) [AUXOSCh[u]] + M_D_Lactate_C3H5O3 [AUXOSClac_D[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 3 of 9:
 r_I_production_03
-  ID: PROTSD_LACtm
+  ID: AUXOSD_LACtm
   Name: R_D_lactate_transport__mitochondrial
   Direction: +1 relative to model.S
   Resolved EC: UNRESOLVED (no annotation inferred)
   EC annotation source: 
   EC annotation reference: 
-  Equation: M_H_H (W_5) [PROTSCh[x]] + M_D_Lactate_C3H5O3 [PROTSClac_D[x]] -> M_H_H (W_6) [PROTSMh[x]] + M_D_Lactate_C3H5O3 [PROTSMlac_D[x]]
+  Equation: M_H_H (W_4) [AUXOSCh[u]] + M_D_Lactate_C3H5O3 [AUXOSClac_D[u]] -> M_H_H (W_5) [AUXOSMh[u]] + M_D_Lactate_C3H5O3 [AUXOSMlac_D[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 4 of 9:
 r_I_production_04
-  ID: PROTSD_LACDm
+  ID: AUXOSD_LACDm
   Name: R_D_lactate_dehydrogenase__mitochondrial
   Direction: +1 relative to model.S
   Resolved EC: 1.1.2.4
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://iubmb.qmul.ac.uk/enzyme/EC1/1/2/4.html
-  Equation: 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [PROTSMficytc[x]] + M_D_Lactate_C3H5O3 [PROTSMlac_D[x]] -> 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_4) [PROTSMfocytc[x]] + M_Pyruvate_C3H3O3 [PROTSMpyr[x]]
+  Equation: 2 M_Ferricytochrome_c_C42H52FeN8O6S2 (X_3) [AUXOSMficytc[u]] + M_D_Lactate_C3H5O3 [AUXOSMlac_D[u]] -> 2 M_Ferrocytochrome_c_C42H53FeN8O6S2 (W_3) [AUXOSMfocytc[u]] + M_Pyruvate_C3H3O3 [AUXOSMpyr[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 5 of 9:
 r_I_production_05
-  ID: PROTSALATA_Lm
+  ID: AUXOSALATA_Lm
   Name: R_L_alanine_transaminase__mitochondrial
   Direction: -1 relative to model.S
   Resolved EC: 2.6.1.2
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://iubmb.qmul.ac.uk/enzyme/EC2/6/1/2.html
-  Equation: M_L_Glutamate_C5H8NO4 (X_4) [PROTSMglu_L[x]] + M_Pyruvate_C3H3O3 [PROTSMpyr[x]] -> M_2_Oxoglutarate_C5H4O5 [PROTSMakg[x]] + M_L_Alanine_C3H7NO2 (W_3) [PROTSMala_L[x]]
+  Equation: M_L_Glutamate_C5H8NO4 (X_4) [AUXOSMglu_L[u]] + M_Pyruvate_C3H3O3 [AUXOSMpyr[u]] -> M_2_Oxoglutarate_C5H4O5 [AUXOSMakg[u]] + M_L_Alanine_C3H7NO2 (W_2) [AUXOSMala_L[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 6 of 9:
 r_I_production_06
-  ID: PROTSOXO2Ctm
+  ID: AUXOSOXO2Ctm
   Name: R_2_oxodicarboylate_transporter__mitochondrial
   Direction: +1 relative to model.S
   Resolved EC: UNRESOLVED (no annotation inferred)
   EC annotation source: 
   EC annotation reference: 
-  Equation: M_2_Oxoglutarate_C5H4O5 [PROTSMakg[x]] + M_Oxaloglutarate_C7H5O7 (X_8) [PROTSCoxag[x]] -> M_2_Oxoglutarate_C5H4O5 [PROTSCakg[x]] + M_Oxaloglutarate_C7H5O7 (W_7) [PROTSMoxag[x]]
+  Equation: M_2_Oxoglutarate_C5H4O5 [AUXOSMakg[u]] + M_Oxaloglutarate_C7H5O7 (X_8) [AUXOSCoxag[u]] -> M_2_Oxoglutarate_C5H4O5 [AUXOSCakg[u]] + M_Oxaloglutarate_C7H5O7 (W_7) [AUXOSMoxag[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 7 of 9:
 r_I_production_07
-  ID: PROTSVALTA
-  Name: R_valine_transaminase
+  ID: AUXOSTRPTA
+  Name: R_tryptophan_transaminase
   Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.42;2.6.1.6
-  EC annotation source: partial_primary_source_Step2_seed_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/VALTA
-  Equation: M_2_Oxoglutarate_C5H4O5 [PROTSCakg[x]] + M_L_Valine_C5H11NO2 (X_9) [PROTSCval_L[x]] -> M_3_Methyl_2_oxobutanoate_C5H7O3 (W_1) [PROTSC3mob[x]] + M_L_Glutamate_C5H8NO4 [PROTSCglu_L[x]]
+  Resolved EC: UNRESOLVED (no annotation inferred)
+  EC annotation source: 
+  EC annotation reference: 
+  Equation: M_2_Oxoglutarate_C5H4O5 [AUXOSCakg[u]] + M_L_Tryptophan_C11H12N2O2 (X_9) [AUXOSCtrp_L[u]] -> M_L_Glutamate_C5H8NO4 [AUXOSCglu_L[u]] + M_Indolepyruvate_C11H8NO3 (W_6) [AUXOSCindpyr[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 8 of 9:
 r_I_production_08
-  ID: PROTSGLUCYS
+  ID: AUXOSGLUCYS
   Name: R_gamma_glutamylcysteine_synthetase
   Direction: +1 relative to model.S
   Resolved EC: 6.3.2.2
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GLUCYS
-  Equation: M_ATP_C10H12N5O13P3 (X_1) [PROTSCatp[x]] + M_L_Cysteine_C3H7NO2S (X_2) [PROTSCcys_L[x]] + M_L_Glutamate_C5H8NO4 [PROTSCglu_L[x]] -> M_ADP_C10H12N5O10P2 (W_2) [PROTSCadp[x]] + M_gamma_L_Glutamyl_L_cysteine_C8H13N2O5S [PROTSCglucys[x]] + M_H_H (W_5) [PROTSCh[x]] + M_Phosphate_HO4P (W_8) [PROTSCpi[x]]
+  Equation: M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_L_Cysteine_C3H7NO2S (X_2) [AUXOSCcys_L[u]] + M_L_Glutamate_C5H8NO4 [AUXOSCglu_L[u]] -> M_ADP_C10H12N5O10P2 (W_1) [AUXOSCadp[u]] + M_gamma_L_Glutamyl_L_cysteine_C8H13N2O5S [AUXOSCglucys[u]] + M_H_H (W_4) [AUXOSCh[u]] + M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
   Core flux multiplier per normalized turnover: 1
   Eq. Block 1 / R1 module step 9 of 9:
 r_I_production_09
-  ID: PROTSGTHS
+  ID: AUXOSGTHS
   Name: R_glutathione_synthetase
   Direction: +1 relative to model.S
   Resolved EC: 6.3.2.3
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GTHS
-  Equation: M_ATP_C10H12N5O13P3 (X_1) [PROTSCatp[x]] + M_gamma_L_Glutamyl_L_cysteine_C8H13N2O5S [PROTSCglucys[x]] + M_Glycine_C2H5NO2 (X_5) [PROTSCgly[x]] -> M_ADP_C10H12N5O10P2 (W_2) [PROTSCadp[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_H_H (W_5) [PROTSCh[x]] + M_Phosphate_HO4P (W_8) [PROTSCpi[x]]
+  Equation: M_ATP_C10H12N5O13P3 (X_1) [AUXOSCatp[u]] + M_gamma_L_Glutamyl_L_cysteine_C8H13N2O5S [AUXOSCglucys[u]] + M_Glycine_C2H5NO2 (X_5) [AUXOSCgly[u]] -> M_ADP_C10H12N5O10P2 (W_1) [AUXOSCadp[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H (W_4) [AUXOSCh[u]] + M_Phosphate_HO4P (W_8) [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
@@ -3862,26 +3884,26 @@ r_I_production_09
 ============================================================
 EQ. BLOCK 2: F-LINKED I REMOVAL
 ============================================================
-  Proposed F signal: m_Fd = PROTSC6pgl[x]. A consumed co-substrate is not F.
+  Proposed F signal: m_Fd = AUXOSC6pgl[u]. A consumed co-substrate is not F.
 r_I_linear_removal
-  ID: PROTSGTMLT
+  ID: AUXOSGTMLT
   Name: R_g_glutamyltransferase
   Direction: +1 relative to model.S
   Resolved EC: 2.3.2.2
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GTMLT
-  Equation: M_L_Alanine_C3H7NO2 [PROTSCala_L[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] -> M_Cys_Gly_C5H10N2O3S [PROTSCcgly[x]] + M_5_L_Glutamyl_L_alanine_C8H13N2O5 [PROTSCgluala[x]]
+  Equation: M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] -> M_Cys_Gly_C5H10N2O3S [AUXOSCcgly[u]] + M_5_L_Glutamyl_L_alanine_C8H13N2O5 [AUXOSCgluala[u]]
   GPR: 
   Resolved genes: 
 
 r_T_F
-  ID: PROTSALAt2r
+  ID: AUXOSALAt2r
   Name: R_L_alanine_reversible_transport_via_proton_symport
   Direction: +1 relative to model.S
   Resolved EC: UNRESOLVED (no annotation inferred)
   EC annotation source: 
   EC annotation reference: 
-  Equation: M_L_Alanine_C3H7NO2 [ala_L[e]] + M_H_H [h[e]] -> M_L_Alanine_C3H7NO2 [PROTSCala_L[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_L_Alanine_C3H7NO2 [ala_L[e]] + M_H_H [h[e]] -> M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
@@ -3891,13 +3913,13 @@ r_T_F
 EQ. BLOCK 3: I PAIR LOSS
 ============================================================
 r_I_quadratic_removal
-  ID: PROTSGTHP
+  ID: AUXOSGTHP
   Name: R_glutathione_peridoxase
   Direction: +1 relative to model.S
   Resolved EC: 1.11.1.9
   EC annotation source: partial_primary_source_Step2_seed_2026_11_13
   EC annotation reference: https://iubmb.qmul.ac.uk/enzyme/EC1/11/1/9.html
-  Equation: 2 M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_Hydrogen_peroxide_H2O2 [PROTSCh2o2[x]] -> M_Oxidized_glutathione_C20H30N6O12S2 [PROTSCgthox[x]] + 2 M_H2O_H2O [PROTSCh2o[x]]
+  Equation: 2 M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Hydrogen_peroxide_H2O2 [AUXOSCh2o2[u]] -> M_Oxidized_glutathione_C20H30N6O12S2 [AUXOSCgthox[u]] + 2 M_H2O_H2O [AUXOSCh2o[u]]
   GPR: 
   Resolved genes: 
 
@@ -3907,13 +3929,13 @@ r_I_quadratic_removal
 COUNTER AND ONE CONSUMING NEURON
 ============================================================
 r_c
-  ID: PROTSFALDH
+  ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
   Direction: +1 relative to model.S
   Resolved EC: 1.1.1.284;1.2.1.1
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
-  Equation: M_Formaldehyde_CH2O [PROTSCfald[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [PROTSCnad[x]] -> M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [PROTSCSfglutth[x]] + M_H_H [PROTSCh[x]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [PROTSCnadh[x]]
+  Equation: M_Formaldehyde_CH2O [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] -> M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
   GPR: 
   Resolved genes: 
 
@@ -3929,24 +3951,24 @@ r_Nr_1
   UNASSIGNED: no accepted consuming single-neuron extension.
   Counter-consuming reactions examined (rejected entries, not neuron assignments):
 REJECTED_r_Nf_1_ENTRY
-  ID: PROTSFALDH
+  ID: AUXOSFALDH
   Name: R_formaldehyde_dehydrogenase
   Direction: -1 relative to model.S
   Resolved EC: 1.1.1.284;1.2.1.1
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FALDH
-  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [PROTSCSfglutth[x]] + M_H_H [PROTSCh[x]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [PROTSCnadh[x]] -> M_Formaldehyde_CH2O [PROTSCfald[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [PROTSCnad[x]]
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] -> M_Formaldehyde_CH2O [AUXOSCfald[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
   GPR: 
   Resolved genes: 
 
 REJECTED_r_Nf_1_ENTRY
-  ID: PROTSSFGTH
+  ID: AUXOSSFGTH
   Name: R_S_Formylglutathione_hydralase
   Direction: +1 relative to model.S
   Resolved EC: 3.1.2.12
   EC annotation source: verified_partial_counter_BiGG_seed_2026_11_13
   EC annotation reference: https://bigg.ucsd.edu/models/iCHOv1/reactions/SFGTHi
-  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [PROTSCSfglutth[x]] + M_H2O_H2O [PROTSCh2o[x]] -> M_Formate_CH1O2 [PROTSCfor[x]] + M_Reduced_glutathione_C10H16N3O6S (I) [PROTSCgthrd[x]] + M_H_H [PROTSCh[x]]
+  Equation: M_S_Formylglutathione_C11H16N3O7S (m_c / m_Nin_1) [AUXOSCSfglutth[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Formate_CH1O2 [AUXOSCfor[u]] + M_Reduced_glutathione_C10H16N3O6S (I) [AUXOSCgthrd[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
