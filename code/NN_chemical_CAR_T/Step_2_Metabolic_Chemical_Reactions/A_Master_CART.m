@@ -1,59 +1,13 @@
-function results = A_Master_CART(modelInput, userOptions)
-% A_MASTER_CART Human T-cell notation; same isolated metabolic circuit search.
-% CONTINUE AFTER ANDERSON (reuses the saved canceller candidates):
-%   R = A_Master_CART('continue',struct('checkpointFile', ...
-%       'Anderson_CART_Results/Anderson_Production_Results.mat'));
-% This searches both branches, a consuming counter, one consuming neuron and
-% exact cAMP-to-m_in Block 0. It writes a separate Anderson_Design_Continuation
-% folder beside the checkpoint unless outputDir is explicitly supplied.
-% A normal run also saves Anderson_Design_Checkpoint.mat before those stages.
-% Older result MAT files can be resumed using their original model and
-% 00_Metabolite_Catalog.csv; loader IDs/stoichiometry are checked before reuse.
-% EXPANDED DEFAULT: every eligible imported I pool is considered. Single-
-% reaction removals are retained and 2..3-reaction removal modules are added.
-% Compatible linear/pair-loss components are sought BEFORE production.
-% The former three targets are priority signals only, not an exclusive list.
-% Priority signals get up to 16 production reactions and 500,000 states;
-% other compatible I pools get 10 reactions and 20,000 states each.
-% The all-pool removal inventory is retained. Existing direction, gross-I
-% accounting, startup, EC and cross-talk policies are unchanged.
-% Set productionTargetOnly=true to restrict production to the priority list.
-% Set productionRequireCompatibleRemoval=false to also search I pools lacking
-% a compatible pair in the current bounded inventory (including unresolved gaps).
-% Set expandRemovalModules=false to retain single-reaction removal matching.
-% New diagnostics: Targeted_Production_Report.txt,
-% 02_Production_Target_Selection.csv, 02_Targeted_Production_Coverage.csv,
-% 02_Production_Solver_Audit.csv. An unresolved solve never counts as failure
-% of the chemistry; solver-audit retention is capped separately from search.
-% Technical linprog failures now fall through to an available, configured
-% solveCobraLP without changing global solver settings or flux constraints.
-% Expanded_Removal_Report.txt, 05_Removal_Module_Coverage.csv and
-% 05_Removal_Pair_Compatibility.csv explain the wider I search and all caps.
-% 02_Expanded_I_Coverage.csv includes every imported pool, selected or skipped.
-% 06_Anderson_Connection_Rejections.csv names reused reactions and shared
-% metabolites for each retained rejected triple. Examples appear directly
-% in Targeted_Production_Report.txt; isolation is never relaxed.
-% Supplied SBML identity: Puniya2021 - Naive CD4+ T cell metabolic model.
-% CAR engineering is not encoded by that model identity.
-% Defaults: cytoplasm c; extracellular e; Homo sapiens / taxonomy 9606.
-% Raw SBML M_..._c and R_... identifiers are cross-referenced to the exact
-% loader IDs (e.g. camp[c] and PDE1). IDs and compartment pools are not merged.
-% Native RDF ECs and explicit ECNumbers note fields are read separately;
-% TCDB identifiers, gene identifiers and reaction names are not EC evidence.
-% Legacy partial EC seed maps are disabled by default in this T-cell version.
-% Put this file and Puniya2021_TNM1055.xml on the MATLAB path or pass a path.
-% Requires COBRA readCbModel; network annotation lookup is off by default.
-% Output: Anderson_CART_Results/Step_2_Results.txt plus the existing CSVs
-% and 00_Compartment_Notation.csv / 00_Reaction_Notation.csv /
-% 00_Gene_Notation.csv. Signal roles remain m_in, m_Fd, m_Sd, I, m_c, etc.
+function results = A_Master(modelInput, userOptions)
+% A_MASTER Connect branches, Anderson canceller and counter.
 % Usage:
-%   A_Master_CART
-%   R = A_Master_CART('Puniya2021_TNM1055.xml');
-%   R = A_Master_CART(model); % import + a seed-dependent autocatalytic module
-%   R = A_Master_CART(model, struct('productionMode',"single_reaction"));
-%   R = A_Master_CART(model, struct('productionMinimumOnly',true));
-%   A_Master_CART('selftest') % no COBRA/model/network needed
-%   R = A_Master_CART(model, struct('block0MaxAlternatives',10,'block0MaxDepth',20));
+%   A_Master
+%   R = A_Master('model_aux.xml');
+%   R = A_Master(model); % import + a seed-dependent autocatalytic module
+%   R = A_Master(model, struct('productionMode',"single_reaction"));
+%   R = A_Master(model, struct('productionMinimumOnly',true));
+%   A_Master('selftest') % no COBRA/model/network needed
+%   R = A_Master(model, struct('block0MaxAlternatives',10,'block0MaxDepth',20));
 % Block 0 enumerates alternative balanced cAMP-to-m_in modules. It permits
 % nonunit stoichiometry and shared INTERNAL intermediates, while excluding
 % every downstream noncurrency participant except the intended m_in output.
@@ -80,7 +34,7 @@ function results = A_Master_CART(modelInput, userOptions)
 % GPR means gene association, not S-dependent gating. Positive protein edges
 % are reported as hypotheses, NEVER reclassified as opening evidence.
 %
-% Derived from the current A_Master.m: model discovery,
+% Adapted from the supplied A_Master(20261113-121519).m: model discovery,
 % direction checks, GPR decoding, currency IDs and EC evidence tools.
 % No delay-line or enzyme-activator search.
 % All canceller roles use the same precise intracellular I species index.
@@ -117,31 +71,69 @@ function results = A_Master_CART(modelInput, userOptions)
 % Step_2_Results.txt follows the supplied signal-map/reaction-block format.
 %
 % QUICK START (COBRA Toolbox already initialized):
-%   A_Master_CART('selftest');
-%   R = A_Master_CART;
+%   A_Master('selftest');
+%   R = A_Master;
 % Linux/HPC, with no display or figures:
-%   matlab -batch "A_Master_CART('selftest')"
-%   matlab -batch "A_Master_CART"
-% The no-argument run loads Puniya2021_TNM1055.xml. Keep it in the current folder or
-% under the code directory. The search settings are included in this file.
+%   matlab -batch "A_Master('selftest')"
+%   matlab -batch "A_Master"
+% The no-argument run loads Puniya2021_TNM1055.xml (human naive CD4+ T-cell
+% model, used here for the CAR-T network). R = A_Master_File_TCell('model_aux.xml')
+% runs the yeast iMM904 community model with its own defaults. Keep the model
+% in the current folder or under the code directory.
+% MODEL PROFILE (modelProfile="auto"): chosen from the model layout.
+%   yeast_iMM904_community (AUXOS/PROTS blocks): defaults as below.
+%   single_cell (e.g. the T-cell model): cancellerI="" (every imported I;
+%   the yeast pyruvate canceller needs pyruvate decarboxylase and
+%   acetolactate synthase, which human cells lack), no embedded iMM904 ECs
+%   (the model carries its own EC and gene annotations), branchInputID="f6p"
+%   (m_in of the Step 1 script, resolved to its model ID), no excluded
+%   reactions. Any option you pass yourself overrides the profile.
 % Only console, TXT, CSV and MAT outputs are produced; no graphics are used.
 % SBML metadata extraction is native MATLAB and also works without a JVM.
 % COBRA model loading remains unchanged.
 % Protein discovery additionally needs organismTaxID and gene annotations:
 %   opt = struct('onlineProteinDiscovery',true);
-%   R = A_Master_CART('Puniya2021_TNM1055.xml',opt);
+%   R = A_Master('model_aux.xml',opt);
 % Positive protein edges remain hypotheses, not membrane-opening evidence.
 %
 % DEFAULTS:
 %   Forward and reverse orientations where the model bounds permit them.
 %   STRUCTURAL SCREEN: EC and transporter GPR requirements are OFF.
 %   Missing EC/GPR annotations are reported, never inferred from stoichiometry.
-%   Cytoplasm c and extracellular e are selected explicitly. Organelles
-%   remain distinct; x is a peroxisome in this model, not a second cell.
+%   Compartments come from SBML/model metadata. model_aux searches u and x
+%   separately; the two blocks are never merged or treated as proteins.
+%   cellFreeMerge=true (default): ONE reaction vessel, no membranes. Inside
+%   each block, organelle copies of a species (cytosol, mitochondrion,
+%   peroxisome, ...) become one species; transports with no net chemistry
+%   are removed and identical isoenzyme copies become one reaction. The
+%   outside compartment and the S-gated I import are kept. Set
+%   cellFreeMerge=false to recover the compartmentalised cell model.
+%   cancellerI="pyr" (default): the canceller is searched ONLY for this I
+%   (BaseID such as "pyr", or an exact ID such as "AUXOSCpyr[u]"; a string
+%   array allows several). Set cancellerI="" to search every imported I.
+%   counterUseEmbeddediMM904EC=true (default): the counter, neuron and
+%   Block 0 stages may use the iMM904 authors' EC annotations (760
+%   reactions, exact reaction ID plus matching chemistry). The fast/slow
+%   branch stage keeps its own EC rules.
+%   counterRequireFormationEC=false, counterRequireLeakEC=false (default):
+%   the counter only has to accumulate C linearly with the I it consumes,
+%   so its reactions need no EC. A counter reaction WITH an EC still joins
+%   the distinct-EC checks; one without an EC is simply left out of them.
+%   Step 2 speed: step2ShareBlock0Search=true runs the cAMP -> m_in search
+%   once per (branch module, canceller) and only re-checks each counter
+%   variant against it (the counter can only forbid more, never allow more).
+%   step2MaxSeconds=21600 (6 h) stops Step 2 cleanly and still writes all
+%   outputs. Progress is written to Step2_Progress.txt in outputDir.
+%   step2SearchBlock0=false (default): Step 2 searches the neuron only; the
+%   cAMP -> m_in connector (Block 0) is skipped and parents with a passing
+%   neuron are reported as "neuron_found_Block0_not_searched". Set it true
+%   to add Block 0. block0RequireEC=false (default): Block 0 reactions need
+%   no EC and stay out of the distinct-EC assignment.
+%   excludedReactionIDs: lumped pseudo-reactions that no single enzyme
+%   catalyses (default: thiazole-phosphate synthesis THZPSN1_SC/2_SC).
 %   Original currency exclusions are retained. No EC numbers are excluded.
-%   productionMode="multi_reaction" is the default. Focused I targets allow
-%   16 existing steps; the optional untargeted pass allows 10 steps for an
-%   I-dependent module implementing effective I+X->2I+W.
+%   productionMode="multi_reaction" is the default, with up to 10 existing
+%   steps for an I-dependent module implementing effective I+X->2I+W.
 %   Modules are searched in layers of 1, 2, 3, ... distinct model reactions.
 %   Shortest modules for each imported I are written separately. Longer
 %   modules remain available for downstream wiring unless productionMinimumOnly
@@ -151,8 +143,7 @@ function results = A_Master_CART(modelInput, userOptions)
 %   primitive I+X->2I+W model reaction and applies the direct atom filter.
 %   Module atom balance is reported separately. Missing/unsupported formulas
 %   remain explicitly unresolved. No reaction or hidden I catalyst is invented.
-%   Focused targets have 500,000 states each; optional other pools retain
-%   20,000 states each. Reached limits appear in the coverage CSV.
+%   Each I has a 20,000-state budget; reached limits appear in coverage CSV.
 %   Protein signals S only when validating supplied gating evidence.
 %   Network retrieval is OFF; only explicitly named protein CSVs are reused.
 %   Core/removal screening imposes no unique-EC constraint.
@@ -161,9 +152,9 @@ function results = A_Master_CART(modelInput, userOptions)
 %   species except I. Partial loss components are still written to CSV.
 %   Biomass-sized loss reactions (>16 participants) are audited, not used.
 %   Branches are ON; all six branch reactions require EC annotations.
-%   Embedded legacy EC seed maps are disabled in this version. Model RDF,
-%   explicit model ECNumbers notes and separately supplied exact evidence
-%   provide annotations. Similar reaction names never transfer yeast ECs.
+%   An embedded, source-linked six-reaction EC seed map is included. It is
+%   a partial annotation set, not full yeast-model EC coverage. The map is
+%   applied only to explicit SBML BiGG references with matching chemistry.
 %   Six distinct EC assignments and no shared known branch genes are required.
 %   Counter search is ON in consume_I mode. Formation and any selected
 %   removal need ECs distinct from the assigned branch ECs and each other.
@@ -171,9 +162,6 @@ function results = A_Master_CART(modelInput, userOptions)
 %   All stoichiometric co-substrates, products and cross-talk are retained.
 %
 % SELECTED OPTIONS (pass a struct; see defaultOptions for the full list):
-%   productionTargetOnly=false            % targets first, then other pools
-%   productionTargetMaxCoreReactions=20    % deepen only the focused targets
-%   productionTargetMaxStatesPerI=1000000  % enlarge only focused budgets
 %   maxCoreReactions=12                    % permit longer production modules
 %   productionMode="single_reaction"      % optional direct-reaction filter
 %   allowReverse=false                   % restrict to forward orientations
@@ -181,7 +169,7 @@ function results = A_Master_CART(modelInput, userOptions)
 %   onlineEC=true                        % exact-ID annotation enrichment
 %   requireGateEvidence=true             % retain only evidence-linked pairs
 %   requireProteinS=false                % also admit nonprotein gating ligands
-%   gateEvidenceFile='/absolute/path/CART_Gate_Evidence.tsv'
+%   gateEvidenceFile='/absolute/path/Gate_Evidence.tsv'
 %   outputDir='/absolute/path/results'
 %   connectRemovalTerms=false             % production-only comparison
 %   allowPairLossAlternative=false        % demand exact gross 2I -> I
@@ -214,18 +202,18 @@ function results = A_Master_CART(modelInput, userOptions)
 % BRANCH OUTPUTS: 07_Branch_EC_Audit.csv; 07_Branch_Modules.csv;
 % 07_Branch_Reaction_Assignments.csv; 08_Branches_Canceller_Wiring.csv;
 % 08_Matched_Control_Interfaces.csv; Anderson_Fast_Slow_Branch_Report.txt.
-% CART_Branch_EC_Evidence.tsv can extend annotations with exact ReactionID,
-% SourceReactionID (blank if absent), EC and Reference columns.
+% Branch_EC_Evidence.tsv can extend annotations using columns
+% SourceReactionID, EC, Reference. Unknown annotations stay excluded.
 % COUNTER OUTPUTS: 09_Counter_Components.csv; 09_Counter_EC_Audit.csv;
 % 10_Canceller_Counter_Connections.csv; 10_Counter_Kinetics_Template.csv;
 % 11_Branches_Canceller_Counter_Wiring.csv; Anderson_Counter_Report.txt.
-% CART_Counter_EC_Evidence.tsv extends annotations; CART_Counter_Gate_Evidence.tsv
+% Counter_EC_Evidence.tsv extends removal annotations; Counter_Gate_Evidence.tsv
 % supplies exact I/transporter/direction/cargo/side mappings and references.
 % In membrane mode, rows without gate evidence are STRUCTURAL HYPOTHESES.
 % In default consume_I mode, the gate is not part of the counter. Read
 % 10_Consuming_Counter_Connection_Audit.csv for missing EC/reuse/overlap
 % rejections. counterRequireRemoval=true demands a separate C-removal step.
-% CART_Gate_Evidence_TEMPLATE.tsv is written if no gate evidence is supplied.
+% Gate_Evidence_TEMPLATE.tsv is written if there is no supplied evidence file.
 % Fill it only from mechanism-specific evidence. It uses exact reaction ID,
 % direction (+1/-1), intracellular cargo ID and model gene ID. Effect must be
 % 'opening'; Mechanism: ligand_gating/protein_gating/pore_assembly;
@@ -250,9 +238,6 @@ if nargin < 2, userOptions = struct(); end
 if (ischar(modelInput) || isstring(modelInput)) && strcmpi(modelInput,'selftest')
     selfTestAnderson(); results = struct('selfTestsPassed',true); return;
 end
-if (ischar(modelInput)||isstring(modelInput))&&strcmpi(modelInput,'continue')
-    results=continueDesignFromAnderson(userOptions);return;
-end
 cfg = defaultOptions();
 keys = fieldnames(userOptions);
 for k=1:numel(keys)
@@ -272,10 +257,8 @@ report(fid,['Started: ' datestr(now,31)]);
 report(fid,'Scope: production plus optional same-I linear/quadratic removal connections.');
 report(fid,'Candidates are structural; S gating, kinetics and spatial closure are separate checks.');
 report(fid,['Production mode: ' char(cfg.productionMode)]);
-report(fid,sprintf('Baseline untargeted depth <= %d; baseline states per I = %g.', ...
+report(fid,sprintf('Depth <= %d; path-state budget per imported I = %g.', ...
     cfg.maxCoreReactions,cfg.maxStatesPerI));
-report(fid,sprintf('Focused targets: depth <= %d; states per I = %g; target-only=%d.', ...
-    cfg.productionTargetMaxCoreReactions,cfg.productionTargetMaxStatesPerI,cfg.productionTargetOnly));
 
 modelPath = '';
 if isstruct(modelInput)
@@ -292,24 +275,25 @@ model = normalizeModel(model);
 report(fid,sprintf('Model: %s; %d reactions; %d metabolites.', ...
     modelPath,numel(model.rxns),numel(model.mets)));
 [baseMet,comp,layout,nativeMetadata] = readModelLayout(model,modelPath);
-[model,notation]=attachTCellNotation(model,baseMet,comp,nativeMetadata);
-model.circuitModelName=layout.modelName;
 model.circuitCompartment=comp;
 model.circuitBaseIDs=baseMet;
 cfg=resolveModelProfile(cfg,layout,comp);
+[cfg,modelProfile]=applyModelProfileDefaults(cfg,layout,userOptions);
 report(fid,['Model identity: ' char(layout.modelName)]);
+report(fid,sprintf('Model profile: %s; cancellerI=%s; embedded iMM904 ECs=%d; branchInputID=%s.', ...
+    modelProfile,joinText(string(cfg.cancellerI),','),cfg.counterUseEmbeddediMM904EC,string(cfg.branchInputID)));
 report(fid,['Inside compartments (searched separately): ' char(joinText(cfg.insideCompartment,'; '))]);
 report(fid,['Outside compartment: ' char(cfg.outsideCompartment)]);
-report(fid,'T-CELL NOTATION: c=cytoplasm; e=extracellular. Other recorded compartments remain separate.');
-report(fid,'Signal roles are assigned by the search; m_in, F, S, I and m_c are not fixed to yeast metabolites.');
-report(fid,'The supplied Puniya file identifies naive CD4+ T cells; CAR engineering is not inferred.');
-writeTCellNotationCatalogs(notation,model,cfg);
 for label=reshape(unique(comp),1,[])
     report(fid,sprintf('  Compartment %s: %d metabolites.',label,nnz(comp==label)));
 end
 if layout.communityIDs
     report(fid,'AUXOS/PROTS prefixes identify separate model blocks, not protein synthesis.');
-    report(fid,'Original organelle labels remain in species IDs; no metabolite states are merged.');
+    if cfg.cellFreeMerge
+        report(fid,'cellFreeMerge=1: organelle copies of each species are merged inside each block (details below).');
+    else
+        report(fid,'Original organelle labels remain in species IDs; no metabolite states are merged.');
+    end
 end
 report(fid,sprintf('Annotation filters: requireCoreEC=%d; requireTransportGPR=%d.', ...
     cfg.requireCoreEC,cfg.requireTransportGPR));
@@ -324,26 +308,18 @@ end
 report(fid,sprintf('Reactions with a nonempty gene rule: %d.', ...
     nnz(strlength(strtrim(string(model.grRules)))>0 | strlength(strtrim(string(model.rules)))>0)));
 currency = ismember(lower(regexprep(baseMet,'^M_','')),lower(cfg.currencyBaseIDs));
-model.circuitCurrency=currency;
 metNames=string(model.mets);
 if isfield(model,'metNames') && numel(model.metNames)==numel(model.mets)
     metNames=string(model.metNames(:));
 end
 metCatalog=table((1:numel(model.mets))',string(model.mets),metNames,baseMet,comp,currency,layout.source, ...
     'VariableNames',{'ModelIndex','MetaboliteID','MetaboliteName','BaseID','Compartment','ExcludedAsSignal','CompartmentSource'});
-metCatalog.RawSBMLSpeciesID=notation.rawSpeciesIDs;
-metCatalog.CompartmentName=notation.compartmentNames;
-metCatalog.ChemicalFormula=string(model.metFormulas);
-metCatalog.Charge=model.metCharges;
 writetable(metCatalog,fullfile(cfg.outputDir,'00_Metabolite_Catalog.csv'));
 % Reuse EC policy from the original code; map the chosen inside compartment
 % to its original c-only policy without changing species IDs or stoichiometry.
 ecComp = repmat("other",size(comp)); ecComp(ismember(comp,cfg.insideCompartment))="c";
 [Rgross,Pgross,grossKnown,grossAudit,sbmlEC,sbmlBiGG,sbmlInfo] = readGrossStoichiometry(model,modelPath,nativeMetadata);
 model.circuitSBMLEC = sbmlEC;
-model.circuitSBMLRDFEC=sbmlInfo.rdfEC;
-model.circuitSBMLNotesEC=sbmlInfo.notesEC;
-model.circuitRawReactionIDs=sbmlInfo.rawReactionIDs;
 model.circuitSourceBiGG = sbmlBiGG;
 report(fid,sprintf('SBML metadata: %d reaction nodes; %d matched model reactions; %d explicit BiGG IDs; %d gross equations recovered.', ...
     sbmlInfo.parsedReactionCount,sbmlInfo.matchedReactionCount,sbmlInfo.sourceBiGGCount,nnz(grossKnown)));
@@ -355,14 +331,37 @@ ecOpt = struct('online',cfg.onlineEC,'timeout',10,'maxLookups',cfg.maxECLookups,
 writetable(ecAudit,fullfile(cfg.outputDir,'00_EC_Annotation_Audit.csv'));
 writetable(grossAudit,fullfile(cfg.outputDir,'00_Gross_Stoichiometry_Audit.csv'));
 report(fid,ecInfo);
-reactionNotation=table((1:numel(model.rxns))',string(model.rxns),sbmlInfo.rawReactionIDs, ...
-    string(model.rxnNames),sbmlInfo.rdfEC,sbmlInfo.notesEC,model.circuitResolvedEC, ...
-    string(model.grRules),string(model.rules), ...
-    'VariableNames',{'ModelIndex','ReactionID','RawSBMLReactionID','ReactionName','SBMLRDFEC', ...
-    'SBMLNotesEC','ResolvedEC','GeneRule','IndexedGeneRule'});
-writetable(reactionNotation,fullfile(cfg.outputDir,'00_Reaction_Notation.csv'));
-report(fid,sprintf('Native EC annotations: RDF=%d reactions; explicit EC note fields=%d reactions. TCDB labels are excluded.', ...
-    nnz(sbmlInfo.rdfEC~=""),nnz(sbmlInfo.notesEC~="")));
+
+% CELL-FREE MODE: merge organelle copies BEFORE every search stage, so that
+% all downstream blocks see one pot with one pool per chemical species.
+cellFreeAudit=table();cellFreeMetAudit=table();cellFreeInfo=struct();
+if cfg.cellFreeMerge
+    [model,baseMet,comp,currency,Rgross,Pgross,grossKnown,ecComp,metSource,cellFreeAudit, ...
+        cellFreeMetAudit,cellFreeInfo]=mergeCellFreeCompartments(model,baseMet,comp,currency, ...
+        Rgross,Pgross,grossKnown,ecComp,layout.source,layout,cfg); %#ok<ASGLU>
+    layout.source=metSource;
+    writetable(cellFreeAudit,fullfile(cfg.outputDir,'00_CellFree_Reaction_Merge.csv'));
+    writetable(cellFreeMetAudit,fullfile(cfg.outputDir,'00_CellFree_Metabolite_Merge.csv'));
+    report(fid,'CELL-FREE MODE: one vessel, no membranes; organelle copies merged inside each block.');
+    report(fid,sprintf('  Metabolites %d -> %d (%d species had several organelle copies).', ...
+        cellFreeInfo.metabolitesBefore,cellFreeInfo.metabolitesAfter,cellFreeInfo.mergedSpecies));
+    report(fid,sprintf('  Reactions %d -> %d: removed %d intracellular transports with no net chemistry and %d with a currency-only net change.', ...
+        cellFreeInfo.reactionsBefore,cellFreeInfo.reactionsAfter, ...
+        cellFreeInfo.removedNoNetChemistry,cellFreeInfo.removedCurrencyOnly));
+    report(fid,sprintf('  Organelle-spanning reactions kept with shared species cancelled: %d; identical copies merged: %d; representatives with widened bounds: %d.', ...
+        cellFreeInfo.spanningKept,cellFreeInfo.duplicatesMerged,cellFreeInfo.boundsWidened));
+    report(fid,'  The outside compartment and the I import transporters are NOT merged: the S-gated import stays in the topology.');
+    report(fid,'  Inspect 00_CellFree_Reaction_Merge.csv and 00_CellFree_Metabolite_Merge.csv.');
+    metNames=string(model.mets);
+    if isfield(model,'metNames') && numel(model.metNames)==numel(model.mets)
+        metNames=string(model.metNames(:));
+    end
+    metCatalog=table((1:numel(model.mets))',string(model.mets),metNames,baseMet,comp,currency,layout.source, ...
+        model.circuitMergedMetIDs, ...
+        'VariableNames',{'ModelIndex','MetaboliteID','MetaboliteName','BaseID','Compartment', ...
+        'ExcludedAsSignal','CompartmentSource','CellFreeMergedIDs'});
+    writetable(metCatalog,fullfile(cfg.outputDir,'00_Metabolite_Catalog.csv'));
+end
 
 [oriented,transport,poolAudit] = buildPools(model,baseMet,comp,currency,Rgross,Pgross,grossKnown,cfg);
 writetable(poolAudit,fullfile(cfg.outputDir,'00_Reaction_Filter_Audit.csv'));
@@ -379,61 +378,22 @@ if isempty(oriented.rxn) || isempty(transport)
 end
 cores = emptyCores();statsRows=cell(0,12);directProductionAudit=directProductionAuditTable(cell(0,15));
 productionDepthCoverage=productionDepthAuditTable(cell(0,8));
-signals = unique(transport.InsideIndex,'stable');
-% Broaden removal chemistry FIRST, across every eligible imported I pool.
-removalSignals=signals;if ~cfg.connectRemovalTerms,removalSignals=[];end
-[linearRemoval,quadraticRemoval,removalCoverage,removalAudit]=findRemovalTerms( ...
-    removalSignals,oriented,transport,model,comp,currency,cfg);
-[linearRemoval,quadraticRemoval,removalModuleCoverage,removalModuleAudit]=expandRemovalModules( ...
-    removalSignals,linearRemoval,quadraticRemoval,oriented,transport,model,comp,currency,cfg);
-removalCoverage=refreshRemovalCoverage(removalCoverage,linearRemoval,quadraticRemoval);
-removalPairCoverage=screenRemovalCompatibility(signals,linearRemoval,quadraticRemoval, ...
-    oriented,transport,model,Rgross,Pgross,currency,cfg);
-writetable(removalModuleCoverage,fullfile(cfg.outputDir,'05_Removal_Module_Coverage.csv'));
-writetable(removalModuleAudit,fullfile(cfg.outputDir,'05_Removal_Module_Audit.csv'));
-writetable(removalPairCoverage,fullfile(cfg.outputDir,'05_Removal_Pair_Compatibility.csv'));
-writeExpandedRemovalReport(fullfile(cfg.outputDir,'Expanded_Removal_Report.txt'), ...
-    linearRemoval,quadraticRemoval,removalModuleCoverage,removalPairCoverage,oriented,model,cfg);
-[productionSignals,isTarget,productionTargetSelection]=selectProductionSeeds(signals,model,currency,cfg);
-if cfg.productionRequireCompatibleRemoval&&cfg.connectRemovalTerms
-    admissible=removalPairCoverage.ModelIndex(removalPairCoverage.ProductionEligible);
-    keep=ismember(productionSignals,admissible);productionSignals=productionSignals(keep);isTarget=isTarget(keep);
-    for k=1:height(productionTargetSelection)
-        if productionTargetSelection.Selected(k)&&~ismember(productionTargetSelection.ModelIndex(k),admissible)
-            productionTargetSelection.Selected(k)=false;
-            productionTargetSelection.SelectionStatus(k)="no_compatible_removal_pair_in_current_inventory";
-        end
+signals = unique(transport.InsideIndex,'stable');signals=reshape(signals,[],1);
+wantedI=lower(strtrim(string(cfg.cancellerI(:))));wantedI=wantedI(wantedI~="");
+if ~isempty(wantedI)
+    keepI=ismember(lower(baseMet(signals)),wantedI)|ismember(lower(string(model.mets(signals))),wantedI);
+    report(fid,sprintf('cancellerI=%s: %d of %d imported I pools kept (%s).',joinText(wantedI,','), ...
+        nnz(keepI),numel(signals),joinText(string(model.mets(signals(keepI))),'; ')));
+    if ~any(keepI)
+        report(fid,'cancellerI matched no imported I pool: check the BaseID in 00_Metabolite_Catalog.csv and 01_Import_Transporters.csv.');
     end
+    signals=signals(keepI);
 end
-% Keep every imported I visible in the output, including pools skipped by
-% the present removal inventory. Requested IDs specify priority, not scope.
-for seed=reshape(signals,1,[])
-    if ismember(seed,productionTargetSelection.ModelIndex),continue;end
-    chosen=ismember(seed,productionSignals);local=productionOptionsForSeed(cfg,false);
-    status="not_selected_by_current_production_scope";
-    if chosen,status="selected_from_expanded_I_inventory";
-    elseif cfg.productionRequireCompatibleRemoval&&cfg.connectRemovalTerms&&~ismember(seed,admissible)
-        status="no_compatible_removal_pair_in_current_inventory";
-    end
-    productionTargetSelection(end+1,:)={string(model.mets{seed}),string(model.mets{seed}),seed,comp(seed), ...
-        true,chosen,local.maxCoreReactions,local.maxStatesPerI,status}; %#ok<AGROW>
-end
-writetable(productionTargetSelection,fullfile(cfg.outputDir,'02_Production_Target_Selection.csv'));
-productionSolverAudit=productionSolverAuditTable(cell(0,8));runRows=cell(0,6);
-report(fid,sprintf('Production pools selected=%d of %d imported pools; target-only=%d.', ...
-    numel(productionSignals),numel(signals),cfg.productionTargetOnly));
-report(fid,['Requested production targets: ' char(joinText(string(cfg.productionTargetIDs),'; '))]);
-for q=1:numel(productionSignals)
-    seed = productionSignals(q);seedCfg=productionOptionsForSeed(cfg,isTarget(q));
-    report(fid,sprintf('Starting production I=%s; target=%d; max reactions=%d; state budget=%g.', ...
-        model.mets{seed},isTarget(q),seedCfg.maxCoreReactions,seedCfg.maxStatesPerI));
-    [found,stats,oneAudit,oneDepth,oneSolverAudit] = findCores(seed,oriented,currency,seedCfg,model);
+for q=1:numel(signals)
+    seed = signals(q);
+    [found,stats,oneAudit,oneDepth] = findCores(seed,oriented,currency,cfg,model);
     directProductionAudit=[directProductionAudit;oneAudit]; %#ok<AGROW>
     productionDepthCoverage=[productionDepthCoverage;oneDepth]; %#ok<AGROW>
-    productionSolverAudit=[productionSolverAudit;oneSolverAudit]; %#ok<AGROW>
-    runRows(end+1,:)={string(model.mets{seed}),isTarget(q),seedCfg.maxCoreReactions,seedCfg.maxStatesPerI, ...
-        height(oneSolverAudit),max(0,stats.unsolved-height(oneSolverAudit))}; %#ok<AGROW>
-    writetable(productionSolverAudit,fullfile(cfg.outputDir,'02_Production_Solver_Audit.csv'));
     cores = [cores found]; %#ok<AGROW>
     statsRows(end+1,:) = {string(model.mets{seed}),stats.states,stats.closures, ...
         numel(found),stats.capped,stats.unsolved,stats.smallestFound,stats.minimumProven, ...
@@ -442,23 +402,13 @@ for q=1:numel(productionSignals)
         model.mets{seed},numel(found),stats.states,stats.capped,stats.unsolved));
     report(fid,sprintf('  Smallest found=%g; minimum proven within search class=%d; completed depth=%d; %s.', ...
         stats.smallestFound,stats.minimumProven,stats.completedDepth,stats.minimumStatus));
-    report(fid,sprintf('  Unresolved solver cases logged=%d; omitted by audit-retention limit=%d.', ...
-        height(oneSolverAudit),max(0,stats.unsolved-height(oneSolverAudit))));
 end
 statsTable = cellTable(statsRows, ...
     {'I_ID','PathStates','ClosedPathsTested','CoreCount','StateBudgetReached','SolverUnresolved', ...
     'SmallestFoundReactionCount','MinimumProvenWithinSearchClass','MinimumLayerComplete', ...
     'CompletedReactionDepth','MinimumStatus','MinimumScope'}, ...
     {'string','double','double','double','logical','double','double','logical','logical','double','string','string'});
-productionRunLimits=cellTable(runRows,{'I_ID','IsTarget','ConfiguredMaxReactions','ConfiguredMaxStates', ...
-    'SolverAuditRows','SolverAuditRowsOmitted'},{'string','logical','double','double','double','double'});
-statsTable.IsTarget=productionRunLimits.IsTarget;
-statsTable.ConfiguredMaxReactions=productionRunLimits.ConfiguredMaxReactions;
-statsTable.ConfiguredMaxStates=productionRunLimits.ConfiguredMaxStates;
-statsTable.SolverAuditRows=productionRunLimits.SolverAuditRows;
-statsTable.SolverAuditRowsOmitted=productionRunLimits.SolverAuditRowsOmitted;
 writetable(statsTable,fullfile(cfg.outputDir,'02_Search_Coverage.csv'));
-writetable(productionSolverAudit,fullfile(cfg.outputDir,'02_Production_Solver_Audit.csv'));
 coreTable = describeCores(cores,oriented,model);
 coreTable=tagProductionMinima(coreTable,statsTable,'I_ID','CoreReactionCount');
 minimumCoreTable=coreTable(coreTable.IsShortestFoundForI,:);
@@ -472,7 +422,7 @@ gatePath = findNamed(codeRoot,cfg.gateEvidenceFile);
 [gates,gateAudit] = readGateEvidence(gatePath,transport,cfg);
 writetable(gateAudit,fullfile(cfg.outputDir,'03_Gate_Evidence_Audit.csv'));
 if isempty(gatePath)
-    writeGateTemplate(fullfile(cfg.outputDir,'CART_Gate_Evidence_TEMPLATE.tsv'));
+    writeGateTemplate(fullfile(cfg.outputDir,'Gate_Evidence_TEMPLATE.tsv'));
 end
 [candidates,details] = assembleCandidates(cores,oriented,transport,gates,model,cfg);
 writetable(candidates,fullfile(cfg.outputDir,'03_Production_Candidates.csv'));
@@ -495,382 +445,28 @@ writetable(proteinMap,fullfile(cfg.outputDir,'04_Transporter_Protein_Map.csv'));
 writetable(proteinEdges,fullfile(cfg.outputDir,'04_Protein_Edges.csv'));
 writetable(regulators,fullfile(cfg.outputDir,'04_Protein_Regulator_Hypotheses.csv'));
 
-% Connect full removal modules without inventing kinetic orders or F.
-[connected,connectionStats,connectionAudit]=connectAndersonTerms(candidates,details,cores,oriented, ...
+% Connect the other two formal terms without inventing kinetic orders or F.
+removalSignals=signals;if ~cfg.connectRemovalTerms,removalSignals=[];end
+[linearRemoval,quadraticRemoval,removalCoverage,removalAudit]=findRemovalTerms( ...
+    removalSignals,oriented,transport,model,comp,currency,cfg);
+[connected,connectionStats]=connectAndersonTerms(candidates,details,cores,oriented, ...
     transport,linearRemoval,quadraticRemoval,model,comp,currency,Rgross,Pgross,cfg);
-targetedProductionCoverage=completeProductionTargetCoverage(productionTargetSelection,statsTable, ...
-    removalCoverage,candidates,connected,cfg);
-writetable(targetedProductionCoverage,fullfile(cfg.outputDir,'02_Targeted_Production_Coverage.csv'));
-writetable(targetedProductionCoverage,fullfile(cfg.outputDir,'02_Expanded_I_Coverage.csv'));
-writeTargetedProductionReport(fullfile(cfg.outputDir,'Targeted_Production_Report.txt'), ...
-    targetedProductionCoverage,productionSolverAudit,cfg,connectionAudit,connectionStats);
-writetable(removalComponentsForCSV(linearRemoval),fullfile(cfg.outputDir,'05_Linear_Removal_Candidates.csv'));
-writetable(removalComponentsForCSV(quadraticRemoval),fullfile(cfg.outputDir,'05_Quadratic_Removal_Candidates.csv'));
+writetable(linearRemoval,fullfile(cfg.outputDir,'05_Linear_Removal_Candidates.csv'));
+writetable(quadraticRemoval,fullfile(cfg.outputDir,'05_Quadratic_Removal_Candidates.csv'));
 writetable(removalCoverage,fullfile(cfg.outputDir,'05_Removal_Coverage.csv'));
 writetable(removalAudit,fullfile(cfg.outputDir,'05_Removal_Filter_Audit.csv'));
 writetable(connected,fullfile(cfg.outputDir,'06_Connected_Anderson_Candidates.csv'));
-writetable(connectionAudit,fullfile(cfg.outputDir,'06_Anderson_Connection_Rejections.csv'));
 writeThreeReactionReport(fullfile(cfg.outputDir,'Anderson_Three_Reaction_Report.txt'), ...
     candidates,details,cores,oriented,transport,linearRemoval,quadraticRemoval, ...
     connected,connectionStats,model,cfg);
 
-upstreamSnapshot = struct('options',cfg,'modelPath',modelPath,'modelLayout',layout,'poolAudit',poolAudit,'transport',transport, ...
-    'cores',cores,'coreTable',coreTable,'orientedCorePool',oriented, ...
-    'candidates',candidates,'details',details, ...
-    'coverage',statsTable,'gateEvidence',gates,'gateAudit',gateAudit, ...
-    'proteinMap',proteinMap,'proteinEdges',proteinEdges,'regulatorHypotheses',regulators, ...
-    'linearRemoval',linearRemoval,'quadraticRemoval',quadraticRemoval, ...
-    'removalCoverage',removalCoverage,'removalAudit',removalAudit, ...
-    'connectedCandidates',connected,'connectionStats',connectionStats);
-upstreamSnapshot.productionPairs=productionPairs;
-upstreamSnapshot.directProductionAudit=directProductionAudit;
-upstreamSnapshot.minimumCoreTable=minimumCoreTable;
-upstreamSnapshot.minimumProductionPairs=minimumProductionPairs;
-upstreamSnapshot.productionDepthCoverage=productionDepthCoverage;
-upstreamSnapshot.productionTargetSelection=productionTargetSelection;
-upstreamSnapshot.targetedProductionCoverage=targetedProductionCoverage;
-upstreamSnapshot.productionSolverAudit=productionSolverAudit;
-upstreamSnapshot.connectionAudit=connectionAudit;
-upstreamSnapshot.removalModuleCoverage=removalModuleCoverage;
-upstreamSnapshot.removalModuleAudit=removalModuleAudit;
-upstreamSnapshot.removalPairCoverage=removalPairCoverage;
-upstreamSnapshot.model=model;upstreamSnapshot.grossReactants=Rgross;upstreamSnapshot.grossProducts=Pgross;
-upstreamSnapshot.grossKnown=grossKnown;upstreamSnapshot.baseMet=baseMet;upstreamSnapshot.comp=comp;upstreamSnapshot.currency=currency;
-upstreamSnapshot.sbmlMetadata=sbmlInfo;
-if cfg.saveAndersonCheckpoint
-    save(fullfile(cfg.outputDir,'Anderson_Design_Checkpoint.mat'),'upstreamSnapshot');
-    report(fid,'Saved Anderson_Design_Checkpoint.mat; downstream stages can be continued independently.');
-end
-[extension,~]=runDesignFromAnderson(upstreamSnapshot,cfg,codeRoot);
-branchModules=extension.branchModules;branchWiring=extension.branchWiring;
-counterComponents=extension.counterComponents;counterConnections=extension.counterConnections;
-counterWiring=extension.counterWiring;step2=extension.step2;
-
-report(fid,sprintf('\nDistinct intracellular cores: %d; transport/core combinations: %d.', ...
-    numel(cores),height(candidates)));
-report(fid,sprintf('Combinations with supplied direct-gating evidence: %d.', ...
-    nnz(candidates.GateEvidenceRows>0)));
-report(fid,sprintf('Combinations with all core ECs and a transporter gene rule present: %d.', ...
-    nnz(candidates.AllCoreECResolved & candidates.TransportHasGPR)));
-report(fid,sprintf('Connected structural triples: %d; exact formal quadratic stoichiometry: %d.', ...
-    height(connected),nnz(connected.ExactFormalQuadratic)));
-report(fid,'Connected triples do not establish S/F gating, quadratic kinetics or equal rate constants.');
-report(fid,sprintf('EC-qualified fast/slow branch modules: %d; provisional wiring rows: %d; matched control interfaces: %d.', ...
-    height(branchModules),height(branchWiring),nnz(branchWiring.BothControlInterfacesMatched)));
-report(fid,sprintf('Counter mode=%s; components=%d; canceller/counter rows=%d; branch/canceller/counter rows=%d.', ...
-    cfg.counterMode,height(counterComponents),height(counterConnections),height(counterWiring)));
-report(fid,sprintf('Step 2: parents checked=%d; single-neuron rails=%d; complete cAMP-to-single-neuron circuits=%d. Report: Step_2_Results.txt.', ...
-    step2.stats.parentsTested,step2.stats.neuron1Rails,height(step2.complete)));
-if isempty(signals)
-    report(fid,'RESULT STATUS: no imported I could be tested; the pathway loop was not entered.');
-elseif isempty(oriented.rxn)
-    report(fid,'RESULT STATUS: no eligible intracellular steps; no pathway could be tested.');
-else
-    report(fid,sprintf('RESULT STATUS: %d distinct imported I pools searched.',numel(signals)));
-end
-report(fid,'No S is inferred from stoichiometry, GPR membership or a positive regulatory edge.');
-report(fid,'Seed checks use ALL substrates in the selected core, not graph connectivity alone.');
-report(fid,'Currency co-participants are assumed available; their buffering is not demonstrated.');
-report(fid,'Only selected-core seed dependence is checked; native-cell bypasses remain possible.');
-report(fid,'No genome-scale FBA feasibility, thermodynamic or kinetic validation is claimed.');
-report(fid,'A finite depth or reached state budget can hide other solutions.');
-report(fid,'A solver-unresolved closure is untested, not a failed biological candidate.');
-report(fid,'Spatial warning: external and internal I are distinct pools; import adds its own flux.');
-report(fid,'For each block: dI_inside/dt = J_T(S,I_outside,I_inside) + v_core(I_inside,X) + other terms.');
-report(fid,'This is not yet the single-pool Anderson equation +k*S*I.');
-for n=1:min(height(candidates),cfg.printTop)
-    d=details(n,:); t=transport(d.TransportRow,:); c=cores(d.CoreIndex);
-    report(fid,sprintf('\nCANDIDATE %d | %s -> %s | core size %d', ...
-        n,t.OutsideMetaboliteID,t.InsideMetaboliteID,numel(c.path)));
-    report(fid,['  Gate status: ' char(candidates.GateStatus(n))]);
-    report(fid,['  Annotation status: ' char(candidates.AnnotationStatus(n))]);
-    report(fid,['  S from supplied evidence: ' char(candidates.S_IDs(n))]);
-    report(fid,['  r_T: ' char(t.ReactionID) ' | ' char(t.Equation)]);
-    report(fid,['  Transporter GPR: ' char(t.GPR)]);
-    for k=1:numel(c.path)
-        o=c.path(k); j=oriented.rxn(o);
-        report(fid,sprintf('  core[%g] %s (%+d): %s | EC %s',c.flux(k), ...
-            model.rxns{j},oriented.direction(o), ...
-            equation(Rgross(:,j)*(oriented.direction(o)==1)+Pgross(:,j)*(oriented.direction(o)==-1), ...
-            Pgross(:,j)*(oriented.direction(o)==1)+Rgross(:,j)*(oriented.direction(o)==-1),model), ...
-            model.circuitResolvedEC(j)));
-    end
-    report(fid,['  Gross I accounting: 1 consumed -> 2 produced; net +1.']);
-    report(fid,['  Core net equation: ' char(candidates.CoreNetEquation(n))]);
-    report(fid,['  Full transport + core net: ' char(candidates.ModuleNetEquation(n))]);
-end
-results=upstreamSnapshot;names=fieldnames(extension);
-for k=1:numel(names),results.(names{k})=extension.(names{k});end
-
-save(fullfile(cfg.outputDir,'Anderson_Production_Results.mat'),'results');
-report(fid,['Finished. Outputs: ' cfg.outputDir]);
-end
-
-function results = continueDesignFromAnderson(overrides)
-% This entry point never calls production/removal enumeration or the
-% canceller connector. It reuses every retained structured canceller.
-if ischar(overrides)||isstring(overrides),overrides=struct('checkpointFile',string(overrides));end
-assert(isstruct(overrides)&&isscalar(overrides),'Anderson:ContinuationOptions', ...
-    'Pass a checkpoint filename or a scalar options struct after continue.');
-root=addCodeParent();defaults=defaultOptions();file="";
-if isfield(overrides,'checkpointFile'),file=string(overrides.checkpointFile);end
-assert(isscalar(file)&&~ismissing(file),'Anderson:CheckpointPath','checkpointFile must be one filename.');
-if file==""
-    choices=[string(fullfile(defaults.outputDir,'Anderson_Production_Results.mat')); ...
-        string(fullfile(defaults.outputDir,'Anderson_Design_Checkpoint.mat'))];latest=-Inf;
-    for k=1:numel(choices)
-        if ~isfile(choices(k)),continue;end
-        info=dir(choices(k));
-        if info.datenum>latest,file=choices(k);latest=info.datenum;end
-    end
-    if file=="",file=choices(1);end
-end
-path=findNamed(root,char(file));
-assert(~isempty(path),'Anderson:CheckpointMissing', ...
-    'Checkpoint not found: %s. Pass checkpointFile or run the normal model entry point once to create Anderson_Design_Checkpoint.mat.',file);
-loaded=load(path);
-if isfield(loaded,'upstreamSnapshot'),S=loaded.upstreamSnapshot;
-elseif isfield(loaded,'results'),S=loaded.results;
-else,error('Anderson:CheckpointFormat','The MAT file must contain results or upstreamSnapshot from A_Master_CART.');end
-cfg=continuationOptions(S,overrides,path);
-S=restoreAndersonSnapshot(S,cfg,path,root);validateAndersonSnapshot(S);
-if ~exist(cfg.outputDir,'dir'),mkdir(cfg.outputDir);end
-writeContinuationInputs(S,cfg,path);
-fid=fopen(fullfile(cfg.outputDir,'Continuation_Input_Report.txt'),'w');
-assert(fid>0,'Anderson:ContinuationReport','Cannot write continuation report.');
-guard=onCleanup(@()fclose(fid)); %#ok<NASGU>
-report(fid,['Checkpoint: ' path]);
-report(fid,sprintf('Reusing %d retained structural cancellers; production, removal and canceller assembly are not rerun.',height(S.connectedCandidates)));
-for id=reshape(unique(S.connectedCandidates.I_ID,'stable'),1,[])
-    report(fid,sprintf('  I=%s: %d retained cancellers.',id,nnz(S.connectedCandidates.I_ID==id)));
-end
-report(fid,'All module reactions, directions, weights and gross participants are retained for downstream isolation.');
-report(fid,sprintf('Downstream stages enabled: branches=%d; counter=%d; Step2=%d; fair I-pool ordering=%d.', ...
-    cfg.connectBranches,cfg.connectCounter,cfg.connectStep2,cfg.fairDownstreamOrder));
-report(fid,sprintf('Branch budgets: rails=%g; modules=%g; pair tests=%g; wiring tests=%g.', ...
-    cfg.branchMaxRails,cfg.branchMaxModules,cfg.branchMaxPairTests,cfg.branchMaxWiringTests));
-report(fid,'Scope: the saved canceller inventory only; prior upstream limits remain part of the evidence.');
-[extension,~]=runDesignFromAnderson(S,cfg,root);
-results=S;names=fieldnames(extension);
-for k=1:numel(names),results.(names{k})=extension.(names{k});end
-results.options=cfg;results.parentCheckpoint=string(path);
-save(fullfile(cfg.outputDir,'Anderson_Design_Continuation_Results.mat'),'results');
-report(fid,sprintf('Complete structural cAMP-to-neuron circuits found=%d. Read Step_2_Results.txt and Design_Stage_Summary.txt.',height(extension.step2.complete)));
-end
-
-function cfg = continuationOptions(S,overrides,path)
-cfg=defaultOptions();
-if isfield(S,'options')
-    names=fieldnames(S.options);
-    for k=1:numel(names),if isfield(cfg,names{k}),cfg.(names{k})=S.options.(names{k});end;end
-end
-% Continuing the requested architecture enables its remaining stages. Any
-% explicit downstream override below remains authoritative.
-cfg.connectBranches=true;cfg.connectCounter=true;cfg.connectStep2=true;
-if isfield(overrides,'continuationBroadenBudgets'),cfg.continuationBroadenBudgets=overrides.continuationBroadenBudgets;end
-if cfg.continuationBroadenBudgets
-    floors=struct('branchMaxRails',10000,'branchMaxModules',2000,'branchMaxPairTests',500000, ...
-        'branchMaxWiringTests',500000,'branchMaxWiring',20000,'counterMaxComponents',10000, ...
-        'counterMaxConnectionTests',500000,'counterMaxConnections',20000, ...
-        'counterMaxWiringTests',500000,'counterMaxWiring',20000,'step2MaxParents',2000,'step2MaxNeuronTests',200000);
-    names=fieldnames(floors);
-    for k=1:numel(names),cfg.(names{k})=max(cfg.(names{k}),floors.(names{k}));end
-end
-names=fieldnames(overrides);
-for k=1:numel(names)
-    name=names{k};assert(isfield(cfg,name),'Anderson:Option','Unknown option: %s',name);
-    allowed=ismember(string(name),["checkpointFile","continuationModelFile","continuationBroadenBudgets", ...
-        "outputDir","printTop","fairDownstreamOrder","connectBranches","connectCounter","connectStep2"]) ...
-        ||startsWith(string(name),["branch","counter","neuron","step2","block0"]);
-    assert(allowed,'Anderson:UpstreamContinuationOption', ...
-        'Option %s changes upstream discovery. Use a normal model run to change it; continuation reuses saved cancellers.',name);
-    cfg.(name)=overrides.(name);
-end
-if ~isfield(overrides,'outputDir'),cfg.outputDir=fullfile(fileparts(path),'Anderson_Design_Continuation');end
-cfg.checkpointFile=string(path);validateOptions(cfg);
-end
-
-function writeContinuationInputs(S,cfg,path)
-% Re-export preserved input tables so relative references in the downstream
-% reports resolve inside the new continuation folder. No search is performed.
-tables={'transport','01_Import_Transporters.csv';'candidates','03_Production_Candidates.csv'; ...
-    'connectedCandidates','06_Connected_Anderson_Candidates.csv';'coverage','02_Search_Coverage.csv'; ...
-    'coreTable','02_Autocatalytic_Cores.csv';'poolAudit','00_Reaction_Filter_Audit.csv'; ...
-    'targetedProductionCoverage','02_Expanded_I_Coverage.csv';'connectionAudit','06_Anderson_Connection_Rejections.csv'};
-for k=1:size(tables,1)
-    if isfield(S,tables{k,1})&&istable(S.(tables{k,1}))&&width(S.(tables{k,1}))>0
-        writetable(S.(tables{k,1}),fullfile(cfg.outputDir,tables{k,2}));
-    end
-end
-writetable(removalComponentsForCSV(S.linearRemoval),fullfile(cfg.outputDir,'05_Linear_Removal_Candidates.csv'));
-writetable(removalComponentsForCSV(S.quadraticRemoval),fullfile(cfg.outputDir,'05_Quadratic_Removal_Candidates.csv'));
-for name={'00_Metabolite_Catalog.csv','00_Reaction_Notation.csv','00_Gene_Notation.csv'}
-    source=fullfile(fileparts(path),name{1});target=fullfile(cfg.outputDir,name{1});
-    if isfile(source)
-        [~,a]=fileattrib(source);[exists,b]=fileattrib(target);
-        if ~exists||~strcmp(a.Name,b.Name),copyfile(source,target);end
-    elseif strcmp(name{1},'00_Metabolite_Catalog.csv')
-        T=table((1:numel(S.model.mets))',string(S.model.mets),S.baseMet,S.comp,S.currency, ...
-            'VariableNames',{'ModelIndex','MetaboliteID','BaseID','Compartment','ExcludedAsSignal'});
-        if isfield(S.model,'metNames'),T.MetaboliteName=string(S.model.metNames);end
-        if isfield(S.model,'circuitRawSpeciesIDs'),T.RawSBMLSpeciesID=S.model.circuitRawSpeciesIDs;end
-        writetable(T,target);
-    elseif strcmp(name{1},'00_Reaction_Notation.csv')
-        T=table((1:numel(S.model.rxns))',string(S.model.rxns),string(S.model.rxnNames), ...
-            'VariableNames',{'ModelIndex','ReactionID','ReactionName'});
-        if isfield(S.model,'circuitRawReactionIDs'),T.RawSBMLReactionID=S.model.circuitRawReactionIDs;end
-        if isfield(S.model,'circuitResolvedEC'),T.ResolvedEC=S.model.circuitResolvedEC;end
-        writetable(T,target);
-    else
-        T=table(string(S.model.genes(:)),'VariableNames',{'LoaderGeneID'});writetable(T,target);
-    end
-end
-end
-
-function S = restoreAndersonSnapshot(S,cfg,path,root)
-required={'orientedCorePool','transport','connectedCandidates','candidates','details','cores', ...
-    'linearRemoval','quadraticRemoval','coverage','connectionStats'};
-for k=1:numel(required)
-    assert(isfield(S,required{k}),'Anderson:IncompleteCheckpoint','Checkpoint is missing %s.',required{k});
-end
-if ~isfield(S,'model')||~isfield(S,'grossReactants')||~isfield(S,'grossProducts')
-    % Compatibility with the immediately preceding A_Master_CART versions.
-    file=string(cfg.continuationModelFile);
-    if file==""&&isfield(S,'modelPath'),file=string(S.modelPath);end
-    modelPath=findNamed(root,char(file));
-    assert(~isempty(modelPath),'Anderson:ResumeModel', ...
-        'This older checkpoint needs its original SBML model. Set continuationModelFile to that file.');
-    assert(exist('readCbModel','file')~=0,'Anderson:COBRA','COBRA readCbModel is required for an older checkpoint.');
-    model=normalizeModel(readCbModel(modelPath));
-    [base,comp,layout,metadata]=readModelLayout(model,modelPath);
-    [model,~]=attachTCellNotation(model,base,comp,metadata);
-    model.circuitBaseIDs=base;model.circuitCompartment=comp;model.circuitModelName=layout.modelName;
-    currency=ismember(lower(regexprep(base,'^M_','')),lower(cfg.currencyBaseIDs));model.circuitCurrency=currency;
-    catalogPath=fullfile(fileparts(path),'00_Metabolite_Catalog.csv');
-    assert(isfile(catalogPath),'Anderson:ResumeCatalog', ...
-        'This older checkpoint needs 00_Metabolite_Catalog.csv beside it to verify exact species indices.');
-    catalog=readTextTable(catalogPath);
-    assert(ismember('MetaboliteID',catalog.Properties.VariableNames)&&height(catalog)==numel(model.mets) ...
-        &&isequal(catalog.MetaboliteID,string(model.mets)), ...
-        'Anderson:ResumeMetabolites','The reloaded model species IDs/order do not match the saved run.');
-    [R,P,known,~,ec,bigg,info]=readGrossStoichiometry(model,modelPath,metadata);
-    assert(info.error==""&&all(known(unique([S.orientedCorePool.rxn reshape(S.transport.ModelIndex,1,[])]))), ...
-        'Anderson:ResumeGross','Exact gross stoichiometry could not be recovered for saved reaction supports.');
-    model.circuitSBMLEC=ec;model.circuitSBMLRDFEC=info.rdfEC;model.circuitSBMLNotesEC=info.notesEC;
-    model.circuitSourceBiGG=bigg;model.circuitRawReactionIDs=info.rawReactionIDs;
-    model.circuitResolvedEC=ec;
-    if isfield(S,'step2EC')&&numel(S.step2EC.codes)==numel(model.rxns)
-        model.circuitResolvedEC=S.step2EC.codes;
-        model.circuitECSource=S.step2EC.source;model.circuitECReference=S.step2EC.reference;
-    end
-    assert(isfield(S,'poolAudit'),'Anderson:ResumeReactions','The older checkpoint needs its saved reaction pool audit.');
-    a=S.poolAudit;a=a(a.CoreAdmitted,:);
-    assert(height(a)==numel(S.orientedCorePool.rxn) ...
-        &&isequal(a.ReactionID,string(model.rxns(S.orientedCorePool.rxn))) ...
-        &&isequal(a.Direction,S.orientedCorePool.direction(:)), ...
-        'Anderson:ResumeReactions','The reloaded reaction IDs/order differ from the saved orientation pool.');
-    S.model=model;S.grossReactants=R;S.grossProducts=P;S.grossKnown=known;
-    S.baseMet=base;S.comp=comp;S.currency=currency;S.modelPath=modelPath;S.modelLayout=layout;S.sbmlMetadata=info;
-end
-for name={'model','grossReactants','grossProducts','grossKnown','baseMet','comp','currency','sbmlMetadata'}
-    assert(isfield(S,name{1}),'Anderson:IncompleteCheckpoint','Restored checkpoint is missing %s.',name{1});
-end
-if ~isfield(S,'targetedProductionCoverage'),S.targetedProductionCoverage=table();end
-if ~isfield(S,'removalModuleCoverage'),S.removalModuleCoverage=removalModuleCoverageTable(cell(0,15));end
-if ~isfield(S,'removalPairCoverage')
-    S.removalPairCoverage=table(false(0,1),'VariableNames',{'CompatibleRemovalPairFound'});
-end
-if ~isfield(S,'directProductionAudit'),S.directProductionAudit=directProductionAuditTable(cell(0,15));end
-end
-
-function validateAndersonSnapshot(S)
-m=numel(S.model.mets);n=numel(S.model.rxns);O=S.orientedCorePool;T=S.transport;
-assert(isequal(size(S.grossReactants),[m n])&&isequal(size(S.grossProducts),[m n]) ...
-    &&norm((S.grossProducts-S.grossReactants)-S.model.S,Inf)<1e-8, ...
-    'Anderson:CheckpointGross','Saved gross matrices do not match model.S.');
-assert(size(O.R,1)==m&&size(O.P,1)==m&&size(O.R,2)==numel(O.rxn) ...
-    &&all(O.rxn>=1&O.rxn<=n)&&numel(O.direction)==numel(O.rxn), ...
-    'Anderson:CheckpointOrientations','Saved orientation indices/dimensions are invalid.');
-signed=S.model.S(:,O.rxn)*spdiags(O.direction(:),0,numel(O.rxn),numel(O.rxn));
-assert(norm((O.P-O.R)-signed,Inf)<1e-8,'Anderson:CheckpointOrientationNet', ...
-    'Saved oriented gross equations do not match the model reactions.');
-assert(isequal(string(S.model.rxns(T.ModelIndex)),T.ReactionID) ...
-    &&isequal(string(S.model.mets(T.InsideIndex)),T.InsideMetaboliteID) ...
-    &&isequal(string(S.model.mets(T.OutsideIndex)),T.OutsideMetaboliteID), ...
-    'Anderson:CheckpointTransport','Saved importer IDs/species do not match the model indices.');
-assert(numel(S.baseMet)==m&&numel(S.comp)==m&&numel(S.currency)==m, ...
-    'Anderson:CheckpointLayout','Saved metabolite layout dimensions are invalid.');
-assert(isequal(S.connectedCandidates.ConnectedID,(1:height(S.connectedCandidates))'), ...
-    'Anderson:CheckpointIDs','Canceller row IDs must match their preserved row indices.');
-end
-
-function order = downstreamRowOrder(labels,indices,cfg)
-% Alternate I pools while preserving row order within each pool. References
-% always retain original table indices and IDs; no candidate table is shuffled.
-order=reshape(indices,1,[]);if ~cfg.fairDownstreamOrder||isempty(order),return;end
-labels=string(labels);groups=unique(labels(order),'stable');buckets=cell(1,numel(groups));largest=0;
-for k=1:numel(groups),buckets{k}=order(labels(order)==groups(k));largest=max(largest,numel(buckets{k}));end
-order=[];
-for j=1:largest
-    for k=1:numel(buckets),if j<=numel(buckets{k}),order(end+1)=buckets{k}(j);end;end %#ok<AGROW>
-end
-end
-
-function value = designCoverageLimited(stats)
-value=false;names=fieldnames(stats);
-for k=1:numel(names)
-    if ~isempty(regexp(names{k},'LimitReached$|LimitedCalls$|LimitCalls$','once'))
-        x=stats.(names{k});value=value||any(x(:)>0);
-    end
-end
-end
-
-function writeDesignStageSummary(path,E,S,cfg)
-P=E.step2;blockLimited=false;
-if ~isempty(P.block0Coverage)
-    B=P.block0Coverage;blockLimited=any(B.StateLimitReached|B.ExpansionLimitReached|B.DepthBoundReached|B.SolverUnresolved>0);
-end
-rows={ ...
-    'Retained Anderson cancellers',height(S.connectedCandidates),true,designCoverageLimited(S.connectionStats),'06_Connected_Anderson_Candidates.csv'; ...
-    'EC-qualified fast/slow modules',height(E.branchModules),cfg.connectBranches,designCoverageLimited(E.branchSearchStats),'07_Branch_Modules.csv'; ...
-    'Branches joined to cancellers',height(E.branchWiring),cfg.connectBranches,designCoverageLimited(E.branchWiringStats),'08_Branches_Canceller_Wiring.csv'; ...
-    'Counter formation components',height(E.counterComponents),cfg.connectCounter,designCoverageLimited(E.counterSearchStats),'09_Counter_Components.csv'; ...
-    'Counters joined to cancellers',height(E.counterConnections),cfg.connectCounter,designCoverageLimited(E.counterConnectionStats),'10_Canceller_Counter_Connections.csv'; ...
-    'Branches/canceller/counter parents',height(E.counterWiring),cfg.connectCounter,designCoverageLimited(E.counterWiringStats),'11_Branches_Canceller_Counter_Wiring.csv'; ...
-    'Isolated single-neuron candidates',height(P.neuronCandidates),cfg.connectStep2,designCoverageLimited(P.stats),'15_Isolated_Neuron_Candidates.csv'; ...
-    'Parents with EC-qualified Block 0',P.stats.parentBlock0Found,cfg.connectStep2,blockLimited,'16_Block0_Coverage.csv'; ...
-    'Complete structural circuits',height(P.complete),cfg.connectStep2,designCoverageLimited(P.stats),'15_Complete_Step2_Circuits.csv'};
-C=cellTable(rows,{'Stage','Count','Enabled','BoundOrUnresolved','DiagnosticFile'}, ...
-    {'string','double','logical','logical','string'});
-writetable(C,fullfile(cfg.outputDir,'17_Design_Stage_Coverage.csv'));
-fid=fopen(path,'w');assert(fid>0,'Anderson:DesignReport','Cannot write design summary.');
-guard=onCleanup(@()fclose(fid)); %#ok<NASGU>
-report(fid,'ANDERSON TO COMPLETE METABOLIC DESIGN');
-report(fid,'Targets: EC-qualified fast/slow branches; I-consuming counter; one neuron consuming m_c; exact cAMP-to-m_in Block 0.');
-report(fid,sprintf('Configured counter mode=%s; neuron placement=%s.',cfg.counterMode,cfg.neuronPlacement));
-report(fid,'Fast/slow are design roles. Transporter gating, biochemical rate laws and independent enzyme control remain unverified.');
-report(fid,'All reactions and all noncurrency module participants remain in the cross-talk/reaction-reuse checks.');
-for k=1:height(C)
-    report(fid,sprintf('%s: %d | enabled=%d | bound/unresolved=%d | %s', ...
-        C.Stage(k),C.Count(k),C.Enabled(k),C.BoundOrUnresolved(k),C.DiagnosticFile(k)));
-end
-first=find(C.Enabled&C.Count==0,1);
-if ~isempty(first),report(fid,['First empty stage: ' char(C.Stage(first)) '. Later zeros may reflect missing upstream parents.']);end
-report(fid,'A retained count is scoped to the tested candidates and budgets; a reached limit is not evidence that alternatives do not exist.');
-report(fid,'Full signal maps, reactions and intermediates: Step_2_Results.txt.');
-end
-
-function [extension,circuitContext] = runDesignFromAnderson(S,cfg,codeRoot)
-% Shared downstream orchestration for normal runs and checkpoint continuation.
-model=S.model;baseMet=S.baseMet;comp=S.comp;currency=S.currency;
-Rgross=S.grossReactants;Pgross=S.grossProducts;grossKnown=S.grossKnown;
-oriented=S.orientedCorePool;transport=S.transport;connected=S.connectedCandidates;
-candidates=S.candidates;details=S.details;cores=S.cores;linearRemoval=S.linearRemoval;quadraticRemoval=S.quadraticRemoval;
-statsTable=S.coverage;targetedProductionCoverage=S.targetedProductionCoverage;
-connectionStats=S.connectionStats;removalModuleCoverage=S.removalModuleCoverage;
-removalPairCoverage=S.removalPairCoverage;directProductionAudit=S.directProductionAudit;sbmlInfo=S.sbmlMetadata;
-signals=unique(transport.InsideIndex,'stable');productionSignals=statsTable.I_ID;
 % Require ECs for the new rails without discarding structural cancellers.
+% A BaseID such as "f6p" is resolved to the exact (merged) model ID.
+requestedInput=string(cfg.branchInputID);
+cfg.branchInputID=resolveMetaboliteChoice(requestedInput,model,baseMet,comp,cfg);
+if requestedInput~=""
+    report(fid,sprintf('Branch input m_in: requested %s -> model ID %s.',requestedInput,string(cfg.branchInputID)));
+end
 [branchEC,branchECAudit]=resolveBranchEC(model,baseMet,codeRoot,cfg);
 writetable(branchECAudit,fullfile(cfg.outputDir,'07_Branch_EC_Audit.csv'));
 [branchRails,branchModules,branchAssignments,branchStats]=findBranchModules( ...
@@ -935,8 +531,7 @@ circuitContext=struct('model',model,'base',baseMet,'comp',comp,'currency',curren
 upstreamCoverage=cellTable({ ...
     'Intracellular reaction orientations',numel(oriented.rxn),true,'00_Reaction_Filter_Audit.csv'; ...
     'I import transporters',height(transport),true,'01_Import_Transporters.csv'; ...
-    'Imported I pools',numel(signals),true,'02_Expanded_I_Coverage.csv'; ...
-    'I pools selected for production',numel(productionSignals),true,'02_Production_Target_Selection.csv'; ...
+    'Imported I pools',numel(signals),true,'02_Search_Coverage.csv'; ...
     'Seed-dependent production modules',numel(cores),true,'02_Autocatalytic_Cores.csv'; ...
     'Import plus production pairs',height(candidates),true,'03_Production_Candidates.csv'; ...
     'Linear I-removal candidates',height(linearRemoval),cfg.connectRemovalTerms,'05_Linear_Removal_Candidates.csv'; ...
@@ -950,9 +545,6 @@ upstreamCoverage=cellTable({ ...
     {'Stage','Count','Enabled','DiagnosticFile'},{'string','double','logical','string'});
 circuitContext.upstreamCoverage=upstreamCoverage;
 circuitContext.productionCoverage=statsTable;
-circuitContext.targetedProductionCoverage=targetedProductionCoverage;
-circuitContext.connectionStats=connectionStats;
-circuitContext.removalModuleCoverage=removalModuleCoverage;circuitContext.removalPairCoverage=removalPairCoverage;
 circuitContext.directProductionAudit=directProductionAudit;
 [step2,circuitContext]=searchStep2Circuit(circuitContext,cfg);
 writetable(upstreamCoverage,fullfile(cfg.outputDir,'12_Upstream_Search_Coverage.csv'));
@@ -973,60 +565,123 @@ writetable(step2.block0Coverage,fullfile(cfg.outputDir,'16_Block0_Coverage.csv')
 writetable(step2.block0FilterAudit,fullfile(cfg.outputDir,'16_Block0_Filter_Audit.csv'));
 writetable(step2.complete,fullfile(cfg.outputDir,'15_Complete_Step2_Circuits.csv'));
 writeStep2Report(fullfile(cfg.outputDir,'Step_2_Results.txt'),step2,circuitContext,cfg);
-extension=struct('branchEC',branchEC,'branchECAudit',branchECAudit,'branchRails',branchRails, ...
-    'branchModules',branchModules,'branchReactionAssignments',branchAssignments,'branchWiring',branchWiring, ...
-    'branchSearchStats',branchStats,'branchWiringStats',branchWiringStats,'counterEC',counterEC, ...
-    'counterECAudit',counterECAudit,'counterComponents',counterComponents,'counterComponentParts',{counterParts}, ...
-    'counterFilterAudit',counterAudit,'counterGates',counterGates,'counterGateAudit',counterGateAudit, ...
-    'counterConnections',counterConnections,'counterWiring',counterWiring,'counterSearchStats',counterStats, ...
-    'counterConnectionStats',counterConnectionStats,'counterWiringStats',counterWiringStats, ...
-    'counterConnectionParts',{counterConnectionParts},'counterConnectionAudit',counterConnectionAudit, ...
-    'step2EC',step2EC,'step2ECAudit',step2ECAudit,'step2',step2,'upstreamCoverage',upstreamCoverage);
-writeDesignStageSummary(fullfile(cfg.outputDir,'Design_Stage_Summary.txt'),extension,S,cfg);
+
+report(fid,sprintf('\nDistinct intracellular cores: %d; transport/core combinations: %d.', ...
+    numel(cores),height(candidates)));
+report(fid,sprintf('Combinations with supplied direct-gating evidence: %d.', ...
+    nnz(candidates.GateEvidenceRows>0)));
+report(fid,sprintf('Combinations with all core ECs and a transporter gene rule present: %d.', ...
+    nnz(candidates.AllCoreECResolved & candidates.TransportHasGPR)));
+report(fid,sprintf('Connected structural triples: %d; exact formal quadratic stoichiometry: %d.', ...
+    height(connected),nnz(connected.ExactFormalQuadratic)));
+report(fid,'Connected triples do not establish S/F gating, quadratic kinetics or equal rate constants.');
+report(fid,sprintf('EC-qualified fast/slow branch modules: %d; provisional wiring rows: %d; matched control interfaces: %d.', ...
+    height(branchModules),height(branchWiring),nnz(branchWiring.BothControlInterfacesMatched)));
+report(fid,sprintf('Counter mode=%s; components=%d; canceller/counter rows=%d; branch/canceller/counter rows=%d.', ...
+    cfg.counterMode,height(counterComponents),height(counterConnections),height(counterWiring)));
+report(fid,sprintf('Step 2: parents checked=%d; single-neuron rails=%d; complete cAMP-to-single-neuron circuits=%d. Report: Step_2_Results.txt.', ...
+    step2.stats.parentsTested,step2.stats.neuron1Rails,height(step2.complete)));
+if isempty(signals)
+    report(fid,'RESULT STATUS: no imported I could be tested; the pathway loop was not entered.');
+elseif isempty(oriented.rxn)
+    report(fid,'RESULT STATUS: no eligible intracellular steps; no pathway could be tested.');
+else
+    report(fid,sprintf('RESULT STATUS: %d distinct imported I pools searched.',numel(signals)));
+end
+report(fid,'No S is inferred from stoichiometry, GPR membership or a positive regulatory edge.');
+report(fid,'Seed checks use ALL substrates in the selected core, not graph connectivity alone.');
+report(fid,'Currency co-participants are assumed available; their buffering is not demonstrated.');
+report(fid,'Only selected-core seed dependence is checked; native-cell bypasses remain possible.');
+report(fid,'No genome-scale FBA feasibility, thermodynamic or kinetic validation is claimed.');
+report(fid,'A finite depth or reached state budget can hide other solutions.');
+report(fid,'A solver-unresolved closure is untested, not a failed biological candidate.');
+report(fid,'Spatial warning: external and internal I are distinct pools; import adds its own flux.');
+report(fid,'For each block: dI_inside/dt = J_T(S,I_outside,I_inside) + v_core(I_inside,X) + other terms.');
+report(fid,'This is not yet the single-pool Anderson equation +k*S*I.');
+for n=1:min(height(candidates),cfg.printTop)
+    d=details(n,:); t=transport(d.TransportRow,:); c=cores(d.CoreIndex);
+    report(fid,sprintf('\nCANDIDATE %d | %s -> %s | core size %d', ...
+        n,t.OutsideMetaboliteID,t.InsideMetaboliteID,numel(c.path)));
+    report(fid,['  Gate status: ' char(candidates.GateStatus(n))]);
+    report(fid,['  Annotation status: ' char(candidates.AnnotationStatus(n))]);
+    report(fid,['  S from supplied evidence: ' char(candidates.S_IDs(n))]);
+    report(fid,['  r_T: ' char(t.ReactionID) ' | ' char(t.Equation)]);
+    report(fid,['  Transporter GPR: ' char(t.GPR)]);
+    for k=1:numel(c.path)
+        o=c.path(k); j=oriented.rxn(o);
+        report(fid,sprintf('  core[%g] %s (%+d): %s | EC %s',c.flux(k), ...
+            model.rxns{j},oriented.direction(o), ...
+            equation(Rgross(:,j)*(oriented.direction(o)==1)+Pgross(:,j)*(oriented.direction(o)==-1), ...
+            Pgross(:,j)*(oriented.direction(o)==1)+Rgross(:,j)*(oriented.direction(o)==-1),model), ...
+            model.circuitResolvedEC(j)));
+    end
+    report(fid,['  Gross I accounting: 1 consumed -> 2 produced; net +1.']);
+    report(fid,['  Core net equation: ' char(candidates.CoreNetEquation(n))]);
+    report(fid,['  Full transport + core net: ' char(candidates.ModuleNetEquation(n))]);
+end
+results = struct('options',cfg,'modelPath',modelPath,'modelLayout',layout,'poolAudit',poolAudit,'transport',transport, ...
+    'cores',cores,'coreTable',coreTable,'orientedCorePool',oriented, ...
+    'candidates',candidates,'details',details, ...
+    'coverage',statsTable,'gateEvidence',gates,'gateAudit',gateAudit, ...
+    'proteinMap',proteinMap,'proteinEdges',proteinEdges,'regulatorHypotheses',regulators, ...
+    'linearRemoval',linearRemoval,'quadraticRemoval',quadraticRemoval, ...
+    'removalCoverage',removalCoverage,'removalAudit',removalAudit, ...
+    'connectedCandidates',connected,'connectionStats',connectionStats);
+results.branchEC=branchEC;results.branchECAudit=branchECAudit;results.branchRails=branchRails;
+results.branchModules=branchModules;results.branchReactionAssignments=branchAssignments;
+results.branchWiring=branchWiring;results.branchSearchStats=branchStats;
+results.branchWiringStats=branchWiringStats;
+results.counterEC=counterEC;results.counterECAudit=counterECAudit;
+results.counterComponents=counterComponents;results.counterComponentParts=counterParts;
+results.counterFilterAudit=counterAudit;results.counterGates=counterGates;
+results.counterGateAudit=counterGateAudit;results.counterConnections=counterConnections;
+results.counterWiring=counterWiring;results.counterSearchStats=counterStats;
+results.counterConnectionStats=counterConnectionStats;results.counterWiringStats=counterWiringStats;
+results.counterConnectionParts=counterConnectionParts;results.counterConnectionAudit=counterConnectionAudit;
+results.step2EC=step2EC;results.step2ECAudit=step2ECAudit;results.step2=step2;
+results.upstreamCoverage=upstreamCoverage;
+results.productionPairs=productionPairs;results.directProductionAudit=directProductionAudit;
+results.minimumCoreTable=minimumCoreTable;results.minimumProductionPairs=minimumProductionPairs;
+results.productionDepthCoverage=productionDepthCoverage;
+results.sbmlMetadata=sbmlInfo;
+results.cellFreeReactionMerge=cellFreeAudit;results.cellFreeMetaboliteMerge=cellFreeMetAudit;
+results.cellFreeSummary=cellFreeInfo;
+save(fullfile(cfg.outputDir,'Anderson_Production_Results.mat'),'results');
+report(fid,['Finished. Outputs: ' cfg.outputDir]);
 end
 
 function cfg = defaultOptions()
-cfg = struct('outputDir',fullfile(pwd,'Anderson_CART_Results'), ...
-    'checkpointFile',"",'continuationModelFile',"",'continuationBroadenBudgets',true, ...
-    'saveAndersonCheckpoint',true,'fairDownstreamOrder',true, ...
-    'insideCompartment',"c",'outsideCompartment',"e", ...
+cfg = struct('outputDir',fullfile(pwd,'Anderson_Transport_Production_Results'), ...
+    'insideCompartment',"auto",'outsideCompartment',"e", ...
     'allowReverse',true,'requireTransportGPR',false,'requireCoreEC',false, ...
     'excludedECs',strings(0,1),'productionMode',"multi_reaction", ...
     'maxCoreReactions',10,'maxStatesPerI',20000,'maxProductionParticipants',16, ...
-    'productionTargetIDs',["amet[c]";"cys_L[c]";"hcys_L[c]"],'productionTargetOnly',false, ...
-    'productionRequireCompatibleRemoval',true, ...
-    'productionTargetMaxCoreReactions',16,'productionTargetMaxStatesPerI',500000, ...
-    'productionSolverAuditMaxRowsPerI',2000, ...
     'productionMinimumOnly',false, ...
     'rejectAtomImbalancedProduction',true,'requireResolvedProductionAtomBalance',false, ...
     'printTop',20,'onlineEC',false,'maxECLookups',100, ...
-    'ecMappingFile','CART_Reaction_EC_Evidence.tsv','brendaFile','brenda_2026_1.txt', ...
-    'gateEvidenceFile','CART_Gate_Evidence.tsv','requireGateEvidence',false, ...
+    'ecMappingFile','Reaction_EC_Evidence.tsv','brendaFile','brenda_2026_1.txt', ...
+    'gateEvidenceFile','Gate_Evidence.tsv','requireGateEvidence',false, ...
     'requireProteinS',true,'onlineProteinDiscovery',false, ...
-    'proteinMapFile','CART_Transporter_Gene_To_Protein.tsv','proteinEdgesFile','CART_Transporter_Protein_Edges.tsv', ...
-    'organismTaxID',9606,'organismName',"Homo sapiens",'networkTimeout',15, ...
+    'proteinMapFile','Transporter_Gene_To_Protein.tsv','proteinEdgesFile','Transporter_Protein_Edges.tsv', ...
+    'organismTaxID',0,'organismName',"auto",'networkTimeout',15, ...
     'connectRemovalTerms',true,'requireFControlTopology',true,'requireRemovalIsolation',true, ...
     'allowPairLossAlternative',true,'maxRemovalParticipants',16, ...
-    'expandRemovalModules',true,'removalModuleMaxReactions',3,'removalModuleMaxStatesPerI',2000, ...
-    'removalModuleMaxTestsPerI',5000,'removalModuleMaxSupportsPerI',100, ...
-    'removalModuleMaxRowsPerI',250, ...
-    'removalModuleMaxAuditRowsPerI',30,'removalPairMaxTestsPerI',10000, ...
-    'maxTripletTests',200000,'maxConnectedCandidates',10000,'maxConnectionAuditRows',10000, ...
-    'connectBranches',true,'branchUseVerifiedSeedMap',false, ...
-    'branchECFile','CART_Branch_EC_Evidence.tsv','branchInputID',"", ...
+    'maxTripletTests',200000,'maxConnectedCandidates',10000, ...
+    'connectBranches',true,'branchUseVerifiedSeedMap',true, ...
+    'branchECFile','Branch_EC_Evidence.tsv','branchInputID',"", ...
     'branchRequireDistinctECs',true,'branchRejectSharedKnownGenes',true, ...
     'branchRequireMatchedInterfaces',false,'branchMaxParticipants',16, ...
     'branchMaxRails',5000,'branchMaxPairTests',200000,'branchMaxModules',500, ...
     'branchMaxWiringTests',100000,'branchMaxWiring',10000, ...
-    'connectCounter',true,'counterMode',"consume_I",'counterRequireFormationEC',true, ...
-    'counterRequireRemoval',false,'counterRequireLeakEC',true,'counterUseVerifiedSeedMap',false, ...
-    'counterECFile','CART_Counter_EC_Evidence.tsv','counterGateEvidenceFile','CART_Counter_Gate_Evidence.tsv', ...
+    'connectCounter',true,'counterMode',"consume_I",'counterRequireFormationEC',false, ...
+    'counterRequireRemoval',false,'counterRequireLeakEC',false,'counterUseVerifiedSeedMap',true, ...
+    'counterECFile','Counter_EC_Evidence.tsv','counterGateEvidenceFile','Counter_Gate_Evidence.tsv', ...
     'counterCargoID',"",'counterRequireGateEvidence',false,'counterRequireIsolation',true, ...
     'counterDistinctECFromBranches',true,'counterRequireBoundaryFeed',false, ...
     'counterMaxParticipants',16,'counterMaxComponentTests',100000,'counterMaxComponents',5000, ...
     'counterMaxConnectionTests',200000,'counterMaxConnections',10000, ...
     'counterMaxWiringTests',200000,'counterMaxWiring',20000, ...
-    'connectStep2',true,'step2UseVerifiedSeedMap',false,'step2ECFile','CART_Step2_EC_Evidence.tsv', ...
+    'connectStep2',true,'step2UseVerifiedSeedMap',true,'step2ECFile','Step2_EC_Evidence.tsv', ...
     'neuronPlacement',"inside",'neuronCompartment',"auto", ...
     'neuronChainMinDepth',2,'neuronChainMaxDepth',6,'neuronChainMaxStates',2000, ...
     'neuronDiagnoseRejectedChains',true,'neuronDiagnosticMaxStates',500, ...
@@ -1035,29 +690,26 @@ cfg = struct('outputDir',fullfile(pwd,'Anderson_CART_Results'), ...
     'neuronTransportMaxLinksPerParent',1000, ...
     'neuronAdapterMaxDepth',3,'neuronAdapterMaxStates',2000,'neuronAdapterMaxExpansions',20000, ...
     'step2DistinctECs',true,'step2PrintTop',10,'step2PrintPartialWhenEmpty',true, ...
-    'step2MaxParents',1000,'step2MaxParticipants',16,'neuronMaxTestsPerRail',50000, ...
+    'step2MaxParents',1000,'step2MaxSeconds',21600,'step2ShareBlock0Search',true, ...
+    'step2SearchBlock0',false,'block0RequireEC',false, ...
+    'step2MaxParticipants',16,'neuronMaxTestsPerRail',50000, ...
     'neuronMaxRails',2000,'step2MaxNeuronTests',100000,'step2MaxCompleteMotifs',1000, ...
     'block0MaxDepth',20,'block0MaxStates',50000,'block0MaxExpansions',100000, ...
     'block0MaxAlternatives',10,'block0MaxParticipants',16, ...
+    'modelProfile',"auto",'cellFreeMerge',true,'cancellerI',"pyr",'counterUseEmbeddediMM904EC',true, ...
+    'excludedReactionIDs',["THZPSN1_SC";"THZPSN2_SC"], ...
     'currencyBaseIDs',block0DefaultCurrencyIDs());
 end
 
 function validateOptions(c)
-for key={'checkpointFile','continuationModelFile'}
-    value=string(c.(key{1}));
-    assert(isscalar(value)&&~ismissing(value),'Anderson:CheckpointPath','%s must be one path or an empty string.',key{1});
-end
 for key={'maxCoreReactions','maxStatesPerI','printTop','maxECLookups','maxProductionParticipants', ...
-        'productionTargetMaxCoreReactions','productionTargetMaxStatesPerI','productionSolverAuditMaxRowsPerI', ...
-        'removalModuleMaxReactions','removalModuleMaxStatesPerI','removalModuleMaxTestsPerI', ...
-        'removalModuleMaxSupportsPerI','removalModuleMaxRowsPerI','removalModuleMaxAuditRowsPerI','removalPairMaxTestsPerI', ...
-        'maxRemovalParticipants','maxTripletTests','maxConnectedCandidates','maxConnectionAuditRows', ...
+        'maxRemovalParticipants','maxTripletTests','maxConnectedCandidates', ...
         'branchMaxParticipants','branchMaxRails','branchMaxPairTests','branchMaxModules', ...
         'branchMaxWiringTests','branchMaxWiring','counterMaxParticipants','counterMaxComponentTests', ...
         'counterMaxComponents','counterMaxConnectionTests','counterMaxConnections', ...
         'counterMaxWiringTests','counterMaxWiring','step2PrintTop','step2MaxParents', ...
         'step2MaxParticipants','neuronMaxTestsPerRail','neuronMaxRails','step2MaxNeuronTests', ...
-        'step2MaxCompleteMotifs','block0MaxDepth','block0MaxStates','block0MaxExpansions', ...
+        'step2MaxCompleteMotifs','block0MaxDepth','block0MaxStates','block0MaxExpansions','step2MaxSeconds', ...
         'block0MaxAlternatives','block0MaxParticipants', ...
         'neuronTransportMaxTests','neuronTransportMaxLinksPerParent', ...
         'neuronAdapterMaxStates','neuronAdapterMaxExpansions','neuronChainMinDepth', ...
@@ -1068,13 +720,6 @@ for key={'maxCoreReactions','maxStatesPerI','printTop','maxECLookups','maxProduc
         'Anderson:Option','%s must be a positive integer or Inf.',key{1});
 end
 assert(isfinite(c.maxCoreReactions),'Anderson:Depth','maxCoreReactions must be finite.');
-assert(isfinite(c.productionTargetMaxCoreReactions),'Anderson:TargetDepth', ...
-    'productionTargetMaxCoreReactions must be finite.');
-assert(isfinite(c.removalModuleMaxReactions),'Anderson:RemovalDepth','removalModuleMaxReactions must be finite.');
-assert(ischar(c.productionTargetIDs)||isstring(c.productionTargetIDs)||iscellstr(c.productionTargetIDs), ...
-    'Anderson:TargetIDs','productionTargetIDs must contain exact, compartment-qualified metabolite IDs.');
-targetIDs=string(c.productionTargetIDs);
-assert(~any(ismissing(targetIDs(:))),'Anderson:TargetIDs','Production target IDs cannot be missing.');
 assert(isfinite(c.block0MaxDepth),'Anderson:Block0Depth','block0MaxDepth must be finite.');
 assert(isfinite(c.neuronChainMaxDepth)&&c.neuronChainMinDepth>=2 ...
     &&c.neuronChainMinDepth<=c.neuronChainMaxDepth,'Anderson:NeuronDepth', ...
@@ -1096,11 +741,15 @@ for key={'allowReverse','requireTransportGPR','requireCoreEC','onlineEC', ...
         'counterRequireFormationEC','counterRequireRemoval','connectStep2','step2UseVerifiedSeedMap', ...
         'step2DistinctECs','step2PrintPartialWhenEmpty','rejectAtomImbalancedProduction', ...
         'requireResolvedProductionAtomBalance','productionMinimumOnly','neuronTransportRequireGPR', ...
-        'neuronDiagnoseRejectedChains','productionTargetOnly','productionRequireCompatibleRemoval','expandRemovalModules', ...
-        'continuationBroadenBudgets','saveAndersonCheckpoint','fairDownstreamOrder'}
+        'neuronDiagnoseRejectedChains','cellFreeMerge','counterUseEmbeddediMM904EC','step2ShareBlock0Search', ...
+        'step2SearchBlock0','block0RequireEC'}
     assert(islogical(c.(key{1})) && isscalar(c.(key{1})), ...
         'Anderson:Flag','%s must be a logical scalar.',key{1});
 end
+assert(any(string(c.modelProfile)==["auto","yeast_iMM904_community","single_cell"]), ...
+    'Anderson:ModelProfile','modelProfile must be "auto", "yeast_iMM904_community" or "single_cell".');
+assert(isstring(string(c.cancellerI))&&~any(ismissing(string(c.cancellerI))), ...
+    'Anderson:CancellerI','cancellerI must be "" or a string (array) of BaseIDs or metabolite IDs.');
 assert(isscalar(string(c.counterMode))&&ismember(string(c.counterMode),["consume_I","membrane"]), ...
     'Anderson:CounterMode','counterMode must be consume_I or membrane.');
 assert(isscalar(string(c.productionMode))&&ismember(string(c.productionMode),["single_reaction","multi_reaction"]), ...
@@ -1114,145 +763,6 @@ if c.neuronPlacement=="outside"
     assert(~ismember(target,string(c.insideCompartment)), ...
         'Anderson:NeuronCompartment','The outside neuron compartment must differ from every inside compartment.');
 end
-end
-
-function [selected,isTarget,A] = selectProductionSeeds(imported,model,currency,cfg)
-% Resolve exact states, including M_..._c versus COBRA ...[c] spelling.
-% Targets that lack a bound-permitted importer are reported, not fabricated.
-requested=string(cfg.productionTargetIDs);requested=unique(strtrim(requested(:)),'stable');
-requested(requested=="")=[];targets=[];rows=cell(0,9);
-for k=1:numel(requested)
-    i=uniqueIDMatch(requested(k),string(model.mets),'M_');
-    id="";index=NaN;comp="";hasImport=false;chosen=false;status="target_state_missing_or_ambiguous";
-    if ~isempty(i)
-        id=string(model.mets{i});index=i;
-        if isfield(model,'circuitCompartment'),comp=model.circuitCompartment(i);
-        else,[~,labels]=splitCompartments(string(model.mets));comp=labels(i);end
-        hasImport=ismember(i,imported);
-        if currency(i),status="target_is_excluded_currency";
-        elseif ~hasImport,status="target_has_no_eligible_import";
-        elseif ismember(i,targets),status="same_target_already_selected_via_alias";
-        else,targets(end+1)=i;chosen=true;status="selected_for_focused_production";end %#ok<AGROW>
-    end
-    rows(end+1,:)={requested(k),id,index,comp,hasImport,chosen, ...
-        cfg.productionTargetMaxCoreReactions,cfg.productionTargetMaxStatesPerI,status}; %#ok<AGROW>
-end
-A=cellTable(rows,{'RequestedID','I_ID','ModelIndex','Compartment','HasEligibleImport','Selected', ...
-    'TargetMaxReactions','TargetMaxStates','SelectionStatus'}, ...
-    {'string','string','double','string','logical','logical','double','double','string'});
-selected=targets;
-if isempty(requested),selected=reshape(imported,1,[]);
-elseif ~cfg.productionTargetOnly,selected=[targets reshape(setdiff(imported,targets,'stable'),1,[])];end
-isTarget=ismember(selected,targets);
-end
-
-function local = productionOptionsForSeed(cfg,isTarget)
-local=cfg;
-if isTarget
-    local.maxCoreReactions=cfg.productionTargetMaxCoreReactions;
-    local.maxStatesPerI=cfg.productionTargetMaxStatesPerI;
-end
-end
-
-function C = completeProductionTargetCoverage(selection,coverage,removal,pairs,connected,cfg)
-C=selection;n=height(C);
-C.CoreCount=zeros(n,1);C.ProductionPairCount=zeros(n,1);C.FLinkedRows=zeros(n,1);C.PairLossRows=zeros(n,1);
-C.EligibleLinearRows=zeros(n,1);C.EligiblePairLossRows=zeros(n,1);C.ConnectedCancellers=zeros(n,1);
-C.PathStates=zeros(n,1);C.StateBudgetReached=false(n,1);C.SolverUnresolved=zeros(n,1);
-C.SolverAuditRowsOmitted=zeros(n,1);C.CompletedReactionDepth=zeros(n,1);C.SearchStatus=strings(n,1);
-for k=1:n
-    id=C.I_ID(k);C.SearchStatus(k)=C.SelectionStatus(k);if id=="",continue;end
-    r=find(removal.I_ID==id,1);
-    if ~isempty(r)
-        C.FLinkedRows(k)=removal.FLinkedRows(r);C.PairLossRows(k)=removal.PairLossRows(r);
-        C.EligibleLinearRows(k)=removal.LinearRows(r);
-        if cfg.requireFControlTopology,C.EligibleLinearRows(k)=removal.FLinkedRows(r);end
-        C.EligiblePairLossRows(k)=removal.PairLossRows(r);
-        if ~cfg.allowPairLossAlternative,C.EligiblePairLossRows(k)=removal.ExactGross2IToI(r);end
-    end
-    C.ProductionPairCount(k)=nnz(pairs.I_Inside==id);C.ConnectedCancellers(k)=nnz(connected.I_ID==id);
-    r=find(coverage.I_ID==id,1);if isempty(r),continue;end
-    C.CoreCount(k)=coverage.CoreCount(r);C.PathStates(k)=coverage.PathStates(r);
-    C.StateBudgetReached(k)=coverage.StateBudgetReached(r);C.SolverUnresolved(k)=coverage.SolverUnresolved(r);
-    C.CompletedReactionDepth(k)=coverage.CompletedReactionDepth(r);
-    C.SolverAuditRowsOmitted(k)=coverage.SolverAuditRowsOmitted(r);
-    C.SearchStatus(k)=coverage.MinimumStatus(r);
-end
-% A missing production module and a missing removal are separate facts.
-C.ProductionFound=C.CoreCount>0;C.LinearComponentFound=C.EligibleLinearRows>0;
-C.PairLossComponentFound=C.EligiblePairLossRows>0;
-C.AllComponentsPresent=C.ProductionPairCount>0&C.LinearComponentFound&C.PairLossComponentFound;
-end
-
-function writeTargetedProductionReport(path,C,S,cfg,A,connectionStats)
-if nargin<5,A=andersonConnectionAuditTable(cell(0,13));end
-if nargin<6
-    connectionStats=struct('tested',0,'reactionReuseRejected',0,'crossTalkRejected',0,'auditRowsOmitted',0);
-end
-fid=fopen(path,'w');assert(fid>0,'Anderson:TargetReport','Cannot write targeted production report.');
-cleanup=onCleanup(@()fclose(fid)); %#ok<NASGU>
-report(fid,'TARGETED PRODUCTION SEARCH FOR REMOVAL-COMPATIBLE I POOLS');
-report(fid,'Expanded mode: requested IDs are priority signals. Additional compatible imported I pools are included unless target-only is enabled.');
-report(fid,'02_Expanded_I_Coverage.csv lists every imported pool, including skipped or incompletely searched pools.');
-report(fid,['Requested IDs: ' char(joinText(string(cfg.productionTargetIDs),'; '))]);
-report(fid,sprintf('Target-only=%d; target depth=%d; target states=%g; solver audit retained per I=%g.', ...
-    cfg.productionTargetOnly,cfg.productionTargetMaxCoreReactions,cfg.productionTargetMaxStatesPerI,cfg.productionSolverAuditMaxRowsPerI));
-report(fid,'Source: the current model and current search; no previously supplied candidate CSV is treated as a reaction source.');
-report(fid,'Direction, compartment, gross I accounting, startup, EC and cross-talk policies are retained.');
-report(fid,'Scope: bounded simple production cycles. Shared smaller-layer work counts toward the same per-I budget.');
-report(fid,'A missing target/import is reported explicitly. A cap or unresolved flux solve leaves coverage incomplete.');
-report(fid,'Larger budgets do not ensure a solution. Removal candidates must still pass the full same-I/reuse/isolation join.');
-report(fid,'LP policy: technical linprog failures try solveCobraLP when available; existing global solver settings are retained.');
-for name=["linprog","optimoptions","solveCobraLP"]
-    location=string(which(char(name)));if location=="",location="not on MATLAB path";end
-    report(fid,sprintf('  %s: %s',name,location));
-end
-report(fid,sprintf('Canceller triples tested=%d; rejected for reuse=%d; rejected for cross-talk=%d; rejection audit rows omitted=%d.', ...
-    connectionStats.tested,connectionStats.reactionReuseRejected,connectionStats.crossTalkRejected,connectionStats.auditRowsOmitted));
-for k=1:height(C)
-    if ~C.Selected(k)&&C.EligiblePairLossRows(k)==0&&~ismember(C.RequestedID(k),string(cfg.productionTargetIDs)),continue;end
-    report(fid,sprintf('\nRequested=%s | resolved I=%s | selected=%d | %s', ...
-        C.RequestedID(k),C.I_ID(k),C.Selected(k),C.SelectionStatus(k)));
-    report(fid,sprintf('  Production modules=%d; production/import pairs=%d; eligible linear rows=%d; eligible pair-loss rows=%d; connected cancellers=%d.', ...
-        C.CoreCount(k),C.ProductionPairCount(k),C.EligibleLinearRows(k),C.EligiblePairLossRows(k),C.ConnectedCancellers(k)));
-    report(fid,sprintf('  States=%g; completed reaction depth=%d; state cap=%d; unresolved flux solves=%d; solver audit rows omitted=%d; %s.', ...
-        C.PathStates(k),C.CompletedReactionDepth(k),C.StateBudgetReached(k),C.SolverUnresolved(k), ...
-        C.SolverAuditRowsOmitted(k),C.SearchStatus(k)));
-    rows=find(S.I_ID==C.I_ID(k));
-    for j=reshape(rows(1:min(3,numel(rows))),1,[])
-        report(fid,sprintf('  Unresolved example: %s | %s | %s',S.SolverMethod(j),S.SolverStatus(j),S.ReactionIDs(j)));
-        report(fid,['    ' char(S.Message(j))]);
-    end
-    rejected=find(A.I_ID==C.I_ID(k));
-    for reason=reshape(unique(A.Reason(rejected),'stable'),1,[])
-        examples=rejected(A.Reason(rejected)==reason);
-        report(fid,sprintf('  Retained rejected triples for this I: %s = %d.',reason,numel(examples)));
-        for j=reshape(examples(1:min(2,numel(examples))),1,[])
-            report(fid,sprintf('    Production candidate=%d; linear=%d; pair-loss=%d.', ...
-                A.ProductionCandidateID(j),A.LinearID(j),A.QuadraticID(j)));
-            report(fid,['    Production reactions: ' char(A.ProductionReactionIDs(j))]);
-            report(fid,['    Linear reactions: ' char(A.LinearReactionIDs(j)) '; pair-loss: ' char(A.PairLossReactionID(j))]);
-            report(fid,['    Reused reactions: ' char(A.ReusedReactionIDs(j))]);
-            report(fid,['    Shared production/linear states: ' char(A.ProductionLinearSharedIDs(j))]);
-            report(fid,['    Shared production/pair states: ' char(A.ProductionPairSharedIDs(j))]);
-            report(fid,['    Shared linear/pair states: ' char(A.LinearPairSharedIDs(j))]);
-        end
-    end
-end
-report(fid,'Full unresolved examples: 02_Production_Solver_Audit.csv. Log retention never changes search acceptance or coverage counts.');
-report(fid,'Full retained canceller rejection details: 06_Anderson_Connection_Rejections.csv. Recorded counts can be partial if audit retention is reached.');
-end
-
-function T = productionSolverAuditTable(rows)
-T=cellTable(rows,{'I_ID','ReactionCount','ReactionIDs','Directions','SolverMethod','SolverStatus','ExitFlag','Message'}, ...
-    {'string','double','string','string','string','string','double','string'});
-end
-
-function row = productionSolverAuditRow(seed,path,O,model,info)
-id="met_"+string(seed);rx=string(O.rxn(path));
-if ~isempty(model),id=string(model.mets{seed});rx=string(model.rxns(O.rxn(path)));end
-row={id,numel(path),joinText(rx,';'),joinText(string(O.direction(path)),';'), ...
-    info.method,info.status,info.exitFlag,info.message};
 end
 
 function root = addCodeParent()
@@ -1319,15 +829,13 @@ if ~isempty(path) && endsWith(lower(string(path)),[".xml",".sbml"])
         warning('Anderson:Layout','SBML compartment reading unavailable: %s.',ME.message);
     end
 end
-raw=regexprep(ids,'^M_','');
-raw=replace(raw,["_LSQBKT_","_RSQBKT_","_LPAREN_","_RPAREN_","_DASH_"], ...
-    ["[","]","(",")","-"]);base=raw;
+raw=regexprep(ids,'^M_','');base=raw;
 for i=1:numel(ids)
     if comp(i)=="",continue;end
     label=regexptranslate('escape',char(comp(i)));
     base(i)=regexprep(base(i),['(?:\[' label '\]|_' label ')$'],'');
 end
-% Optional legacy community wrapper convention (not used by Puniya): AUXOS and
+% Exact wrapper convention found in the attached model_aux.xml: AUXOS and
 % PROTS blocks plus an original organelle code C/M/X/N/R/V/G. Strip only
 % those wrappers for chemical identity matching, not arbitrary ID prefixes.
 isU=comp=="u";isX=comp=="x";
@@ -1338,68 +846,6 @@ if communityIDs
     base(isX)=regexprep(base(isX),'^PROTS[CMXNRVG]','');
 end
 layout=struct('modelName',modelName,'communityIDs',communityIDs,'source',source);
-end
-
-function [model,notation] = attachTCellNotation(model,base,comp,metadata)
-% Enrich exact loader states with source metadata; never rename model IDs.
-m=numel(model.mets);ids=string(model.mets);
-if ~isfield(model,'metNames')||numel(model.metNames)~=m,model.metNames=cellstr(ids);end
-if ~isfield(model,'metFormulas')||numel(model.metFormulas)~=m,model.metFormulas=repmat({''},m,1);end
-if ~isfield(model,'metCharges')||numel(model.metCharges)~=m,model.metCharges=nan(m,1);end
-model.metNames=cellstr(string(model.metNames(:)));model.metFormulas=cellstr(string(model.metFormulas(:)));
-model.metCharges=full(model.metCharges(:));rawIDs=strings(m,1);compNames=comp;
-geneIDs=strings(0,1);geneLabels=geneIDs;geneNames=geneIDs;matchedGenes=geneIDs;
-if ~isempty(metadata)
-    for k=1:numel(metadata.speciesIDs)
-        i=uniqueIDMatch(metadata.speciesIDs(k),ids,'M_');if isempty(i),continue;end
-        rawIDs(i)=metadata.speciesIDs(k);
-        if isfield(metadata,'speciesNames')&&metadata.speciesNames(k)~=""
-            name=string(model.metNames{i});
-            if ismissing(name)||name==""||name==ids(i),model.metNames{i}=char(metadata.speciesNames(k));end
-        end
-        if isfield(metadata,'speciesFormulas')&&metadata.speciesFormulas(k)~=""
-            formula=string(model.metFormulas{i});
-            if ismissing(formula)||formula=="",model.metFormulas{i}=char(metadata.speciesFormulas(k));end
-        end
-        if isfield(metadata,'speciesCharges')&&isnan(model.metCharges(i))
-            model.metCharges(i)=metadata.speciesCharges(k);
-        end
-    end
-    if isfield(metadata,'compartmentIDs')
-        for k=1:numel(metadata.compartmentIDs)
-            label=metadata.compartmentNames(k);if label=="",continue;end
-            compNames(comp==metadata.compartmentIDs(k))=label;
-        end
-    end
-    if isfield(metadata,'geneProductIDs')
-        geneIDs=metadata.geneProductIDs;geneLabels=metadata.geneProductLabels;geneNames=metadata.geneProductNames;
-        matchedGenes=strings(size(geneIDs));genes=string(model.genes);
-        for k=1:numel(geneIDs)
-            % G_ is an SBML namespace prefix; retain both ID and label.
-            choices=unique([geneIDs(k);geneLabels(k);regexprep(geneIDs(k),'^G_','')]);
-            hits=genes(ismember(genes,choices(choices~="")));
-            if numel(hits)==1,matchedGenes(k)=hits;end
-        end
-    end
-end
-model.circuitRawSpeciesIDs=rawIDs;model.circuitCompartmentNames=compNames;
-notation=struct('rawSpeciesIDs',rawIDs,'base',base,'comp',comp,'compartmentNames',compNames, ...
-    'geneIDs',geneIDs,'geneLabels',geneLabels,'geneNames',geneNames,'matchedGenes',matchedGenes);
-end
-
-function writeTCellNotationCatalogs(notation,model,cfg)
-labels=unique(notation.comp(notation.comp~=""),'stable');names=labels;counts=zeros(numel(labels),1);
-for k=1:numel(labels)
-    found=find(notation.comp==labels(k),1);names(k)=notation.compartmentNames(found);
-    counts(k)=nnz(notation.comp==labels(k));
-end
-T=table(labels,names,counts,ismember(labels,cfg.insideCompartment),labels==cfg.outsideCompartment, ...
-    'VariableNames',{'CompartmentID','CompartmentName','SpeciesCount','SelectedInside','SelectedOutside'});
-writetable(T,fullfile(cfg.outputDir,'00_Compartment_Notation.csv'));
-G=table(notation.geneIDs,notation.geneLabels,notation.geneNames,notation.matchedGenes, ...
-    'VariableNames',{'RawSBMLGeneProductID','SBMLGeneLabel','SBMLGeneName','LoaderGeneID'});
-writetable(G,fullfile(cfg.outputDir,'00_Gene_Notation.csv'));
-assert(numel(notation.base)==numel(model.mets),'Anderson:Notation','Notation dimensions differ from model states.');
 end
 
 function cfg = resolveModelProfile(cfg,layout,comp)
@@ -1432,7 +878,6 @@ R=max(-model.S,0); P=max(model.S,0); n=numel(model.rxns);
 if nargin<3,metadata=[];end % reuse the native parse already performed for layout
 known=false(n,1); status=repmat("net_only_no_hidden_catalysts_inferred",n,1);
 sbmlEC=strings(n,1);sbmlBiGG=strings(n,1);rawIDs=strings(n,1);
-sbmlRDFEC=strings(n,1);sbmlNotesEC=strings(n,1);
 info=struct('parsedReactionCount',0,'matchedReactionCount',0,'sourceBiGGCount',0, ...
     'unmatchedReactionExamples',strings(0,1),'error',"",'reader',"native_MATLAB_no_Java");
 if isfield(model,'circuitSourceBiGG') && numel(model.circuitSourceBiGG)==n
@@ -1462,8 +907,6 @@ elseif ~isempty(path) && endsWith(lower(string(path)),[".xml",".sbml"])
             end
             info.matchedReactionCount=info.matchedReactionCount+1;rawIDs(j)=id;
             sbmlEC(j)=joinText(unique(reaction.ec,'stable'),'; ');
-            if isfield(reaction,'rdfEC'),sbmlRDFEC(j)=joinText(reaction.rdfEC,'; ');end
-            if isfield(reaction,'notesEC'),sbmlNotesEC(j)=joinText(reaction.notesEC,'; ');end
             sourceIDs=unique(reaction.bigg,'stable');
             if numel(sourceIDs)==1,sbmlBiGG(j)=sourceIDs(1);end
             [a,ok1]=nativeSBMLSide(reaction.reactantIDs,reaction.reactantCoefficients,model.mets);
@@ -1480,8 +923,6 @@ elseif ~isempty(path) && endsWith(lower(string(path)),[".xml",".sbml"])
     end
 end
 info.sourceBiGGCount=nnz(sbmlBiGG~="");
-info.rawReactionIDs=rawIDs;
-info.rdfEC=sbmlRDFEC;info.notesEC=sbmlNotesEC;
 audit=table(string(model.rxns),known,status,rawIDs,sbmlBiGG, ...
     'VariableNames',{'ReactionID','GrossKnown','Status','RawSBMLReactionID','SourceReactionID'});
 end
@@ -1508,21 +949,16 @@ text=regexprep(text,'(?s)<\?.*?\?>','');
 assert(isempty(regexpi(text,'<!DOCTYPE\b','once')),'Anderson:NativeXML', ...
     'DOCTYPE/entity declarations are not supported by the native SBML metadata reader.');
 tagPattern='<(?:"[^"]*"|''[^'']*''|[^''">])*>';
-[tagStart,tagEnd,tags]=regexp(text,tagPattern,'start','end','match');
+tags=regexp(text,tagPattern,'match');
 template=struct('id',"",'reactantIDs',strings(0,1),'reactantCoefficients',zeros(0,1), ...
     'productIDs',strings(0,1),'productCoefficients',zeros(0,1), ...
-    'ec',strings(0,1),'rdfEC',strings(0,1),'notesEC',strings(0,1), ...
-    'bigg',strings(0,1),'referenceIDs',strings(0,1), ...
+    'ec',strings(0,1),'bigg',strings(0,1),'referenceIDs',strings(0,1), ...
     'grossSupported',true,'grossStatus',"constant_explicit");
 metadata=struct('modelName',"",'speciesIDs',strings(0,1), ...
-    'speciesCompartments',strings(0,1),'speciesNames',strings(0,1), ...
-    'speciesFormulas',strings(0,1),'speciesCharges',zeros(0,1), ...
-    'compartmentIDs',strings(0,1),'compartmentNames',strings(0,1), ...
-    'geneProductIDs',strings(0,1),'geneProductLabels',strings(0,1),'geneProductNames',strings(0,1), ...
-    'reactions',template([]), ...
+    'speciesCompartments',strings(0,1),'reactions',template([]), ...
     'reader',"native_MATLAB_no_Java");
 stack=strings(0,1);qualifiedStack=strings(0,1);
-current=0;reactionDepth=0;side=0;sideDepth=0;annotationDepth=0;notesDepth=0;notesStart=0;
+current=0;reactionDepth=0;side=0;sideDepth=0;annotationDepth=0;
 assignedSymbols=strings(0,1);
 for t=1:numel(tags)
     tag=tags{t};head=regexp(tag,'^<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)','tokens','once');
@@ -1533,12 +969,6 @@ for t=1:numel(tags)
         assert(~isempty(stack)&&qualifiedStack(end)==qualified,'Anderson:NativeXML', ...
             'Unbalanced XML element: %s.',qualified);
         depth=numel(stack);
-        if current>0&&notesDepth>0&&depth==notesDepth
-            codes=explicitSBMLNoteECs(text(notesStart:tagStart(t)-1));
-            metadata.reactions(current).notesEC=codes;
-            metadata.reactions(current).ec=[metadata.reactions(current).ec;codes];
-            notesDepth=0;notesStart=0;
-        end
         if current>0&&depth==reactionDepth
             current=0;reactionDepth=0;side=0;sideDepth=0;annotationDepth=0;
         elseif depth==sideDepth
@@ -1554,31 +984,15 @@ for t=1:numel(tags)
         attrs=nativeSBMLAttributes(tag);value=nativeSBMLAttribute(attrs,'name');
         if value=="",value=nativeSBMLAttribute(attrs,'id');end
         metadata.modelName=value;
-    elseif name=="compartment"&&parent=="listOfCompartments"&&numel(stack)==3
-        attrs=nativeSBMLAttributes(tag);
-        metadata.compartmentIDs(end+1,1)=nativeSBMLAttribute(attrs,'id');
-        metadata.compartmentNames(end+1,1)=nativeSBMLAttribute(attrs,'name');
-    elseif name=="geneProduct"&&parent=="listOfGeneProducts"&&numel(stack)==3
-        attrs=nativeSBMLAttributes(tag);
-        metadata.geneProductIDs(end+1,1)=nativeSBMLAttribute(attrs,'id');
-        metadata.geneProductLabels(end+1,1)=nativeSBMLAttribute(attrs,'label');
-        metadata.geneProductNames(end+1,1)=nativeSBMLAttribute(attrs,'name');
     elseif name=="species"&&parent=="listOfSpecies"&&numel(stack)==3&&stack(2)=="model"
         attrs=nativeSBMLAttributes(tag);
         metadata.speciesIDs(end+1,1)=nativeSBMLAttribute(attrs,'id');
         metadata.speciesCompartments(end+1,1)=nativeSBMLAttribute(attrs,'compartment');
-        metadata.speciesNames(end+1,1)=nativeSBMLAttribute(attrs,'name');
-        metadata.speciesFormulas(end+1,1)=nativeSBMLAttribute(attrs,'chemicalFormula');
-        value=nativeSBMLAttribute(attrs,'charge');charge=NaN;
-        if value~="",charge=str2double(value);end
-        metadata.speciesCharges(end+1,1)=charge;
     elseif name=="reaction"&&parent=="listOfReactions"&&numel(stack)==3&&stack(2)=="model"
         attrs=nativeSBMLAttributes(tag);
         metadata.reactions(end+1,1)=template;current=numel(metadata.reactions);
         metadata.reactions(current).id=nativeSBMLAttribute(attrs,'id');
-        reactionDepth=depth;side=0;sideDepth=0;annotationDepth=0;notesDepth=0;notesStart=0;
-    elseif current>0&&name=="notes"&&numel(stack)==reactionDepth
-        notesDepth=depth;notesStart=tagEnd(t)+1;
+        reactionDepth=depth;side=0;sideDepth=0;annotationDepth=0;
     elseif current>0&&numel(stack)==reactionDepth ...
             &&(name=="listOfReactants"||name=="listOfProducts")
         side=1;if name=="listOfProducts",side=2;end
@@ -1612,11 +1026,8 @@ for t=1:numel(tags)
         metadata.reactions(current).grossStatus="stoichiometryMath_not_evaluated";
     elseif current>0&&annotationDepth>0&&name=="li"
         attrs=nativeSBMLAttributes(tag);uri=char(nativeSBMLAttribute(attrs,'resource'));
-        hit=regexp(uri,'(?:ec-code|ec_code|enzyme-commission)[/:]([1-7]\.[0-9]+\.[0-9]+\.[0-9]+)(?![0-9.\-])','tokens','once');
-        if ~isempty(hit)
-            metadata.reactions(current).ec(end+1,1)=string(hit{1});
-            metadata.reactions(current).rdfEC(end+1,1)=string(hit{1});
-        end
+        hit=regexp(uri,'(?:ec-code|ec_code|enzyme-commission)[/:](?:EC:)?([1-7]\.[0-9]+\.[0-9]+\.[0-9]+)(?![0-9.\-])','tokens','once');
+        if ~isempty(hit),metadata.reactions(current).ec(end+1,1)=string(hit{1});end
         hit=regexp(uri,'bigg\.reaction[/:]([^/?#\s]+)','tokens','once');
         if ~isempty(hit),metadata.reactions(current).bigg(end+1,1)=string(hit{1});end
     elseif name=="initialAssignment"||name=="assignmentRule"||name=="rateRule"
@@ -1632,7 +1043,6 @@ for t=1:numel(tags)
         elseif depth==annotationDepth
             annotationDepth=0;
         end
-        if depth==notesDepth,notesDepth=0;notesStart=0;end
     else
         stack(end+1,1)=name;qualifiedStack(end+1,1)=qualified;
     end
@@ -1646,21 +1056,6 @@ for k=1:numel(metadata.reactions)
         metadata.reactions(k).grossStatus="assigned_stoichiometry_not_evaluated";
     end
 end
-end
-
-function codes = explicitSBMLNoteECs(raw)
-% Only explicitly labeled EC note fields count. A citation, a protein name,
-% TCDB code or unlabelled number in free text is not an EC annotation.
-raw=regexprep(raw,'(?i)</(?:[A-Za-z_][A-Za-z0-9_.-]*:)?(?:p|div|li)\s*>',sprintf('\n'));
-raw=nativeXMLDecode(regexprep(raw,'<[^>]*>',' '));
-lines=splitlines(string(raw));codes=strings(0,1);
-for k=1:numel(lines)
-    hit=regexpi(char(lines(k)),'^\s*(?:EC\s*Numbers?|EC\s*Codes?|ENZYME_CLASSIFICATION)\s*:\s*(.*)$','tokens','once');
-    if isempty(hit),continue;end
-    value=regexprep(hit{1},'(?i)TCDB\s*:\s*[A-Za-z0-9_.-]+',' ');
-    codes=[codes;completeECTokens(value)]; %#ok<AGROW>
-end
-codes=unique(codes,'stable');
 end
 
 function attrs = nativeSBMLAttributes(tag)
@@ -1732,7 +1127,19 @@ n=numel(model.rxns); m=numel(model.mets);
 O=struct('rxn',zeros(1,0),'direction',zeros(1,0),'R',sparse(m,0), ...
     'P',sparse(m,0),'N',sparse(m,0),'consumers',{cell(m,1)},'grossKnown',false(1,0));
 rows=cell(0,17);auditRows=cell(0,9);
+% Lumped multi-enzyme pseudo-reactions listed in cfg.excludedReactionIDs
+% (matched after removing the AUXOS/PROTS wrapper) never enter any pool.
+excludedRx=false(n,1);
+if isfield(cfg,'excludedReactionIDs')&&~isempty(cfg.excludedReactionIDs)
+    unwrapped=regexprep(regexprep(string(model.rxns(:)),'^R_',''),'^(AUXOS|PROTS)','');
+    excludedRx=ismember(lower(unwrapped),lower(string(cfg.excludedReactionIDs(:))));
+end
 for j=1:n
+    if excludedRx(j)
+        auditRows(end+1,:)={string(model.rxns{j}),0,"excluded_by_excludedReactionIDs",false, ...
+            false,false,false,0,0}; %#ok<AGROW>
+        continue;
+    end
     dirs=[]; if model.ub(j)>0,dirs=1;end
     if cfg.allowReverse && model.lb(j)<0,dirs=[dirs -1];end %#ok<AGROW>
     [gpr,glist,~]=decodeGPR(string(model.grRules{j}),string(model.rules{j}),string(model.genes));
@@ -1801,11 +1208,11 @@ A=cellTable(rows,{'I_ID','ReactionID','Direction','GrossKnown','PrimitiveScale',
     'string','string','string','string','string'});
 end
 
-function [out,stats,A,solverAudit] = findSingleReactionCores(seed,O,currency,cfg,model)
+function [out,stats,A] = findSingleReactionCores(seed,O,currency,cfg,model)
 % Do not turn net X->I into I+X->2I by adding an invented catalyst.
 % Primitive normalization removes arbitrary column scaling but does not
 % accept a primitive 2I+X->4I event as a one-copy reaction.
-out=emptyCores();rows=cell(0,15);solverRows=cell(0,8);tol=1e-8;
+out=emptyCores();rows=cell(0,15);tol=1e-8;
 stats=struct('states',0,'closures',0,'capped',false,'unsolved',0);
 if isempty(model)
     model=struct('mets',{cellstr("met_"+string((1:size(O.R,1))'))}, ...
@@ -1842,13 +1249,9 @@ for o=reshape(O.consumers{seed},1,[])
                 elseif cfg.requireResolvedProductionAtomBalance&&atomStatus~="balanced_atoms"
                     status="production_atom_balance_unresolved";
                 else
-                    [core,valid,unresolved,solverInfo]=validateCore(seed,o,O,currency);
+                    [core,valid,unresolved]=validateCore(seed,o,O,currency);
                     stats.unsolved=stats.unsolved+unresolved;
-                    if unresolved&&size(solverRows,1)<cfg.productionSolverAuditMaxRowsPerI
-                        solverRows(end+1,:)=productionSolverAuditRow(seed,o,O,model,solverInfo); %#ok<AGROW>
-                    end
                     if valid,out(end+1)=core; %#ok<AGROW>
-                    elseif unresolved,status="production_flux_solver_unresolved";
                     else,status="additional_substrate_or_seed_dependence_check_failed";end
                 end
             end
@@ -1860,7 +1263,6 @@ for o=reshape(O.consumers{seed},1,[])
         atomStatus,imbalance,eq,status}; %#ok<AGROW>
 end
 A=directProductionAuditTable(rows);
-solverAudit=productionSolverAuditTable(solverRows);
 end
 
 function [status,detail] = productionAtomBalance(net,model)
@@ -1990,14 +1392,13 @@ for p=1:min(height(P),cfg.printTop)
 end
 end
 
-function [out,stats,audit,depthAudit,solverAudit] = findCores(seed,O,currency,cfg,model)
+function [out,stats,audit,depthAudit] = findCores(seed,O,currency,cfg,model)
 if nargin<5,model=[];end
 audit=directProductionAuditTable(cell(0,15));
-solverAudit=productionSolverAuditTable(cell(0,8));solverRows=cell(0,8);
 seedID="met_"+string(seed);
 if ~isempty(model),seedID=string(model.mets{seed});end
 if cfg.productionMode=="single_reaction"
-    [out,stats,audit,solverAudit]=findSingleReactionCores(seed,O,currency,cfg,model);
+    [out,stats,audit]=findSingleReactionCores(seed,O,currency,cfg,model);
     complete=~stats.capped;
     depthAudit=productionDepthAuditTable({seedID,1,stats.states,stats.closures, ...
         numel(out),stats.unsolved,complete,stats.capped});
@@ -2026,11 +1427,8 @@ for depth=1:cfg.maxCoreReactions
                 key=sprintf('%d,',sort(chosen));
                 if ~isKey(seen,key)
                     seen(key)=true;stats.closures=stats.closures+1;
-                    [c,valid,unresolved,solverInfo]=validateCore(seed,chosen,O,currency);
+                    [c,valid,unresolved]=validateCore(seed,chosen,O,currency);
                     stats.unsolved=stats.unsolved+unresolved;
-                    if unresolved&&size(solverRows,1)<cfg.productionSolverAuditMaxRowsPerI
-                        solverRows(end+1,:)=productionSolverAuditRow(seed,chosen,O,model,solverInfo); %#ok<AGROW>
-                    end
                     if valid,out(end+1)=c;end %#ok<AGROW>
                 end
             end
@@ -2051,7 +1449,6 @@ for depth=1:cfg.maxCoreReactions
     if stats.capped || (cfg.productionMinimumOnly && numel(out)>beforeFound),break;end
 end
 depthAudit=productionDepthAuditTable(rows);
-solverAudit=productionSolverAuditTable(solverRows);
 stats=finishProductionMinimum(stats,out,layerComplete,layerUnresolved, ...
     "simple_cycle_modules_for_this_I_under_current_filters");
 end
@@ -2116,10 +1513,8 @@ report(fid,'Scope: simple metabolite cycles for each I under the current filters
 report(fid,'MinimumProvenWithinSearchClass=true requires a valid size-k module and exhaustive, solver-resolved searches of every smaller layer.');
 report(fid,'MinimumLayerComplete separately records whether all size-k alternatives were examined and resolved.');
 report(fid,'A budget hit or a smaller solver-unresolved case gives only a smallest-found result. No-match results are limited to the tested layers and search class.');
-report(fid,sprintf('Mode=%s; baseline production steps=%d; baseline states per I=%g; productionMinimumOnly=%d.', ...
+report(fid,sprintf('Mode=%s; maximum production steps=%d; shared per-I state budget=%g; productionMinimumOnly=%d.', ...
     cfg.productionMode,cfg.maxCoreReactions,cfg.maxStatesPerI,cfg.productionMinimumOnly));
-report(fid,sprintf('Focused targets use up to %d steps and %g states per I; per-I limits are recorded in 02_Search_Coverage.csv.', ...
-    cfg.productionTargetMaxCoreReactions,cfg.productionTargetMaxStatesPerI));
 report(fid,'Repeated prefix expansions at successive depths count toward the same per-I state budget. See 02_Production_Depth_Coverage.csv.');
 if ~cfg.productionMinimumOnly
     report(fid,'Longer modules are retained for downstream wiring; the shortest isolated production module may not connect to the removal/counter blocks.');
@@ -2148,7 +1543,7 @@ report(fid,'All shortest-found modules are in 02_Minimum_Production_Modules.csv;
 report(fid,'S-dependent gating, reaction orders and whole-cell feasibility are not established by a reaction-count minimum.');
 end
 
-function [c,valid,unresolved,solverInfo] = validateCore(seed,path,O,currency)
+function [c,valid,unresolved] = validateCore(seed,path,O,currency)
 c=[];valid=false;unresolved=false;tol=1e-8;
 a=O.R(:,path);b=O.P(:,path);N=b-a;
 % Every noncurrency species both consumed and produced is an internal
@@ -2157,7 +1552,7 @@ internal=find(any(a>tol,2)&any(b>tol,2)&~currency);
 internal(internal==seed)=[];
 A=[full(N(internal,:));full(a(seed,:));full(b(seed,:))];
 target=[zeros(numel(internal),1);1;2];
-[v,solved,solverInfo]=positiveFlux(A,target);
+[v,solved]=positiveFlux(A,target);
 if ~solved,unresolved=true;return;end
 if isempty(v),return;end
 net=N*v;net(abs(net)<tol)=0;
@@ -2180,84 +1575,43 @@ c=struct('seed',seed,'path',path,'flux',v(:)', ...
 valid=true;
 end
 
-function [v,solved,info] = positiveFlux(A,b,backends)
+function [v,solved] = positiveFlux(A,b)
 % Solve the caller's exact positive-flux accounting constraints A*v=b.
 % Production uses gross I consumption=1/production=2; Block 0 instead
 % fixes cAMP consumption=1 and balances its shared internal intermediates.
 % Use the unique linear solution where possible, else LP. Flux multipliers
 % are stoichiometric weights, NOT physiological rates or fitted constants.
 tol=1e-8; n=size(A,2); v=[];solved=true;
-info=struct('method',"linear_algebra",'status',"no_positive_exact_solution",'exitFlag',NaN,'message',"", ...
-    'usedFallback',false);
 if rank(A)==n
     candidate=A\b;
-    if all(candidate>1e-9) && norm(A*candidate-b,Inf)<tol
-        v=candidate;info.status="positive_exact_solution";
-    end
+    if all(candidate>1e-9) && norm(A*candidate-b,Inf)<tol,v=candidate;end
     return;
 end
-if rank([A b])>rank(A),info.status="inconsistent_balance_constraints";return;end
-% Optional backend injection is used only by synthetic selftests. Ordinary
-% calls try the available functions without selecting/changing a COBRA solver.
-if nargin<3
-    backends=struct('name',{},'solve',{});
+if rank([A b])>rank(A),return;end
+try
     if exist('linprog','file')~=0
-        backends(end+1)=struct('name',"linprog",'solve',@positiveFluxLinprog);
+        options=optimoptions('linprog','Display','none');
+        [candidate,~,flag]=linprog(ones(n,1),[],[],A,b,ones(n,1)*1e-7,[],options);
+        if flag==-2,return;end
+        if flag<=0,solved=false;return;end
+    elseif exist('solveCobraLP','file')~=0
+        problem=struct('A',sparse(A),'b',b,'c',ones(n,1),'lb',ones(n,1)*1e-7, ...
+            'ub',inf(n,1),'csense',repmat('E',size(A,1),1),'osense',1);
+        answer=solveCobraLP(problem);
+        if answer.stat==0,return;end
+        if answer.stat~=1,solved=false;return;end
+        candidate=answer.full;
+    else
+        solved=false;return;
     end
-    if exist('solveCobraLP','file')~=0
-        backends(end+1)=struct('name',"solveCobraLP",'solve',@positiveFluxCobra);
+    if numel(candidate)==n && all(candidate>1e-9) && norm(A*candidate-b,Inf)<tol
+        v=candidate;
+    else
+        solved=false;
     end
+catch
+    solved=false;
 end
-if isempty(backends)
-    solved=false;info.method="none";info.status="LP_solver_unavailable";
-    info.message="Underdetermined flux weights need linprog or an available, configured COBRA LP solver.";return;
-end
-messages=strings(0,1);methods=strings(0,1);
-for k=1:numel(backends)
-    info.method=string(backends(k).name);methods(end+1,1)=info.method;info.usedFallback=k>1;
-    info.exitFlag=NaN;
-    try
-        answer=backends(k).solve(A,b);info.exitFlag=answer.flag;
-        if answer.status=="infeasible"
-            info.status="LP_infeasible";info.message=joinText(messages,' | ');return;
-        end
-        if answer.status~="optimal"
-            info.status="LP_did_not_converge";
-            messages(end+1,1)=info.method+": unresolved exit flag "+string(answer.flag);continue;
-        end
-        candidate=answer.candidate;
-        if numel(candidate)==n&&all(isfinite(candidate))&&all(candidate>1e-9)&&norm(A*candidate-b,Inf)<tol
-            v=candidate;info.status="positive_exact_solution";info.message=joinText(messages,' | ');return;
-        end
-        info.status="LP_solution_failed_numeric_validation";
-        messages(end+1,1)=info.method+": returned weights failed positivity or equality-residual checks.";
-    catch ME
-        info.status="LP_exception";
-        message=info.method+": "+string(ME.identifier)+": "+string(ME.message);
-        for j=1:min(3,numel(ME.stack))
-            message=message+" | "+string(ME.stack(j).name)+":"+string(ME.stack(j).line);
-        end
-        messages(end+1,1)=message;
-    end
-end
-solved=false;info.method=joinText(methods,' -> ');info.message=joinText(messages,' | ');
-end
-
-function answer = positiveFluxLinprog(A,b)
-n=size(A,2);options=optimoptions('linprog','Display','none');
-[candidate,~,flag]=linprog(ones(n,1),[],[],A,b,ones(n,1)*1e-7,[],options);
-status="unresolved";if flag==-2,status="infeasible";elseif flag>0,status="optimal";end
-answer=struct('candidate',candidate,'status',status,'flag',flag);
-end
-
-function answer = positiveFluxCobra(A,b)
-n=size(A,2);
-problem=struct('A',sparse(A),'b',b,'c',ones(n,1),'lb',ones(n,1)*1e-7, ...
-    'ub',inf(n,1),'csense',repmat('E',size(A,1),1),'osense',1);
-result=solveCobraLP(problem);status="unresolved";candidate=[];
-if result.stat==0,status="infeasible";
-elseif result.stat==1,status="optimal";candidate=result.full;end
-answer=struct('candidate',candidate,'status',status,'flag',result.stat);
 end
 
 function [available,fired] = substrateClosure(available,a,b)
@@ -2489,288 +1843,6 @@ A=cellTable(auditRows,{'I_ID','ReactionID','Direction','ParticipantCount', ...
     {'string','string','double','double','string','double','double','double','string'});
 end
 
-function C = refreshRemovalCoverage(C,L,Q)
-for k=1:height(C)
-    id=C.I_ID(k);ls=find(L.I_ID==id);qs=find(Q.I_ID==id);
-    C.LinearRows(k)=numel(ls);C.FLinkedRows(k)=nnz(L.FMode(ls)~="F_unassigned");
-    C.PairLossRows(k)=numel(qs);C.ExactGross2IToI(k)=nnz(Q.ExactFormalStoichiometry(qs));
-end
-end
-
-function A = removalModuleCoverageTable(rows)
-A=cellTable(rows,{'I_ID','PathStates','ModuleTests','RetainedSupports','AddedLinearRows','AddedPairRows', ...
-    'SolverUnresolved','BalanceOrPrimitiveRejected','StartupRejected','StateLimitReached', ...
-    'TestLimitReached','SupportLimitReached','RowLimitReached','DepthBoundReached','AuditRowsOmitted'}, ...
-    {'string','double','double','double','double','double','double','double','double', ...
-    'logical','logical','logical','logical','logical','double'});
-end
-
-function A = removalModuleAuditTable(rows)
-A=cellTable(rows,{'I_ID','Kind','F_ID','ReactionIDs','Directions','Status','SolverMessage'}, ...
-    repmat({'string'},1,7));
-end
-
-function [L,Q,C,A] = expandRemovalModules(signals,L,Q,O,T,model,comp,currency,cfg)
-% Bounded simple connector paths; shared internal side intermediates balance.
-% Every selected gross reaction is retained. No pseudo-reaction or EC is added.
-L=withRemovalModuleMetadata(L,O,model);Q=withRemovalModuleMetadata(Q,O,model);
-coverageRows=cell(0,15);auditRows=cell(0,7);tol=1e-8;
-kindNames=["linear_I_to_products","gross_2I_to_I","two_copy_loss_2I_to_products"];
-if ~cfg.expandRemovalModules,C=removalModuleCoverageTable(coverageRows);A=removalModuleAuditTable(auditRows);return;end
-parts=cell(1,numel(O.rxn));eligible=false(1,numel(O.rxn));
-for o=1:numel(O.rxn)
-    parts{o}=find(O.R(:,o)+O.P(:,o)>tol);
-    eligible(o)=O.grossKnown(o)&&numel(parts{o})<=cfg.maxRemovalParticipants;
-end
-for seed=reshape(signals,1,[])
-    beforeL=height(L);beforeQ=height(Q);states=1;tests=0;retained=0;unsolved=0;balanceRejected=0;startupRejected=0;
-    addedL=L([],:);addedQ=Q([],:);
-    stateLimit=false;testLimit=false;supportLimit=false;rowLimit=false;depthBound=false;omitted=0;logged=0;stop=false;
-    queue=struct('node',seed,'path',[],'chain',seed);head=1;
-    seen=containers.Map('KeyType','char','ValueType','logical');
-    while head<=numel(queue)&&~stop
-        state=queue(head);queue(head).path=[];queue(head).chain=[];head=head+1;
-        for o=reshape(O.consumers{state.node},1,[])
-            if ~eligible(o)||O.N(state.node,o)>=-tol||any(O.rxn(state.path)==O.rxn(o)) ...
-                    ||any(comp(parts{o})~=comp(seed)),continue;end
-            chosen=[state.path o];depth=numel(chosen);
-            if depth>=2
-                a=O.R(:,chosen);b=O.P(:,chosen);
-                catalysts=find(any(a>tol&b>tol&abs(b-a)<tol,2)&~currency);catalysts(catalysts==seed)=[];
-                for kind=[3 2 1] % Test scarce pair-loss roles before linear roles.
-                    controls=0;if kind==1,controls=[0 reshape(catalysts,1,[])];end
-                    for control=controls
-                        key=sprintf('%d,',[kind control sort(chosen)]);if isKey(seen,key),continue;end
-                        seen(key)=true;
-                        if tests>=cfg.removalModuleMaxTestsPerI,testLimit=true;stop=true;break;end
-                        tests=tests+1;
-                        [module,status,info]=validateRemovalModule(seed,chosen,kind,control,O,currency);
-                        if status=="accepted"
-                            remaining=cfg.removalModuleMaxRowsPerI-height(addedL)-height(addedQ);
-                            [addedL,addedQ]=appendRemovalModule(addedL,addedQ,seed,chosen,module.flux,kind,control, ...
-                                O,T,model,comp,currency,remaining);
-                            retained=retained+1;
-                        elseif status=="solver_unresolved",unsolved=unsolved+1;
-                        elseif status=="startup_or_seed_dependence_rejected",startupRejected=startupRejected+1;
-                        else,balanceRejected=balanceRejected+1;
-                        end
-                        if status=="accepted"||status=="solver_unresolved"
-                            if logged<cfg.removalModuleMaxAuditRowsPerI
-                                f="";if control>0,f=string(model.mets{control});end
-                                auditRows(end+1,:)={string(model.mets{seed}),kindNames(kind),f, ...
-                                    joinText(string(model.rxns(O.rxn(chosen))),';'),joinText(string(O.direction(chosen)),';'), ...
-                                    status,info.message};logged=logged+1; %#ok<AGROW>
-                            else,omitted=omitted+1;end
-                        end
-                        supportLimit=retained>=cfg.removalModuleMaxSupportsPerI;
-                        rowLimit=height(addedL)+height(addedQ)>=cfg.removalModuleMaxRowsPerI;
-                        if supportLimit||rowLimit,stop=true;break;end
-                    end
-                    if stop,break;end
-                end
-            end
-            if stop,break;end
-            if depth>=cfg.removalModuleMaxReactions,depthBound=true;continue;end
-            next=find(O.N(:,o)>tol&~currency);next(next==seed|ismember(next,state.chain))=[];
-            for node=reshape(next,1,[])
-                if states>=cfg.removalModuleMaxStatesPerI,stateLimit=true;stop=true;break;end
-                queue(end+1)=struct('node',node,'path',chosen,'chain',[state.chain node]);states=states+1; %#ok<AGROW>
-            end
-            if stop,break;end
-        end
-    end
-    addedL.LinearID=addedL.LinearID+beforeL;addedQ.QuadraticID=addedQ.QuadraticID+beforeQ;
-    L=[L;addedL];Q=[Q;addedQ]; %#ok<AGROW>
-    coverageRows(end+1,:)={string(model.mets{seed}),states,tests,retained,height(addedL),height(addedQ), ...
-        unsolved,balanceRejected,startupRejected,stateLimit,testLimit,supportLimit,rowLimit,depthBound,omitted}; %#ok<AGROW>
-end
-C=removalModuleCoverageTable(coverageRows);A=removalModuleAuditTable(auditRows);
-end
-
-function [module,status,info] = validateRemovalModule(seed,path,kind,control,O,currency)
-module=[];status="balance_or_primitive_rejected";tol=1e-8;
-info=struct('message',"");
-if numel(path)<2||numel(unique(O.rxn(path)))~=numel(path)||~all(O.grossKnown(path)),return;end
-a=O.R(:,path);b=O.P(:,path);N=b-a;
-internal=find(any(a>tol,2)&any(b>tol,2)&~currency);internal(internal==seed)=[];
-target=[1;0];if kind==2,target=[2;1];elseif kind==3,target=[2;0];end
-[v,solved,info]=positiveFlux([full(N(internal,:));full(a(seed,:));full(b(seed,:))], ...
-    [zeros(numel(internal),1);target]);
-if ~solved,status="solver_unresolved";return;end
-if isempty(v),return;end
-grossA=a*v;grossB=b*v;
-% Reject obtaining "2I loss" by multiplying an ordinary one-I pathway by 2.
-% Primitive normalization includes gross internal participants, not net-only
-% cancellation, exactly as in the original single-reaction event convention.
-[scale,ok]=primitiveReactionScale(grossA,grossB);if ~ok,return;end
-v=v*scale;grossA=grossA*scale;grossB=grossB*scale;
-if norm([full(grossA(seed));full(grossB(seed))]-target,Inf)>tol,return;end
-net=(b-a)*v;net(abs(net)<tol)=0;
-if control>0
-    if kind~=1||abs(net(control))>tol||~any(a(control,:)>tol&b(control,:)>tol&abs(b(control,:)-a(control,:))<tol),return;end
-end
-feed=find(net < -tol);feed(feed==seed)=[];buffered=find(currency&any(a+b>tol,2));
-available=false(size(N,1),1);available([feed;buffered])=true;if control>0,available(control)=true;end
-without=substrateClosure(available,a,b);available(seed)=true;[with,fired]=substrateClosure(available,a,b);
-if without(seed)||~all(fired)||~with(seed),status="startup_or_seed_dependence_rejected";return;end
-module=struct('flux',v(:)','net',net);status="accepted";
-end
-
-function T = withRemovalModuleMetadata(T,O,model,paths,weights)
-% Numeric cell vectors are authoritative in MAT output; CSV export serializes
-% them explicitly. Scalar legacy Reaction/OrientationIndex fields are anchors.
-n=height(T);explicit=nargin>=4;
-T.ModuleOrientations=cell(n,1);T.ModuleFluxes=cell(n,1);T.ModuleReactionIndices=cell(n,1);T.ModuleParticipants=cell(n,1);
-T.ModuleReactionCount=zeros(n,1);T.ModuleNetEquation=strings(n,1);T.ModuleFluxText=strings(n,1);
-T.ModuleDirections=strings(n,1);T.ModuleFeedIDs=strings(n,1);T.ModuleWasteIDs=strings(n,1);
-T.ModuleInternalIDs=strings(n,1);T.ModuleECs=strings(n,1);T.IsMultiReaction=false(n,1);
-for k=1:n
-    os=T.OrientationIndex(k);v=T.PrimitiveScale(k);
-    if explicit,os=paths{k};v=weights{k};end
-    os=reshape(os,1,[]);v=reshape(v,1,[]);a=O.R(:,os);b=O.P(:,os);net=(b-a)*v(:);
-    participants=find(any(a+b>1e-8,2));internal=find(any(a>1e-8,2)&any(b>1e-8,2));internal(internal==T.I_Index(k))=[];
-    if isfield(model,'circuitCurrency'),internal(model.circuitCurrency(internal))=[];end
-    feed=find(net < -1e-8);feed(feed==T.I_Index(k))=[];waste=find(net>1e-8);waste(waste==T.I_Index(k))=[];
-    T.ModuleOrientations{k}=os;T.ModuleFluxes{k}=v;T.ModuleReactionIndices{k}=O.rxn(os);T.ModuleParticipants{k}=participants;
-    T.ModuleReactionCount(k)=numel(os);T.ModuleNetEquation(k)=equation(max(-net,0),max(net,0),model);
-    T.ModuleFluxText(k)=joinText(compose('%.9g',v),';');T.ModuleDirections(k)=joinText(string(O.direction(os)),';');
-    T.ModuleFeedIDs(k)=joinText(string(model.mets(feed)),';');T.ModuleWasteIDs(k)=joinText(string(model.mets(waste)),';');
-    T.ModuleInternalIDs(k)=joinText(string(model.mets(internal)),';');T.IsMultiReaction(k)=numel(os)>1;
-    codes=strings(1,numel(os));
-    for j=1:numel(os)
-        codes(j)="UNRESOLVED";
-        if isfield(model,'circuitResolvedEC')&&model.circuitResolvedEC(O.rxn(os(j)))~="",codes(j)=model.circuitResolvedEC(O.rxn(os(j)));end
-    end
-    T.ModuleECs(k)=joinText(codes,' | ');
-end
-end
-
-function [L,Q] = appendRemovalModule(L,Q,seed,path,v,kind,control,O,T,model,comp,currency,maxRows)
-a=O.R(:,path)*v(:);b=O.P(:,path)*v(:);net=b-a;
-feed=find(net < -1e-8);feed(feed==seed)=[];products=find(b>1e-8);
-common={seed,string(model.mets{seed}),comp(seed),O.rxn(path(1)),joinText(string(model.rxns(O.rxn(path))),';'), ...
-    O.direction(path(1)),path(1),NaN,full(a(seed)-b(seed)),equation(a,b,model),equation(a,b,model), ...
-    joinText(string(model.mets(feed)),';'),joinText(string(model.mets(products)),';'),true};
-if kind==1
-    modes={"F_unassigned","",0,"","","multi_reaction_F_control_missing"};
-    if control>0
-        modes={"explicit_regenerated_F",string(model.mets{control}),0,"","","multi_reaction_gross_F_regeneration_kinetics_unverified"};
-    else
-        for cargo=reshape(feed(~currency(feed)),1,[])
-            for t=reshape(find(T.InsideIndex==cargo),1,[])
-                if ismember(T.ModelIndex(t),O.rxn(path)),continue;end
-                modes(end+1,:)={"F_gated_cosubstrate_import","",t,T.ReactionID(t),string(model.mets{cargo}), ...
-                    "multi_reaction_F_identity_and_gating_unverified"}; %#ok<AGROW>
-            end
-        end
-    end
-    if control==0&&size(modes,1)>1,modes=modes([2:end 1],:);end % Keep F-linked variants first.
-    for k=1:min(size(modes,1),maxRows)
-        row=L([],1:21);row(1,:)=[{height(L)+1},common,modes(k,:)];
-        row=withRemovalModuleMetadata(row,O,model,{path},{v});L=[L;row]; %#ok<AGROW>
-    end
-else
-    exact=kind==2;label="multi_reaction_alternative_two_copy_loss";
-    if exact,label="multi_reaction_exact_gross_2I_to_I";end
-    row=Q([],1:17);row(1,:)=[{height(Q)+1},common,{label,exact}];
-    row=withRemovalModuleMetadata(row,O,model,{path},{v});Q=[Q;row];
-end
-end
-
-function [rx,parts,os,v] = removalComponentSupport(row,O)
-os=row.OrientationIndex;v=row.PrimitiveScale;
-if ismember('ModuleOrientations',row.Properties.VariableNames)
-    os=row.ModuleOrientations{1};v=row.ModuleFluxes{1};
-end
-rx=O.rxn(os);parts=find(any(O.R(:,os)+O.P(:,os)>1e-8,2));
-end
-
-function [rx,parts] = linearRemovalSupport(row,O,T,R,P)
-[rx,parts]=removalComponentSupport(row,O);
-if row.FTransportRow>0
-    ft=T.ModelIndex(row.FTransportRow);rx=[reshape(rx,1,[]) ft];parts=union(parts,find(R(:,ft)+P(:,ft)>1e-8));
-end
-end
-
-function S = removalComponentsForCSV(S)
-for name={'ModuleOrientations','ModuleFluxes','ModuleReactionIndices','ModuleParticipants'}
-    if ~ismember(name{1},S.Properties.VariableNames),continue;end
-    values=strings(height(S),1);
-    for k=1:height(S),values(k)=joinText(compose('%.9g',S.(name{1}){k}),';');end
-    S.(name{1})=values;
-end
-end
-
-function C = screenRemovalCompatibility(signals,L,Q,O,T,model,R,P,currency,cfg)
-rows=cell(0,11);
-for seed=reshape(signals,1,[])
-    ls=find(L.I_Index==seed);if cfg.requireFControlTopology,ls=ls(L.FMode(ls)~="F_unassigned");end
-    qs=find(Q.I_Index==seed);if ~cfg.allowPairLossAlternative,qs=qs(Q.ExactFormalStoichiometry(qs));end
-    tested=0;reuse=0;cross=0;found=false;limited=false;stop=false;
-    for l=reshape(ls,1,[])
-        [lr,lp]=linearRemovalSupport(L(l,:),O,T,R,P);
-        for q=reshape(qs,1,[])
-            if tested>=cfg.removalPairMaxTestsPerI,limited=true;stop=true;break;end
-            tested=tested+1;[qr,qp]=removalComponentSupport(Q(q,:),O);
-            if numel(unique([lr qr]))~=numel([lr qr]),reuse=reuse+1;continue;end
-            shared=intersect(lp,qp);shared(shared==seed|currency(shared))=[];
-            if cfg.requireRemovalIsolation&&~isempty(shared),cross=cross+1;continue;end
-            found=true;stop=true;break;
-        end
-        if stop,break;end
-    end
-    % An unfinished pair screen cannot establish incompatibility. Such I
-    % pools remain eligible for production; the uncertainty is explicit.
-    rows(end+1,:)={seed,string(model.mets{seed}),numel(ls),numel(qs),tested,reuse,cross,found,limited, ...
-        found||limited,"current_bounded_removal_inventory_only"}; %#ok<AGROW>
-end
-C=cellTable(rows,{'ModelIndex','I_ID','EligibleLinearRows','EligiblePairRows','PairTests','ReuseRejected', ...
-    'CrossTalkRejected','CompatibleRemovalPairFound','PairTestLimitReached','ProductionEligible','Scope'}, ...
-    {'double','string','double','double','double','double','double','logical','logical','logical','string'});
-end
-
-function writeExpandedRemovalReport(path,L,Q,C,S,O,model,cfg)
-fid=fopen(path,'w');assert(fid>0,'Anderson:RemovalReport','Cannot write expanded removal report.');
-cleanup=onCleanup(@()fclose(fid)); %#ok<NASGU>
-report(fid,'EXPANDED REMOVAL MODULES AND REMOVAL-FIRST COMPATIBILITY');
-report(fid,sprintf('Single-reaction candidates retained; multi-reaction expansion=%d; maximum reactions/module=%d.', ...
-    cfg.expandRemovalModules,cfg.removalModuleMaxReactions));
-report(fid,'Scope: bounded simple connector paths with positive weights and balanced internal noncurrency states; arbitrary branched supports are not exhaustively enumerated.');
-report(fid,'Primitive gross event normalization rejects doubling an ordinary one-I pathway to manufacture a two-I event.');
-report(fid,'Neither a primitive two-I module nor an EC establishes quadratic kinetics, equal rates or a working Anderson implementation.');
-report(fid,'Balance here means internal stoichiometric accounting; atom, whole-cell flux and thermodynamic validation are separate checks.');
-report(fid,'All gross participants remain in inter-block isolation checks, including intermediates that cancel in net equations.');
-report(fid,sprintf('Linear rows=%d (multi-reaction=%d); pair-loss rows=%d (multi-reaction=%d).', ...
-    height(L),nnz(L.IsMultiReaction),height(Q),nnz(Q.IsMultiReaction)));
-report(fid,sprintf('Imported I pools=%d; with a compatible removal pair=%d; pair screens budget-limited=%d.', ...
-    height(S),nnz(S.CompatibleRemovalPairFound),nnz(S.PairTestLimitReached)));
-report(fid,sprintf('Removal enumeration limits: states/I=%g; tests/I=%g; retained supports/I=%g; retained rows/I=%g; pair tests/I=%g.', ...
-    cfg.removalModuleMaxStatesPerI,cfg.removalModuleMaxTestsPerI,cfg.removalModuleMaxSupportsPerI,cfg.removalModuleMaxRowsPerI,cfg.removalPairMaxTestsPerI));
-report(fid,sprintf('Coverage: state-limited pools=%d; test-limited=%d; support-limited=%d; row-limited=%d; unresolved flux solves=%d.', ...
-    nnz(C.StateLimitReached),nnz(C.TestLimitReached),nnz(C.SupportLimitReached),nnz(C.RowLimitReached),sum(C.SolverUnresolved)));
-report(fid,'No compatible pair in this retained inventory is not a proof of biochemical impossibility.');
-for k=1:height(S)
-    if S.EligibleLinearRows(k)==0&&S.EligiblePairRows(k)==0,continue;end
-    report(fid,sprintf('I=%s | linear=%d | pair=%d | compatible=%d | tested=%d | reuse=%d | cross-talk=%d | pair cap=%d.', ...
-        S.I_ID(k),S.EligibleLinearRows(k),S.EligiblePairRows(k),S.CompatibleRemovalPairFound(k), ...
-        S.PairTests(k),S.ReuseRejected(k),S.CrossTalkRejected(k),S.PairTestLimitReached(k)));
-end
-for kind=1:2
-    rows=L;label="linear";if kind==2,rows=Q;label="pair_loss";end
-    indices=find(rows.IsMultiReaction);
-    for k=reshape(indices(1:min(cfg.printTop,numel(indices))),1,[])
-        row=rows(k,:);[~,~,os,v]=removalComponentSupport(row,O);
-        report(fid,sprintf('\nRemoval role=%s | I=%s | component row=%d | %s',label,row.I_ID,k,row.ModuleNetEquation));
-        report(fid,['  Internal states: ' char(row.ModuleInternalIDs) '; feeds: ' char(row.ModuleFeedIDs) '; wastes: ' char(row.ModuleWasteIDs)]);
-        for j=1:numel(os)
-            report(fid,sprintf('  step %d: %s (%+d), weight %.9g | %s',j,model.rxns{O.rxn(os(j))},O.direction(os(j)),v(j), ...
-                equation(O.R(:,os(j)),O.P(:,os(j)),model)));
-        end
-    end
-end
-report(fid,'Full inventories and caps: 05_Linear_Removal_Candidates.csv, 05_Quadratic_Removal_Candidates.csv, 05_Removal_Module_Coverage.csv and 05_Removal_Pair_Compatibility.csv.');
-end
-
 function [scale,ok] = primitiveReactionScale(a,b)
 % Remove arbitrary whole-column scaling WITHOUT cancelling gross catalysts.
 % E.g. 2I+2X->2P is primitive I+X->P, not evidence of an I-pair event.
@@ -2788,11 +1860,9 @@ scale=common/divisor;
 ok=all(abs(values*scale-round(values*scale))<1e-7);
 end
 
-function [C,stats,audit] = connectAndersonTerms(P,D,cores,O,T,L,Q,model,comp,currency,Rgross,Pgross,cfg)
+function [C,stats] = connectAndersonTerms(P,D,cores,O,T,L,Q,model,comp,currency,Rgross,Pgross,cfg)
 rows=cell(0,18);stats=struct('tested',0,'reactionReuseRejected',0, ...
-    'crossTalkRejected',0,'testLimitReached',false,'candidateLimitReached',false, ...
-    'auditRowsOmitted',0);
-auditRows=cell(0,13);
+    'crossTalkRejected',0,'testLimitReached',false,'candidateLimitReached',false);
 stop=false;tol=1e-8;
 for p=1:height(P)
     core=cores(D.CoreIndex(p));seed=core.seed;s=T.ModelIndex(D.TransportRow(p));
@@ -2803,32 +1873,27 @@ for p=1:height(P)
     qs=find(Q.I_Index==seed);
     if ~cfg.allowPairLossAlternative,qs=qs(Q.ExactFormalStoichiometry(qs));end
     for l=reshape(ls,1,[])
-        [linRx,linParts]=linearRemovalSupport(L(l,:),O,T,Rgross,Pgross);
+        linRx=L.ReactionIndex(l);linParts=find(O.R(:,L.OrientationIndex(l))+O.P(:,L.OrientationIndex(l))>tol);
+        if L.FTransportRow(l)>0
+            ft=T.ModelIndex(L.FTransportRow(l));linRx=[linRx ft]; %#ok<AGROW>
+            linParts=union(linParts,find(Rgross(:,ft)+Pgross(:,ft)>tol));
+        end
         for q=reshape(qs,1,[])
             if stats.tested>=cfg.maxTripletTests
                 stats.testLimitReached=true;stop=true;break;
             end
-            stats.tested=stats.tested+1;[quadRx,quadParts]=removalComponentSupport(Q(q,:),O);
-            if any(ismember(linRx,prodRx)) || any(ismember(quadRx,[prodRx linRx])) ...
+            stats.tested=stats.tested+1;quadRx=Q.ReactionIndex(q);
+            if any(ismember(linRx,prodRx)) || ismember(quadRx,[prodRx linRx]) ...
                     || numel(unique(linRx))<numel(linRx)
-                stats.reactionReuseRejected=stats.reactionReuseRejected+1;
-                if size(auditRows,1)<cfg.maxConnectionAuditRows
-                    auditRows(end+1,:)=andersonConnectionAuditRow(p,seed,L.LinearID(l),Q.QuadraticID(q), ...
-                        "reaction_reuse",prodRx,linRx,quadRx,prodParts,linParts,quadParts,currency,model); %#ok<AGROW>
-                else,stats.auditRowsOmitted=stats.auditRowsOmitted+1;end
-                continue;
+                stats.reactionReuseRejected=stats.reactionReuseRejected+1;continue;
             end
+            quadParts=find(O.R(:,Q.OrientationIndex(q))+O.P(:,Q.OrientationIndex(q))>tol);
             shared=unique([intersect(prodParts,linParts);intersect(prodParts,quadParts); ...
                 intersect(linParts,quadParts)]);
             shared(shared==seed | currency(shared))=[];
             isolated=isempty(shared);
             if cfg.requireRemovalIsolation && ~isolated
-                stats.crossTalkRejected=stats.crossTalkRejected+1;
-                if size(auditRows,1)<cfg.maxConnectionAuditRows
-                    auditRows(end+1,:)=andersonConnectionAuditRow(p,seed,L.LinearID(l),Q.QuadraticID(q), ...
-                        "shared_noncurrency_outside_I",prodRx,linRx,quadRx,prodParts,linParts,quadParts,currency,model); %#ok<AGROW>
-                else,stats.auditRowsOmitted=stats.auditRowsOmitted+1;end
-                continue;
+                stats.crossTalkRejected=stats.crossTalkRejected+1;continue;
             end
             rows(end+1,:)={size(rows,1)+1,p,D.CoreIndex(p),numel(core.path),seed, ...
                 string(model.mets{seed}),comp(seed),L.LinearID(l),Q.QuadraticID(q), ...
@@ -2850,31 +1915,10 @@ C=cellTable(rows,{'ConnectedID','ProductionCandidateID','CoreIndex','CoreReactio
     'ExactFormalQuadratic','NoSharedNoncurrencyOutsideI','SharedNoncurrencyOutsideI','RateStatus'}, ...
     {'double','double','double','double','double','string','string','double','double', ...
     'string','string','string','string','double','logical','logical','string','string'});
-audit=andersonConnectionAuditTable(auditRows);
 if ~isempty(C)
     [~,order]=sortrows([C.CoreReactionCount,-double(C.ExactFormalQuadratic),C.ConnectedID],[1 2 3]);
     C=C(order,:);C.ConnectedID=(1:height(C))';
 end
-end
-
-function T = andersonConnectionAuditTable(rows)
-T=cellTable(rows,{'ProductionCandidateID','I_ID','LinearID','QuadraticID','Reason','ReusedReactionIDs', ...
-    'SharedNoncurrencyOutsideI','ProductionLinearSharedIDs','ProductionPairSharedIDs','LinearPairSharedIDs', ...
-    'ProductionReactionIDs','LinearReactionIDs','PairLossReactionID'}, ...
-    {'double','string','double','double','string','string','string','string','string','string','string','string','string'});
-end
-
-function row = andersonConnectionAuditRow(p,seed,l,q,reason,prodRx,linRx,quadRx,prodParts,linParts,quadParts,currency,model)
-pl=intersect(prodParts,linParts);pq=intersect(prodParts,quadParts);lq=intersect(linParts,quadParts);
-pl(pl==seed|currency(pl))=[];pq(pq==seed|currency(pq))=[];lq(lq==seed|currency(lq))=[];
-shared=unique([pl;pq;lq]);reused=unique([intersect(prodRx,linRx),intersect(prodRx,quadRx),intersect(linRx,quadRx)]);
-if numel(unique(linRx))<numel(linRx)
-    [ids,~,index]=unique(linRx);counts=accumarray(index(:),1);reused=union(reused,ids(counts>1));
-end
-row={p,string(model.mets{seed}),l,q,reason,joinText(string(model.rxns(reused)),';'), ...
-    joinText(string(model.mets(shared)),';'),joinText(string(model.mets(pl)),';'), ...
-    joinText(string(model.mets(pq)),';'),joinText(string(model.mets(lq)),';'), ...
-    joinText(string(model.rxns(prodRx)),';'),joinText(string(model.rxns(linRx)),';'),joinText(string(model.rxns(quadRx)),';')};
 end
 
 function writeThreeReactionReport(path,P,D,cores,O,T,L,Q,C,stats,model,cfg)
@@ -2890,20 +1934,13 @@ report(fid,sprintf('Connected structural triples: %d; exact formal quadratic mat
     height(C),nnz(C.ExactFormalQuadratic)));
 report(fid,sprintf('Triples tested: %d; reaction-reuse rejections: %d; cross-talk rejections: %d.', ...
     stats.tested,stats.reactionReuseRejected,stats.crossTalkRejected));
-report(fid,sprintf('Detailed rejection rows omitted by audit retention=%d. Full retained rows: 06_Anderson_Connection_Rejections.csv.', ...
-    stats.auditRowsOmitted));
-report(fid,'The audit records the first rejecting check and all pairwise shared noncurrency metabolites for that retained triple.');
 report(fid,sprintf('Test limit reached=%d; candidate limit reached=%d; isolation required=%d.', ...
     stats.testLimitReached,stats.candidateLimitReached,cfg.requireRemovalIsolation));
-report(fid,sprintf('Require F-control topology=%d; allow alternative two-copy pair loss=%d.', ...
-    cfg.requireFControlTopology,cfg.allowPairLossAlternative));
-report(fid,'Focused production scope and per-target gaps: Targeted_Production_Report.txt. Unsearched I pools are not ruled out.');
 report(fid,'All three roles use the SAME model species index; e/u/x pools are never identified.');
 report(fid,'F-gated co-substrate import is a topology hypothesis: F itself is NOT that consumed cargo.');
 report(fid,'A linear sink lacking a linked F mechanism remains a partial component.');
 report(fid,'No kinetic orders are inferred from stoichiometric coefficients or normalized column scales.');
 report(fid,'Exact 2I->I events lose one copy; alternative 2I->products events lose TWO copies.');
-report(fid,'A loss role may be a balanced multi-reaction module; full reaction/direction/flux/participant metadata is retained. Primitive event counts do not establish quadratic kinetics.');
 report(fid,'For loss v_q=a*I^2, dI/dt includes -nu*a*I^2. Matching -k*I^2 needs a=k/nu.');
 report(fid,'Enzymatic pair consumption alone does NOT demonstrate v_q proportional to I^2.');
 report(fid,'No example is certified as a complete Anderson kinetic implementation.');
@@ -2935,10 +1972,8 @@ for n=1:min(height(C),cfg.printTop)
         report(fid,['  Consumed co-substrate (not F): ' char(l.FControlCargo)]);
     end
     report(fid,['  Linear sink: ' char(l.ReactionID) ' | ' char(l.OriginalEquation)]);
-    writeRemovalComponentDetails(fid,'Linear removal',l,O,model);
     report(fid,['  F status: ' char(l.FStatus)]);
     report(fid,['  Pair-loss candidate: ' char(q.ReactionID) ' | ' char(q.OriginalEquation)]);
-    writeRemovalComponentDetails(fid,'Pair loss',q,O,model);
     report(fid,sprintf('  Pair class: %s | primitive scale=%g | loss/event=%g | exact 2I->I=%d', ...
         q.PairClass,q.PrimitiveScale,q.LossPerEvent,q.ExactFormalStoichiometry));
     report(fid,['  Pair primitive equation: ' char(q.PrimitiveEquation)]);
@@ -2991,7 +2026,7 @@ end
 if cfg.branchUseVerifiedSeedMap
     seed=verifiedBranchECSeeds();
     for j=reshape(find(E.codes=="" & sourceID~=""),1,[])
-        k=find(seed.SourceReactionID==sourceID(j),1);
+        k=cellFreeSeedMatch(seed.SourceReactionID,sourceID(j),model,j);
         if isempty(k),status(j)="source_ID_outside_partial_EC_seed_map";continue;end
         if ~branchSignatureMatches(model.S(:,j),base,seed.ChemicalSignature(k))
             status(j)="explicit_BiGG_link_but_seed_chemistry_mismatch";continue;
@@ -3004,10 +2039,10 @@ if cfg.branchUseVerifiedSeedMap
 end
 A=table(string(model.rxns),sourceID,E.codes,E.source,E.reference,status,E.codes~="", ...
     'VariableNames',{'ReactionID','SourceReactionID','EC','AnnotationSource','Reference','Status','BranchECEligible'});
-template=fullfile(cfg.outputDir,'CART_Branch_EC_Evidence_TEMPLATE.tsv');
+template=fullfile(cfg.outputDir,'Branch_EC_Evidence_TEMPLATE.tsv');
 if ~exist(template,'file')
-    blank=table(strings(0,1),strings(0,1),strings(0,1),strings(0,1), ...
-        'VariableNames',{'ReactionID','SourceReactionID','EC','Reference'});
+    blank=table(strings(0,1),strings(0,1),strings(0,1), ...
+        'VariableNames',{'SourceReactionID','EC','Reference'});
     writetable(blank,template,'FileType','text','Delimiter','\t');
 end
 end
@@ -3189,22 +2224,20 @@ end
 
 function [W,stats] = wireBranchesToCancellers(M,rails,C,P,D,cores,O,T,L,Q,model,currency,Rgross,Pgross,cfg)
 rows=cell(0,14);tol=1e-8;stop=false;
-cancellerOrder=downstreamRowOrder(C.I_ID,1:height(C),cfg);
 stats=struct('tested',0,'reactionReuseRejected',0,'crossTalkRejected',0, ...
     'unmatchedInterfaceRejected',0,'testLimitReached',false,'wiringLimitReached',false);
 for b=1:height(M)
     fast=rails(M.FastRailIndex(b));slow=rails(M.SlowRailIndex(b));
     branchRx=[fast.rx slow.rx];branchParts=union(fast.parts,slow.parts);
-    candidates=cancellerOrder(C.InsideCompartment(cancellerOrder)==M.InsideCompartment(b));
-    for c=reshape(candidates,1,[])
+    for c=reshape(find(C.InsideCompartment==M.InsideCompartment(b)),1,[])
         if stats.tested>=cfg.branchMaxWiringTests,stats.testLimitReached=true;stop=true;break;end
         stats.tested=stats.tested+1;prod=C.ProductionCandidateID(c);core=cores(D.CoreIndex(prod));
         st=T.ModelIndex(D.TransportRow(prod));l=L(C.LinearID(c),:);q=Q(C.QuadraticID(c),:);
-        [lr,lp]=removalComponentSupport(l,O);[qr,qp]=removalComponentSupport(q,O);
-        cancelRx=[O.rxn(core.path),st,lr,qr];
+        cancelRx=[O.rxn(core.path),st,l.ReactionIndex,q.ReactionIndex];
         cancelParts=find(any(O.R(:,core.path)+O.P(:,core.path)>tol,2));
         cancelParts=union(cancelParts,find(Rgross(:,st)+Pgross(:,st)>tol));
-        cancelParts=union(cancelParts,lp);cancelParts=union(cancelParts,qp);
+        cancelParts=union(cancelParts,find(O.R(:,l.OrientationIndex)+O.P(:,l.OrientationIndex)>tol));
+        cancelParts=union(cancelParts,find(O.R(:,q.OrientationIndex)+O.P(:,q.OrientationIndex)>tol));
         if l.FTransportRow>0
             ft=T.ModelIndex(l.FTransportRow);cancelRx(end+1)=ft; %#ok<AGROW>
             cancelParts=union(cancelParts,find(Rgross(:,ft)+Pgross(:,ft)>tol));
@@ -3269,7 +2302,7 @@ report(fid,sprintf('EC-annotated model reactions: %d/%d; eligible rail orientati
     nnz(E.BranchECEligible),height(E),stats.eligibleOrientations));
 report(fid,'The embedded BiGG starting map covers SIX reaction classes, not the complete model.');
 report(fid,'Only exact annotated source IDs with matching chemical signatures receive embedded EC annotations.');
-report(fid,['Additional exact reaction annotations: ' char(cfg.branchECFile) '. Use ReactionID from 00_Reaction_Notation.csv, optional SourceReactionID, EC and Reference.']);
+report(fid,'Add sourced SourceReactionID/EC/Reference rows to Branch_EC_Evidence.tsv for broader coverage.');
 report(fid,sprintf('Single rails: %d; pairs tested: %d; branch modules: %d; wiring rows: %d; matched interfaces: %d.', ...
     stats.rails,stats.pairsTested,height(M),height(W),nnz(W.BothControlInterfacesMatched)));
 report(fid,sprintf('Pair rejections: reaction reuse=%d; shared noncurrency=%d; EC assignment=%d; shared known genes=%d.', ...
@@ -3336,13 +2369,16 @@ end
 if cfg.counterUseVerifiedSeedMap
     seeds=verifiedCounterECSeeds();
     for j=reshape(find(E.codes==""&sourceID~=""),1,[])
-        k=find(seeds.SourceReactionID==sourceID(j),1);if isempty(k),continue;end
+        k=cellFreeSeedMatch(seeds.SourceReactionID,sourceID(j),model,j);if isempty(k),continue;end
         if ~branchSignatureMatches(model.S(:,j),base,seeds.ChemicalSignature(k))
             status(j)="explicit_BiGG_link_but_counter_seed_chemistry_mismatch";continue;
         end
         E.codes(j)=seeds.EC(k);E.source(j)="verified_partial_counter_BiGG_seed_2026_11_13";
         E.reference(j)=seeds.Reference(k);status(j)="source_ID_and_chemical_signature_matched";
     end
+end
+if cfg.counterUseEmbeddediMM904EC
+    [E,status]=applyEmbeddediMM904EC(E,status,model,base);
 end
 A=table(string(model.rxns),sourceID,E.codes,E.source,E.reference,status,E.codes~="", ...
     'VariableNames',{'ReactionID','SourceReactionID','EC','AnnotationSource','Reference','Status','CounterECEligible'});
@@ -3414,7 +2450,7 @@ function [X,support,A,stats] = connectConsumingCounters(F,fp,C,D,cores,O,T,L,Q,E
 rows=cell(0,16);support=cell(0,1);audit=cell(0,10);tol=1e-8;stop=false;
 stats=struct('tested',0,'leakTests',0,'testLimitReached',false,'leakTestLimitReached',false, ...
     'connectionLimitReached',false);
-for c=downstreamRowOrder(C.I_ID,1:height(C),cfg)
+for c=1:height(C)
     [cr,cp]=counterCancellerSupport(c,C,D,cores,O,T,L,Q,R,P);
     for f=reshape(find(F.I_Index==C.I_Index(c)),1,[])
         if stats.tested>=cfg.counterMaxConnectionTests,stats.testLimitReached=true;stop=true;break;end
@@ -3484,7 +2520,7 @@ function [Y,stats] = wireConsumingCounters(X,F,support,W,M,rails,O,model,currenc
 rows=cell(0,14);stop=false;
 stats=struct('tested',0,'reactionReuseRejected',0,'crossTalkRejected',0,'ECRejected',0, ...
     'knownGeneOverlapRejected',0,'testLimitReached',false,'wiringLimitReached',false);
-for x=downstreamRowOrder(X.I_ID,1:height(X),cfg)
+for x=1:height(X)
     f=X.FormationID(x);rx=F.ReactionIndex(f);
     if X.LeakOrientationIndex(x)>0,rx(end+1)=O.rxn(X.LeakOrientationIndex(x));end %#ok<AGROW>
     for w=reshape(find(W.ConnectedID==X.ConnectedID(x)),1,[])
@@ -3494,10 +2530,19 @@ for x=downstreamRowOrder(X.I_ID,1:height(X),cfg)
         if any(ismember(rx,brx)),stats.reactionReuseRejected=stats.reactionReuseRejected+1;continue;end
         shared=intersect(support{x},union(fast.parts,slow.parts));shared(currency(shared))=[];
         if cfg.counterRequireIsolation&&~isempty(shared),stats.crossTalkRejected=stats.crossTalkRejected+1;continue;end
-        assigned=completeECTokens(M.AssignedECs(b));sets=cell(1,numel(assigned)+1);
+        assigned=completeECTokens(M.AssignedECs(b));sets=cell(1,numel(assigned));
         for k=1:numel(assigned),sets{k}=assigned(k);end
-        sets{end}=completeECTokens(F.ECs(f));
-        if X.LeakOrientationIndex(x)>0,sets{end+1}=completeECTokens(X.LeakECs(x));end
+        % A counter reaction without an EC joins the distinct-EC check only
+        % when an EC is required for it (counterRequireFormationEC/LeakEC).
+        formationSet=completeECTokens(F.ECs(f));
+        hasFormationEC=~isempty(formationSet)||cfg.counterRequireFormationEC;
+        if hasFormationEC,sets{end+1}=formationSet;end
+        hasLeakEC=false;
+        if X.LeakOrientationIndex(x)>0
+            leakSet=completeECTokens(X.LeakECs(x));
+            hasLeakEC=~isempty(leakSet)||cfg.counterRequireLeakEC;
+            if hasLeakEC,sets{end+1}=leakSet;end
+        end
         [codes,ecOK]=distinctBranchECs(sets,cfg.counterDistinctECFromBranches);
         if ~ecOK,stats.ECRejected=stats.ECRejected+1;continue;end
         genes=strings(0,1);branchGenes=strings(0,1);
@@ -3511,8 +2556,9 @@ for x=downstreamRowOrder(X.I_ID,1:height(X),cfg)
         if cfg.branchRejectSharedKnownGenes&&~isempty(knownOverlap)
             stats.knownGeneOverlapRejected=stats.knownGeneOverlapRejected+1;continue;
         end
-        formationEC=codes(numel(assigned)+1);leakEC="";
-        if X.LeakOrientationIndex(x)>0,leakEC=codes(end);end
+        formationEC="";leakEC="";
+        if hasFormationEC,formationEC=codes(numel(assigned)+1);end
+        if hasLeakEC,leakEC=codes(end);end
         rows(end+1,:)={size(rows,1)+1,W.WiringID(w),W.ModuleID(w),X.ConnectedID(x), ...
             X.CounterConnectionID(x),F.FormationID(f),X.I_ID(x),X.C_ID(x),X.CounterType(x), ...
             formationEC,leakEC,numel(unique(codes))==numel(codes),W.BothControlInterfacesMatched(w), ...
@@ -3566,7 +2612,7 @@ report(fid,'For the ideal single-pool Anderson form, the linear I coefficient be
 report(fid,'All selected C-removal reactions are screened against containing or regenerating I; feedback paths are excluded and audited.');
 report(fid,'No reaction reuse or noncurrency overlap outside the intended I/C interfaces is admitted under default isolation.');
 report(fid,'Formation chemistry is catalogued before EC filtering. Separate EC, gross-stoichiometry, reuse and overlap rejections are written to CSV.');
-report(fid,'ECs come from the model or supplied exact evidence. Optional legacy seed maps require an explicit source ID plus a complete chemical signature, and are disabled by default for T cells.');
+report(fid,'EC annotations are from model/supplied evidence or exact source-ID AND complete-signature matches in a partial primary-source seed map.');
 report(fid,'EC separation does not establish independent proteins, kinetic constants, flux feasibility or absence of endogenous bypasses.');
 report(fid,'Counter values integrate the consumed I flux; proportional pulse counts require standardized pulse areas and a suitable retention window.');
 report(fid,'A formation-only accumulator is not a complete leaky counter. No leakage kinetics or steady-state capacity has been inferred.');
@@ -3621,7 +2667,7 @@ end
 if cfg.step2UseVerifiedSeedMap
     seeds=verifiedStep2ECSeeds();
     for j=reshape(find(E.codes==""&source~=""),1,[])
-        k=find(seeds.SourceReactionID==source(j),1);if isempty(k),continue;end
+        k=cellFreeSeedMatch(seeds.SourceReactionID,source(j),model,j);if isempty(k),continue;end
         if ~branchSignatureMatches(model.S(:,j),base,seeds.ChemicalSignature(k))
             status(j)="Step2_seed_chemical_signature_mismatch";continue;
         end
@@ -3631,9 +2677,8 @@ if cfg.step2UseVerifiedSeedMap
 end
 A=table(string(model.rxns),source,E.codes,E.source,E.reference,status,E.codes~="", ...
     'VariableNames',{'ReactionID','SourceReactionID','EC','AnnotationSource','Reference','Status','ECResolved'});
-blank=table(strings(0,1),strings(0,1),strings(0,1),strings(0,1), ...
-    'VariableNames',{'ReactionID','SourceReactionID','EC','Reference'});
-writetable(blank,fullfile(cfg.outputDir,'CART_Step2_EC_Evidence_TEMPLATE.tsv'),'FileType','text','Delimiter','\t');
+blank=table(strings(0,1),strings(0,1),strings(0,1),'VariableNames',{'SourceReactionID','EC','Reference'});
+writetable(blank,fullfile(cfg.outputDir,'Step2_EC_Evidence_TEMPLATE.tsv'),'FileType','text','Delimiter','\t');
 end
 
 function T = verifiedStep2ECSeeds()
@@ -3934,22 +2979,37 @@ c=find(ctx.C.ConnectedID==ctx.Y.ConnectedID(w),1);
 [rx,parts]=counterCancellerSupport(c,ctx.C,ctx.D,ctx.cores,ctx.O,ctx.T,ctx.L,ctx.Q,ctx.R,ctx.P);
 fast=ctx.rails(ctx.M.FastRailIndex(b));slow=ctx.rails(ctx.M.SlowRailIndex(b));
 control=[fast.rx slow.rx];rx=[rx control];parts=union(parts,union(fast.parts,slow.parts));
-f=ctx.X.FormationID(x);fr=ctx.F.ReactionIndex(f);rx(end+1)=fr;control(end+1)=fr;
+% Counter reactions are always part of the circuit (rx, parts), but take
+% part in the distinct-EC assignment only when they carry an EC: the counter
+% may use EC-less chemistry (counterRequireFormationEC/LeakEC=false).
+f=ctx.X.FormationID(x);fr=ctx.F.ReactionIndex(f);rx(end+1)=fr;
+if ctx.E.codes(fr)~="",control(end+1)=fr;end
 parts=union(parts,ctx.XP{x});
 if ctx.X.LeakOrientationIndex(x)>0
-    lr=ctx.O.rxn(ctx.X.LeakOrientationIndex(x));rx(end+1)=lr;control(end+1)=lr;
+    lr=ctx.O.rxn(ctx.X.LeakOrientationIndex(x));rx(end+1)=lr;
+    if ctx.E.codes(lr)~="",control(end+1)=lr;end
 end
 rx=unique(rx,'stable');
 end
 
 function [codes,ok] = step2AssignEC(rx,ctx,cfg)
-sets=cell(1,numel(rx));for k=1:numel(rx),sets{k}=completeECTokens(ctx.E.codes(rx(k)));end
+% ctx.ecTokenSets/geneTokenSets (built once in searchStep2Circuit) avoid
+% re-parsing EC text and gene rules inside the Block 0/neuron inner loops.
+cached=isfield(ctx,'ecTokenSets')&&numel(ctx.ecTokenSets)==numel(ctx.model.rxns);
+sets=cell(1,numel(rx));
+for k=1:numel(rx)
+    if cached,sets{k}=ctx.ecTokenSets{rx(k)};else,sets{k}=completeECTokens(ctx.E.codes(rx(k)));end
+end
 [codes,ok]=distinctBranchECs(sets,cfg.step2DistinctECs);if ~ok,return;end
 if cfg.branchRejectSharedKnownGenes
     seen=strings(0,1);
     for j=reshape(rx,1,[])
-        [~,g,~]=decodeGPR(string(ctx.model.grRules{j}),string(ctx.model.rules{j}),string(ctx.model.genes));
-        genes=split(g,';');genes=genes(genes~="");
+        if cached
+            genes=ctx.geneTokenSets{j};
+        else
+            [~,g,~]=decodeGPR(string(ctx.model.grRules{j}),string(ctx.model.rules{j}),string(ctx.model.genes));
+            genes=split(g,';');genes=genes(genes~="");
+        end
         if ~isempty(intersect(seen,genes)),ok=false;return;end
         seen=union(seen,genes);
     end
@@ -4328,24 +3388,62 @@ stats=struct('parentsTested',0,'parentLimitReached',false,'neuron1Rails',0, ...
     'parentBlock0Found',0,'parentBlock0StructuralOnly',0,'block0BudgetLimitedCalls',0,'block0Queries',0, ...
     'transportTests',0,'exportLinks',0,'exportBudgetLimitedCalls',0,'qualifiedNeuronCandidates',0, ...
     'adapterStates',0,'adapterExpansions',0,'adapterBudgetLimitedCalls',0, ...
-    'neuronChainStates',0,'neuronDiagnosticStates',0,'neuronDiagnosticLimitCalls',0);
+    'neuronChainStates',0,'neuronDiagnosticStates',0,'neuronDiagnosticLimitCalls',0, ...
+    'timeLimitReached',false,'sharedBlock0Searches',0,'sharedBlock0Reused',0,'block0FullReruns',0,'elapsedSeconds',0);
 cache=containers.Map('KeyType','char','ValueType','any');stop=false;
+shared=containers.Map('KeyType','char','ValueType','any');
+% Parse every reaction's EC and gene sets once (used in all inner loops).
+nR=numel(ctx.model.rxns);ctx.ecTokenSets=cell(nR,1);ctx.geneTokenSets=cell(nR,1);
+for j=1:nR
+    ctx.ecTokenSets{j}=completeECTokens(ctx.E.codes(j));
+    [~,g,~]=decodeGPR(string(ctx.model.grRules{j}),string(ctx.model.rules{j}),string(ctx.model.genes));
+    g=split(string(g),';');ctx.geneTokenSets{j}=g(g~="");
+end
+progressPath=fullfile(cfg.outputDir,'Step2_Progress.txt');clock0=tic;
+step2Progress(progressPath,sprintf('Step 2 started %s: %d parent circuits available, cap %g, time limit %g s.', ...
+    datestr(now,31),height(ctx.Y),cfg.step2MaxParents,cfg.step2MaxSeconds),true);
 if cfg.connectStep2&&cfg.counterMode=="consume_I"
-    [matched,parentCounter]=ismember(ctx.Y.CounterConnectionID,ctx.X.CounterConnectionID);
-    assert(all(matched),'Anderson:CounterParent','A branch/counter parent references an unknown counter connection.');
-    parentOrder=downstreamRowOrder(ctx.X.I_ID(parentCounter),1:height(ctx.Y),cfg);
-for w=parentOrder
+% Visit the least expensive parents first (fewest canceller reactions), so
+% that parent, neuron-test and time caps cut the expensive ones.
+parentCost=zeros(height(ctx.Y),1);
+for w=1:height(ctx.Y)
+    parentCost(w)=step2CancellerReactionCount(ctx,find(ctx.C.ConnectedID==ctx.Y.ConnectedID(w),1));
+end
+[~,parentOrder]=sortrows([parentCost (1:height(ctx.Y))']);
+for w=reshape(parentOrder,1,[])
     if stats.parentsTested>=cfg.step2MaxParents,stats.parentLimitReached=true;break;end
+    if toc(clock0)>cfg.step2MaxSeconds
+        stats.timeLimitReached=true;
+        step2Progress(progressPath,sprintf('Time limit reached after %d parents; writing outputs.',stats.parentsTested),false);
+        break;
+    end
     stats.parentsTested=stats.parentsTested+1;
     [rx,parts,control,b,x,c]=step2Prefix(ctx,w);target=ctx.M.InputIndex(b);
     key=sprintf('%d,',[target sort(rx) 0 sort(control)]);
-    if isKey(cache,key),saved=cache(key);b0=saved.best;b0alts=saved.alternatives;passes=saved.passes;
+    if ~cfg.step2SearchBlock0
+        b0=emptyStep2Path(target);b0.status="Block0_not_searched_step2SearchBlock0_false";
+        b0alts=repmat(b0,1,0);passes=struct('mode',{},'result',{},'retained',{},'audit',{});
+    elseif isKey(cache,key),saved=cache(key);b0=saved.best;b0alts=saved.alternatives;passes=saved.passes;
+    elseif ~cfg.block0RequireEC
+        % Block 0 without EC requirement: one structural pass only.
+        stats.block0Queries=stats.block0Queries+1;
+        [baseRx,baseParts]=step2PrefixWithoutCounter(ctx,w);
+        [b0,b0alts,b0audit,how]=step2SharedBlock0(target,rx,parts,[],baseRx,baseParts,[], ...
+            ctx,G0,cfg,false,shared);
+        stats=step2CountShared(stats,how);
+        passes=struct('mode',"structural_only",'result',b0,'retained',numel(b0alts),'audit',b0audit);
+        saved=struct('best',b0,'alternatives',b0alts,'passes',passes);cache(key)=saved;
     else
         stats.block0Queries=stats.block0Queries+1;
-        [b0,b0alts,b0audit]=findStep2Block0(target,rx,parts,control,ctx,G0,cfg,true);
+        [baseRx,baseParts,baseControl]=step2PrefixWithoutCounter(ctx,w);
+        [b0,b0alts,b0audit,how]=step2SharedBlock0(target,rx,parts,control,baseRx,baseParts,baseControl, ...
+            ctx,G0,cfg,true,shared);
+        stats=step2CountShared(stats,how);
         passes=struct('mode',"EC_qualified",'result',b0,'retained',numel(b0alts),'audit',b0audit);
         if ~b0.found
-            [raw,rawalts,rawaudit]=findStep2Block0(target,rx,parts,[],ctx,G0,cfg,false);
+            [raw,rawalts,rawaudit,how]=step2SharedBlock0(target,rx,parts,[],baseRx,baseParts,[], ...
+                ctx,G0,cfg,false,shared);
+            stats=step2CountShared(stats,how);
             passes(end+1)=struct('mode',"structural_only",'result',raw,'retained',numel(rawalts),'audit',rawaudit);
             if raw.found,b0=raw;b0alts=rawalts;end
         end
@@ -4411,6 +3509,7 @@ for w=parentOrder
             if isempty(preview),preview=n1(a);previewTransport=link;end
             if ~startsWith(neuronStatus,"complete_")
                 neuronStatus="neuron_found_Block0_or_full_circuit_pending";
+                if ~cfg.step2SearchBlock0,neuronStatus="neuron_found_Block0_not_searched";end
             end
             exportID="";if link.rx>0,exportID=string(ctx.model.rxns{link.rx});end
             neuronRows(end+1,:)={size(neuronRows,1)+1,ctx.Y.CounterWiringID(w), ...
@@ -4420,15 +3519,19 @@ for w=parentOrder
                 string(ctx.model.mets{n1(a).output}),"neuron_only_candidate_not_a_complete_circuit", ...
                 string(ctx.model.mets{link.cargo}),numel(link.adapterO),joinText(string(ctx.model.rxns(link.adapterRx)),';'), ...
                 numel(n1(a).conversionO),joinText(string(ctx.model.mets(n1(a).mets)),' -> ')}; %#ok<AGROW>
+            if ~cfg.step2SearchBlock0,continue;end % neuron-only mode: no per-neuron Block 0
             fullRx=unique([prefix n1(a).rx],'stable');fullParts=union(prefixParts,n1(a).parts);
-            [full0,fullAlternatives]=findStep2Block0(target,fullRx,fullParts,ctrl,ctx,G0,cfg,true);
+            blockControl=[];if cfg.block0RequireEC,blockControl=ctrl;end
+            [full0,fullAlternatives]=findStep2Block0(target,fullRx,fullParts,blockControl,ctx,G0,cfg,cfg.block0RequireEC);
             if ~full0.found,continue;end
             % A transport-gene conflict in the first retained alternative
-            % must not hide a later compatible Block 0 support.
+            % must not hide a later compatible Block 0 support. Without
+            % block0RequireEC, Block 0 reactions stay out of the EC assignment.
             ok=false;
             for z=1:numel(fullAlternatives)
                 chosen=fullAlternatives(z);controlled=[ctrl ctx.O.rxn(chosen.o)];
-                [assigned,compatible]=step2AssignEC(controlled,ctx,cfg);
+                ecSet=ctrl;if cfg.block0RequireEC,ecSet=controlled;end
+                [assigned,compatible]=step2AssignEC(ecSet,ctx,cfg);
                 if compatible&&step2TransportGenesOK(link.rx,controlled,ctx,cfg)
                     full0=chosen;ok=true;break;
                 end
@@ -4444,6 +3547,9 @@ for w=parentOrder
         end
         if stop,break;end
     end
+    step2Progress(progressPath,sprintf('parent %d/%d (wiring %d): neuron rails %d, tested %d -> %s | Block 0 %s | %.0f s', ...
+        stats.parentsTested,min(height(ctx.Y),cfg.step2MaxParents),ctx.Y.CounterWiringID(w), ...
+        parentRails,neuronTests,neuronStatus,b0.status,toc(clock0)),false);
     id=numel(details)+1;details(id)=struct('id',ctx.Y.CounterWiringID(w),'w',w,'x',x,'b',b,'c',c, ...
         'rx',rx,'parts',parts,'controlRx',control,'block0',b0,'block0Alternatives',b0alts, ...
         'diagnostic',step2DiagnosticGraphPath(target,ctx,G0),'neuronStatus',neuronStatus, ...
@@ -4454,6 +3560,9 @@ for w=parentOrder
     if stop,break;end
 end
 end
+stats.elapsedSeconds=toc(clock0);
+step2Progress(progressPath,sprintf('Step 2 finished: %d parents in %.0f s (time limit reached=%d).', ...
+    stats.parentsTested,stats.elapsedSeconds,stats.timeLimitReached),false);
 step2=struct('stats',stats,'details',details,'motifs',motifs,'reactionPool',ctx.O);
 step2.block0Alternatives=step2Block0AlternativeTable(block0Rows);
 step2.block0Coverage=cellTable(block0CoverageRows,{'ParentID','Pass','Status','PathStates','Expansions', ...
@@ -4494,10 +3603,8 @@ end
 
 function writeUpstreamCoverage(fid,ctx,cfg)
 step2Section(fid,'UPSTREAM SEARCH DIAGNOSTICS');
-report(fid,sprintf('Production mode=%s; baseline module reactions=%d; baseline I-state budget=%g.', ...
+report(fid,sprintf('Production mode=%s; maximum module reactions=%d; I-state budget=%g.', ...
     cfg.productionMode,cfg.maxCoreReactions,cfg.maxStatesPerI));
-report(fid,sprintf('Focused production depth=%d; states per target=%g; target-only=%d.', ...
-    cfg.productionTargetMaxCoreReactions,cfg.productionTargetMaxStatesPerI,cfg.productionTargetOnly));
 report(fid,sprintf('Stages enabled: removal=%d; branches=%d; counter=%d; Step2=%d. Required supplied import-gate evidence=%d.', ...
     cfg.connectRemovalTerms,cfg.connectBranches,cfg.connectCounter,cfg.connectStep2,cfg.requireGateEvidence));
 if ~isfield(ctx,'upstreamCoverage')
@@ -4522,31 +3629,6 @@ if isfield(ctx,'productionCoverage')
         report(fid,'A minimum applies to production alone. Longer modules may be needed to satisfy downstream isolation and wiring.');
     end
 end
-if isfield(ctx,'targetedProductionCoverage')
-    T=ctx.targetedProductionCoverage;
-    for k=1:height(T)
-        if ~T.Selected(k)&&T.EligiblePairLossRows(k)==0&&~ismember(T.RequestedID(k),string(cfg.productionTargetIDs)),continue;end
-        report(fid,sprintf('  Target %s -> %s: production cores=%d; import/production pairs=%d; eligible linear=%d; pair-loss=%d; connected=%d.', ...
-            T.RequestedID(k),T.I_ID(k),T.CoreCount(k),T.ProductionPairCount(k),T.EligibleLinearRows(k), ...
-            T.EligiblePairLossRows(k),T.ConnectedCancellers(k)));
-        report(fid,sprintf('    Selection=%s; search=%s; completed depth=%d; state cap=%d; unresolved flux solves=%d; solver log rows omitted=%d.', ...
-            T.SelectionStatus(k),T.SearchStatus(k),T.CompletedReactionDepth(k),T.StateBudgetReached(k), ...
-            T.SolverUnresolved(k),T.SolverAuditRowsOmitted(k)));
-    end
-    report(fid,'See Targeted_Production_Report.txt and 02_Production_Solver_Audit.csv for focused search coverage and unresolved solver reasons.');
-end
-if isfield(ctx,'removalModuleCoverage')
-    R=ctx.removalModuleCoverage;P=ctx.removalPairCoverage;
-    report(fid,sprintf('Expanded removal modules: added linear rows=%d; pair rows=%d; solver-unresolved tests=%d; compatible removal-pair I pools=%d.', ...
-        sum(R.AddedLinearRows),sum(R.AddedPairRows),sum(R.SolverUnresolved),nnz(P.CompatibleRemovalPairFound)));
-    report(fid,'Bounds, skipped I pools and module details: Expanded_Removal_Report.txt, 05_Removal_Module_Coverage.csv and 02_Expanded_I_Coverage.csv.');
-end
-if isfield(ctx,'connectionStats')
-    c=ctx.connectionStats;
-    report(fid,sprintf('Canceller join: tested=%d; reuse rejections=%d; cross-talk rejections=%d; rejection audit rows omitted=%d.', ...
-        c.tested,c.reactionReuseRejected,c.crossTalkRejected,c.auditRowsOmitted));
-    report(fid,'Rejected reaction IDs and pairwise shared metabolites: 06_Anderson_Connection_Rejections.csv; examples: Targeted_Production_Report.txt.');
-end
 if cfg.productionMode=="single_reaction" && isfield(ctx,'directProductionAudit')
     A=ctx.directProductionAudit;
     report(fid,'Direct-only production filter: 02_Direct_Production_Filter_Audit.csv.');
@@ -4569,11 +3651,12 @@ function writeStep2Report(path,S,ctx,cfg)
 fid=fopen(path,'w');assert(fid>0,'Anderson:Step2Report','Cannot write Step_2_Results.txt.');
 cleanup=onCleanup(@()fclose(fid)); %#ok<NASGU>
 report(fid,'BLOCK 0 -> FAST/SLOW BRANCHES -> ANDERSON CANCELLER -> CONSUMING COUNTER -> ONE CONSUMING NEURON');
-if isfield(ctx.model,'circuitModelName'),report(fid,['Model identity: ' char(ctx.model.circuitModelName)]);end
-report(fid,'Human T-cell notation: c=cytoplasm; e=extracellular; every organelle remains a separate species pool.');
-report(fid,'00_Metabolite_Catalog.csv and 00_Reaction_Notation.csv map exact loader IDs to raw SBML IDs.');
-report(fid,'00_Gene_Notation.csv preserves FBC gene-product IDs and labels; gene labels do not establish protein activity or CAR expression.');
-report(fid,'Code revision: expanded_I_and_balanced_removal_modules_2026_11_16.');
+report(fid,'Code revision: direct_intracellular_consuming_neuron_chains_2026_11_16; cell-free merge and cancellerI 2026-11-19.');
+report(fid,sprintf('cancellerI=%s; counter/neuron/Block 0 may use embedded iMM904 ECs=%d.', ...
+    joinText(string(cfg.cancellerI),','),cfg.counterUseEmbeddediMM904EC));
+if cfg.cellFreeMerge
+    report(fid,'CELL-FREE MODE: one vessel; organelle copies merged per block; intracellular transports removed; identical isoenzymes merged.');
+end
 if ~isfield(ctx,'currentChainInventory'),ctx.currentChainInventory=S.consumingChains;end
 report(fid,'Direction policy: model-bound orientations; reverse steps included only when allowReverse and the lower bound permit them.');
 report(fid,sprintf('allowReverse=%d; counterMode=%s; EC map is partial and source/signature checked.',cfg.allowReverse,cfg.counterMode));
@@ -4648,7 +3731,19 @@ report(fid,sprintf('Distinct complete motifs found: %d; complete motifs printed:
 report(fid,sprintf('Limits reached: parent=%d; neuron calls=%d; neuron candidate tests=%d; complete retention=%d; parent Block0 budget-limited calls=%d.', ...
     S.stats.parentLimitReached,S.stats.neuronBudgetLimitedCalls,S.stats.neuronTestLimitReached, ...
     S.stats.completeLimitReached,S.stats.block0BudgetLimitedCalls));
+if isfield(S.stats,'timeLimitReached')
+    report(fid,sprintf('Step 2 time limit reached=%d (step2MaxSeconds=%g); elapsed %.0f s.', ...
+        S.stats.timeLimitReached,cfg.step2MaxSeconds,S.stats.elapsedSeconds));
+    report(fid,sprintf('Block 0: shared upstream searches=%d; counter variants answered from a shared search=%d; full per-parent re-searches=%d.', ...
+        S.stats.sharedBlock0Searches,S.stats.sharedBlock0Reused,S.stats.block0FullReruns));
+end
 report(fid,'Complete counts require one neuron and a Block 0 connector rechecked against all downstream reactions and EC assignments.');
+report(fid,sprintf('Block 0 searched=%d; Block 0 requires EC=%d. With Block 0 off, look for neuronStatus neuron_found_Block0_not_searched.', ...
+    cfg.step2SearchBlock0,cfg.block0RequireEC));
+if isfield(S,'neuronCandidates')
+    report(fid,sprintf('Parents with at least one passing neuron: %d; passing neuron candidates: %d.', ...
+        numel(unique(S.neuronCandidates.ParentID)),height(S.neuronCandidates)));
+end
 report(fid,'Partial parents and rejected diagnostic paths never contribute to the complete count. Printing does not determine search limits.');
 report(fid,'No whole-cell flux, atom-transfer, thermodynamic or kinetic validation is claimed. Additional co-substrates remain required.');
 if cfg.neuronPlacement=="outside"
@@ -4668,17 +3763,52 @@ for status=reshape(unique(S.entryAudit.Status,'stable'),1,[])
     report(fid,sprintf('  %s: %d',status,nnz(S.entryAudit.Status==status)));
 end
 if ~isempty(S.motifs)
-    for k=1:min(numel(S.motifs),cfg.step2PrintTop)
+    % Least expensive first: fewest canceller reactions, then fewest Block 0
+    % reactions, then fewest neuron reactions; ties keep the search order.
+    nMotif=numel(S.motifs);cost=zeros(nMotif,3);
+    for k=1:nMotif
         motif=S.motifs(k);detail=S.details(motif.parentID);
+        cost(k,:)=[step2CancellerReactionCount(ctx,detail.c) motif.block0.distance numel(motif.n1.rx)];
+    end
+    [~,printOrder]=sortrows([cost (1:nMotif)']);
+    report(fid,sprintf(['\nComplete motifs are printed least expensive first: canceller reactions, then Block 0 ' ...
+        'reactions, then neuron reactions. Cheapest: %d canceller, %g Block 0, %d neuron reactions.'], ...
+        cost(printOrder(1),1),cost(printOrder(1),2),cost(printOrder(1),3)));
+    for k=1:min(nMotif,cfg.step2PrintTop)
+        motif=S.motifs(printOrder(k));detail=S.details(motif.parentID);
+        report(fid,sprintf('\nRANK %d | canceller reactions=%d | Block 0 reactions=%g | neuron reactions=%d', ...
+            k,cost(printOrder(k),1),cost(printOrder(k),2),cost(printOrder(k),3)));
         writeStep2Candidate(fid,k,true,detail,motif,ctx,cfg);
     end
 elseif cfg.step2PrintPartialWhenEmpty
+    % Most advanced parents first (a passing neuron), then the least
+    % expensive: fewest canceller reactions, then fewest Block 0 reactions
+    % (Inf when none was found or searched); ties keep the search order.
+    nDetail=numel(S.details);neuronStatus=strings(nDetail,1);cost=zeros(nDetail,2);
+    for k=1:nDetail
+        neuronStatus(k)=string(S.details(k).neuronStatus);
+        cost(k,:)=[step2CancellerReactionCount(ctx,S.details(k).c) S.details(k).block0.distance];
+    end
+    printRank=2*ones(nDetail,1);printRank(startsWith(neuronStatus,"neuron_found"))=1;
+    [~,printOrder]=sortrows([printRank cost (1:nDetail)']);
     report(fid,sprintf('\nNo complete motif passed. Printing %d of %d PARTIAL parents with all known reactions and explicit missing roles.', ...
         min(numel(S.details),cfg.step2PrintTop),numel(S.details)));
+    report(fid,sprintf('Parents with a passing neuron are printed first: %d of %d parents have one.', ...
+        nnz(printRank==1),numel(S.details)));
+    report(fid,'Within each group: fewest canceller reactions first, then fewest Block 0 reactions.');
     for k=1:min(numel(S.details),cfg.step2PrintTop)
-        writeStep2Candidate(fid,k,false,S.details(k),[],ctx,cfg);
+        report(fid,sprintf('\nRANK %d | neuron found=%d | canceller reactions=%d | Block 0 reactions=%g', ...
+            k,printRank(printOrder(k))==1,cost(printOrder(k),1),cost(printOrder(k),2)));
+        writeStep2Candidate(fid,k,false,S.details(printOrder(k)),[],ctx,cfg);
     end
 end
+end
+
+function n = step2CancellerReactionCount(ctx,c)
+% Distinct model reactions of one Anderson canceller: production core, I
+% import, linear sink (plus its F-gated co-substrate import) and pair loss.
+rx=counterCancellerSupport(c,ctx.C,ctx.D,ctx.cores,ctx.O,ctx.T,ctx.L,ctx.Q,ctx.R,ctx.P);
+n=numel(unique(rx));
 end
 
 function writeStep2Candidate(fid,k,complete,d,motif,ctx,cfg)
@@ -4827,13 +3957,13 @@ report(fid,'  S-controlled I import supplies seed/additional I. S-dependent stop
 lin=ctx.L(ctx.C.LinearID(c),:);quad=ctx.Q(ctx.C.QuadraticID(c),:);
 step2Section(fid,'EQ. BLOCK 2: F-LINKED I REMOVAL');
 report(fid,['  Proposed F signal: m_Fd = ' char(ctx.M.FastSignalID(b)) '. A consumed co-substrate is not F.']);
-step2PrintRemovalComponent(fid,'r_I_linear_removal',lin,ctx);
+step2PrintOrientation(fid,'r_I_linear_removal',lin.OrientationIndex,ctx);
 if lin.FTransportRow>0
     ft=ctx.T(lin.FTransportRow,:);step2PrintReaction(fid,'r_T_F',ft.ModelIndex,ft.Direction,ctx);
     report(fid,'  Imported co-substrate is consumed; it is not automatically the F controller.');
 end
 step2Section(fid,'EQ. BLOCK 3: I PAIR LOSS');
-step2PrintRemovalComponent(fid,'r_I_quadratic_removal',quad,ctx);
+step2PrintOrientation(fid,'r_I_quadratic_removal',quad.OrientationIndex,ctx);
 report(fid,sprintf('  I loss per primitive quadratic event: %g; exact formal 2I->I=%d; quadratic kinetics unverified.', ...
     quad.LossPerEvent,quad.ExactFormalStoichiometry));
 step2Section(fid,'COUNTER AND ONE CONSUMING NEURON');
@@ -4952,37 +4082,6 @@ for n=1:numel(path.o)
 end
 end
 
-function step2PrintRemovalComponent(fid,role,row,ctx)
-[~,~,os,v]=removalComponentSupport(row,ctx.O);
-if numel(os)==1,step2PrintOrientation(fid,role,os,ctx);return;end
-internal=find(any(ctx.O.R(:,os)>1e-8,2)&any(ctx.O.P(:,os)>1e-8,2)&~ctx.currency);
-internal(ismember(internal,ctx.signalIndices))=[];
-prefix="m_R2_int_";if contains(role,'quadratic'),prefix="m_R3_int_";end
-for k=1:numel(internal)
-    label=prefix+compose('%02d',k);ctx.signalIndices(end+1)=internal(k);ctx.signalLabels(end+1)=label;
-    step2Signal(fid,char(label),internal(k),ctx.model);
-end
-report(fid,[char(role) ': MULTI-REACTION MODULE; stoichiometric weights are not kinetic constants.']);
-report(fid,['  Module net equation: ' char(row.ModuleNetEquation)]);
-report(fid,['  Additional net-consumed feeds: ' char(row.ModuleFeedIDs)]);
-report(fid,['  Other net-produced products: ' char(row.ModuleWasteIDs)]);
-for k=1:numel(os)
-    report(fid,sprintf('  Module flux multiplier: %.9g',v(k)));
-    step2PrintOrientation(fid,sprintf('%s_%02d',role,k),os(k),ctx);
-end
-end
-
-function writeRemovalComponentDetails(fid,label,row,O,model)
-[~,~,os,v]=removalComponentSupport(row,O);if numel(os)==1,return;end
-report(fid,[label ' is a multiple-reaction module; aggregate gross equations are not single elementary reactions.']);
-report(fid,['  Net equation: ' char(row.ModuleNetEquation)]);
-for k=1:numel(os)
-    ec="UNRESOLVED";if isfield(model,'circuitResolvedEC')&&model.circuitResolvedEC(O.rxn(os(k)))~="",ec=model.circuitResolvedEC(O.rxn(os(k)));end
-    report(fid,sprintf('  step %d: %s (%+d); weight %.9g; EC %s | %s',k,model.rxns{O.rxn(os(k))}, ...
-        O.direction(os(k)),v(k),ec,equation(O.R(:,os(k)),O.P(:,os(k)),model)));
-end
-end
-
 function step2PrintOrientation(fid,role,o,ctx)
 step2PrintReaction(fid,role,ctx.O.rxn(o),ctx.O.direction(o),ctx);
 end
@@ -4990,8 +4089,9 @@ end
 function step2PrintReaction(fid,role,j,direction,ctx)
 model=ctx.model;a=ctx.R(:,j);b=ctx.P(:,j);if direction<0,tmp=a;a=b;b=tmp;end
 report(fid,char(role));report(fid,['  ID: ' model.rxns{j}]);report(fid,['  Name: ' model.rxnNames{j}]);
-if isfield(model,'circuitRawReactionIDs')&&model.circuitRawReactionIDs(j)~=""
-    report(fid,['  Raw SBML ID: ' char(model.circuitRawReactionIDs(j))]);
+if isfield(model,'circuitMergedRxnIDs')&&numel(model.circuitMergedRxnIDs)==numel(model.rxns) ...
+        &&contains(model.circuitMergedRxnIDs(j),";")
+    report(fid,['  Cell-free merged copies: ' char(model.circuitMergedRxnIDs(j))]);
 end
 report(fid,sprintf('  Direction: %+d relative to model.S',direction));
 ec=ctx.E.codes(j);if ec=="",ec="UNRESOLVED (no annotation inferred)";end
@@ -5027,10 +4127,6 @@ end
 
 function step2Signal(fid,role,i,model)
 report(fid,sprintf('  %-9s: %s | %s',role,string(model.mets{i}),step2MetName(model,i)));
-if isfield(model,'circuitRawSpeciesIDs')&&model.circuitRawSpeciesIDs(i)~=""
-    report(fid,sprintf('             SBML: %s | compartment %s (%s)', ...
-        model.circuitRawSpeciesIDs(i),model.circuitCompartment(i),model.circuitCompartmentNames(i)));
-end
 end
 
 function step2Section(fid,title)
@@ -5135,11 +4231,11 @@ end
 function [rx,parts] = counterCancellerSupport(c,C,D,cores,O,T,L,Q,R,P)
 prod=C.ProductionCandidateID(c);core=cores(D.CoreIndex(prod));
 st=T.ModelIndex(D.TransportRow(prod));l=L(C.LinearID(c),:);q=Q(C.QuadraticID(c),:);
-[lr,lp]=removalComponentSupport(l,O);[qr,qp]=removalComponentSupport(q,O);
-rx=[O.rxn(core.path),st,lr,qr];
+rx=[O.rxn(core.path),st,l.ReactionIndex,q.ReactionIndex];
 parts=find(any(O.R(:,core.path)+O.P(:,core.path)>1e-8,2));
 parts=union(parts,find(R(:,st)+P(:,st)>1e-8));
-parts=union(parts,lp);parts=union(parts,qp);
+parts=union(parts,find(O.R(:,l.OrientationIndex)+O.P(:,l.OrientationIndex)>1e-8));
+parts=union(parts,find(O.R(:,q.OrientationIndex)+O.P(:,q.OrientationIndex)>1e-8));
 if l.FTransportRow>0
     ft=T.ModelIndex(l.FTransportRow);rx(end+1)=ft;
     parts=union(parts,find(R(:,ft)+P(:,ft)>1e-8));
@@ -5150,7 +4246,7 @@ function [X,stats] = connectCounters(K,support,G,C,D,cores,O,T,L,Q,model,base,cu
 rows=cell(0,15);stop=false;
 stats=struct('tested',0,'signalInChemistryRejected',0,'reactionReuseRejected',0, ...
     'crossTalkRejected',0,'missingGateEvidenceRejected',0,'testLimitReached',false,'connectionLimitReached',false);
-for c=downstreamRowOrder(C.I_ID,1:height(C),cfg)
+for c=1:height(C)
     [cr,cp]=counterCancellerSupport(c,C,D,cores,O,T,L,Q,R,P);
     for k=reshape(find(K.InsideCompartment==C.InsideCompartment(c)),1,[])
         if stats.tested>=cfg.counterMaxConnectionTests,stats.testLimitReached=true;stop=true;break;end
@@ -5228,13 +4324,13 @@ end
 
 function writeCounterTemplates(K,X,model,cfg)
 % Leave all kinetic constants unmeasured. ECs are not kinetic parameters.
-path=fullfile(cfg.outputDir,'CART_Counter_EC_Evidence_TEMPLATE.tsv');
+path=fullfile(cfg.outputDir,'Counter_EC_Evidence_TEMPLATE.tsv');
 if ~exist(path,'file')
-    blank=table(strings(0,1),strings(0,1),strings(0,1),strings(0,1), ...
-        'VariableNames',{'ReactionID','SourceReactionID','EC','Reference'});
+    blank=table(strings(0,1),strings(0,1),strings(0,1), ...
+        'VariableNames',{'SourceReactionID','EC','Reference'});
     writetable(blank,path,'FileType','text','Delimiter','\t');
 end
-path=fullfile(cfg.outputDir,'CART_Counter_Gate_Evidence_TEMPLATE.tsv');
+path=fullfile(cfg.outputDir,'Counter_Gate_Evidence_TEMPLATE.tsv');
 if ~exist(path,'file')
     names=counterGateColumns();blank=cellTable(cell(0,numel(names)),names,repmat({'string'},1,numel(names)));
     writetable(blank,path,'FileType','text','Delimiter','\t');
@@ -5264,7 +4360,7 @@ report(fid,sprintf('Counter enabled=%d; components=%d; canceller/counter=%d; bra
 report(fid,sprintf('Connections with supplied I-opening references=%d (references not independently verified).',nnz(X.GateEvidenceRows>0)));
 report(fid,sprintf('Components with outside supply allowed by single-species boundary bounds=%d of %d.',nnz(K.OutsideFeedAllowed),height(K)));
 report(fid,'Closed supply is retained as an explicit external-reservoir design assumption by default. No bounds were changed.');
-report(fid,'This is a partial EC-based structural screen, not a complete human T-cell transporter/enzyme survey.');
+report(fid,'This is a partial EC-based structural screen, not a complete yeast transporter/enzyme survey.');
 report(fid,'The separate GALK seed uses an explicit BiGG source ID AND the complete chemical signature; it does not change branch annotations.');
 report(fid,'Counter chemistry neither consumes, regenerates nor transports I: all gross participants with the same canonical chemical ID are excluded.');
 report(fid,'Proposed regulatory coupling: G + I <-> GI; GI + C_out -> GI + C_in (other transport co-substrates retained in CSV).');
@@ -5445,11 +4541,6 @@ end
 function selfTestAnderson()
 % Meaningful chemistry regressions; no real model/network/toolbox required.
 cfg=defaultOptions();
-selfTestContinuation();
-selfTestExpandedRemoval();
-selfTestSolverFallback();
-selfTestProductionTargeting();
-selfTestTCellNotation();
 selfTestBlock0Alternatives();
 assert(cfg.productionMode=="multi_reaction"&&cfg.maxCoreReactions==10, ...
     'Default search must permit the original multi-step production modules.');
@@ -5567,8 +4658,7 @@ community=struct('mets',{{'M_2hb_e';'M_AUXOSC2hb_u';'M_h_e';'M_AUXOSCh_u'; ...
     'S',sparse([-1 -1 0;1 0 -1;-1 -1 0;1 0 0;0 1 1;0 1 0]), ...
     'lb',[0;0;0],'ub',[100;100;100],'comps',{{'e';'u';'x'}},'metComps',[1;2;1;2;3;3]);
 community=normalizeModel(community);community.circuitResolvedEC=strings(3,1);
-[cb,cc,cl]=readModelLayout(community,'');communityCfg=defaultOptions();communityCfg.insideCompartment="auto";
-communityCfg=resolveModelProfile(communityCfg,cl,cc);
+[cb,cc,cl]=readModelLayout(community,'');communityCfg=resolveModelProfile(defaultOptions(),cl,cc);
 assert(cl.communityIDs&&cb(1)==cb(2)&&cb(1)==cb(5),'Community cargo identities were not recovered.');
 assert(cc(2)=="u"&&cc(5)=="x",'Independent community pools were merged.');
 currencyCommunity=ismember(cb,communityCfg.currencyBaseIDs);
@@ -5580,6 +4670,12 @@ selfTestNativeSBML(direct);
 selfTestThreeReactionExtension();
 selfTestSingleReactionProduction();
 selfTestMinimumProduction();
+selfTestCellFreeMerge();
+selfTestEmbeddediMM904EC();
+selfTestModelProfile();
+fprintf('PASS: model profiles (yeast community vs single-cell T-cell), EC: prefix in SBML URIs.\n');
+fprintf('PASS: embedded iMM904 EC transfer with chemistry guard.\n');
+fprintf('PASS: cell-free merge of organelle copies, transport removal and isoenzyme collapse.\n');
 fprintf('PASS: import, gross/net distinction, two-step amplification, net-zero rejection,\n');
 fprintf('      co-substrate availability, buffering, bounds, reverse policy, depth/budgets,\n');
 fprintf('      GPR/EC parsing, gating-evidence filtering and transport/core accounting.\n');
@@ -5695,235 +4791,6 @@ assert(ties.minimumProven&&~ties.minimumLayerComplete, ...
     'Minimum-size proof was confused with enumeration of all equal-size alternatives.');
 end
 
-function selfTestContinuation()
-% Continuation orchestration controls only: no real model or network search.
-old=defaultOptions();S=struct('options',old);S.options.connectBranches=false;
-S.options.connectCounter=false;S.options.connectStep2=false;
-path=fullfile(tempdir,'synthetic_run','Anderson_Production_Results.mat');
-cfg=continuationOptions(S,struct(),path);
-assert(cfg.connectBranches&&cfg.connectCounter&&cfg.connectStep2 ...
-    &&cfg.branchMaxModules>=2000&&cfg.counterMode=="consume_I"&&cfg.neuronPlacement=="inside");
-assert(strcmp(cfg.outputDir,fullfile(fileparts(path),'Anderson_Design_Continuation')));
-assert(cfg.requireRemovalIsolation==old.requireRemovalIsolation ...
-    &&cfg.step2DistinctECs==old.step2DistinctECs&&isequal(cfg.currencyBaseIDs,old.currencyBaseIDs), ...
-    'Continuation changed upstream chemistry or isolation policy.');
-cfg=continuationOptions(S,struct('branchMaxModules',17,'continuationBroadenBudgets',false),path);
-assert(cfg.branchMaxModules==17&&cfg.branchMaxRails==old.branchMaxRails, ...
-    'An explicit downstream budget override was ignored.');
-rejected=false;
-try,continuationOptions(S,struct('requireRemovalIsolation',false),path);
-catch ME,rejected=strcmp(ME.identifier,'Anderson:UpstreamContinuationOption');end
-assert(rejected,'Continuation accepted an upstream isolation change without revalidating the cached cancellers.');
-cfg=defaultOptions();labels=["nh4[c]";"nh4[c]";"nh4[c]";"adn[c]";"adn[c]"];
-order=downstreamRowOrder(labels,1:5,cfg);
-assert(isequal(order,[1 4 2 5 3])&&isequal(sort(order),1:5), ...
-    'Alternating I-pool traversal lost/duplicated original row references.');
-cfg.fairDownstreamOrder=false;assert(isequal(downstreamRowOrder(labels,1:5,cfg),1:5));
-assert(designCoverageLimited(struct('testLimitReached',true,'tested',2)) ...
-    &&~designCoverageLimited(struct('testLimitReached',false,'tested',200)), ...
-    'The design summary confused tested counts with reached limits.');
-end
-
-function selfTestExpandedRemoval()
-% Synthetic modules exercise expansion and all-reaction support propagation.
-% No real metabolic model, external lookup or optimization toolbox is used.
-cfg=defaultOptions();assert(~cfg.productionTargetOnly&&cfg.expandRemovalModules&&cfg.productionRequireCompatibleRemoval);
-cfg.insideCompartment="c";cfg.maxCoreReactions=3;cfg.maxStatesPerI=1000;
-cfg.removalModuleMaxReactions=3;cfg.removalModuleMaxStatesPerI=1000;
-cfg.removalModuleMaxTestsPerI=2000;cfg.removalModuleMaxSupportsPerI=100;
-m=struct('mets',{{'i[c]';'i[e]';'x[c]';'x[e]';'a[c]';'w[c]';'y[c]';'b[c]';'z[c]';'f[c]';'u[c]';'j[c]';'v[c]'}}, ...
-    'rxns',{{'T_I';'T_X';'L_first';'L_last';'Q_first';'Q_last';'P_first';'P_last'}}, ...
-    'S',sparse(13,8),'lb',zeros(8,1),'ub',ones(8,1)*100);
-R=sparse(13,8);P=R;R(2,1)=1;P(1,1)=1;R(4,2)=1;P(3,2)=1;
-R([1 3],3)=1;P(5,3)=1;R(5,4)=1;P(6,4)=1;
-R([1 7],5)=1;P(8,5)=1;R([1 8],6)=1;P(9,6)=1;
-R([1 11],7)=1;P(12,7)=1;R(12,8)=1;P(1,8)=2;P(13,8)=1;
-m.S=P-R;m=normalizeModel(m);m.circuitResolvedEC="1.1.1."+string((1:8)');
-[base,comp]=splitCompartments(string(m.mets));m.circuitCompartment=comp;m.circuitCurrency=false(13,1);
-[O,T]=buildPools(m,base,comp,m.circuitCurrency,R,P,true(8,1),cfg);
-lo=[find(O.rxn==3,1) find(O.rxn==4,1)];qo=[find(O.rxn==5,1) find(O.rxn==6,1)];
-[module,status]=validateRemovalModule(1,lo,1,0,O,m.circuitCurrency);
-assert(status=="accepted"&&norm(module.flux-[1 1],Inf)<1e-8);
-[~,status]=validateRemovalModule(1,lo,3,0,O,m.circuitCurrency);
-assert(status=="balance_or_primitive_rejected",'A doubled ordinary one-I pathway was mislabeled as a pair-loss event.');
-[module,status]=validateRemovalModule(1,qo,3,0,O,m.circuitCurrency);
-assert(status=="accepted"&&abs(module.net(1)+2)<1e-8&&module.net(8)==0);
-exact=O;exact.P(1,qo(2))=1;
-[module,status]=validateRemovalModule(1,qo,2,0,exact,m.circuitCurrency);
-assert(status=="accepted"&&abs(module.net(1)+1)<1e-8,'Balanced multi-step gross 2I->I accounting failed.');
-catalytic=O;catalytic.R(10,lo(1))=1;catalytic.P(10,lo(1))=1;
-[~,status]=validateRemovalModule(1,lo,1,0,catalytic,m.circuitCurrency);
-assert(status=="startup_or_seed_dependence_rejected",'An unavailable internal catalyst was silently supplied.');
-[~,status]=validateRemovalModule(1,lo,1,10,catalytic,m.circuitCurrency);
-assert(status=="accepted",'A declared regenerated F signal was not admitted.');
-[L,Q]=findRemovalTerms(1,O,T,m,comp,m.circuitCurrency,cfg);
-[L,Q,coverage]=expandRemovalModules(1,L,Q,O,T,m,comp,m.circuitCurrency,cfg);
-li=[];qi=[];
-for k=1:height(L)
-    if isequal(sort(L.ModuleReactionIndices{k}),[3 4])&&L.FMode(k)=="F_gated_cosubstrate_import",li=k;break;end
-end
-for k=1:height(Q)
-    if isequal(sort(Q.ModuleReactionIndices{k}),[5 6])&&Q.LossPerEvent(k)==2,qi=k;break;end
-end
-assert(~isempty(li)&&~isempty(qi)&&coverage.AddedPairRows>0,'Expanded removal roles or F-linked module inputs were missed.');
-L=L(li,:);Q=Q(qi,:);L.LinearID=1;Q.QuadraticID=1;
-screen=screenRemovalCompatibility(1,L,Q,O,T,m,R,P,m.circuitCurrency,cfg);
-assert(screen.CompatibleRemovalPairFound&&screen.ProductionEligible);
-cross=O;cross.P(5,qo(2))=1;
-screen=screenRemovalCompatibility(1,L,Q,cross,T,m,R,P,m.circuitCurrency,cfg);
-assert(~screen.CompatibleRemovalPairFound&&~screen.ProductionEligible&&screen.CrossTalkRejected==1, ...
-    'An intermediate cancelled inside a module disappeared from inter-block isolation.');
-reused=Q;reused.ModuleOrientations{1}=[lo(2) qo(2)];
-screen=screenRemovalCompatibility(1,L,reused,O,T,m,R,P,m.circuitCurrency,cfg);
-assert(~screen.CompatibleRemovalPairFound&&screen.ReuseRejected==1,'A non-anchor module reaction bypassed reuse checks.');
-[cores,~]=findCores(1,O,m.circuitCurrency,cfg,m);g=cellTable(cell(0,11),gateColumns(),repmat({'string'},1,11));
-[pairs,D]=assembleCandidates(cores,O,T,g,m,cfg);
-[connected,~]=connectAndersonTerms(pairs,D,cores,O,T,L,Q,m,comp,m.circuitCurrency,R,P,cfg);
-assert(~isempty(connected),'The expanded removal modules did not connect to an isolated synthetic production module.');
-snapshot=struct('model',m,'grossReactants',R,'grossProducts',P,'orientedCorePool',O,'transport',T, ...
-    'baseMet',base,'comp',comp,'currency',m.circuitCurrency,'connectedCandidates',connected);
-validateAndersonSnapshot(snapshot);
-bad=snapshot;bad.orientedCorePool.P(5,lo(1))=bad.orientedCorePool.P(5,lo(1))+1;rejected=false;
-try,validateAndersonSnapshot(bad);
-catch ME,rejected=strcmp(ME.identifier,'Anderson:CheckpointOrientationNet');end
-assert(rejected,'A saved reaction orientation inconsistent with model.S was accepted.');
-bad=snapshot;bad.model.mets{1}='wrong_pool[c]';rejected=false;
-try,validateAndersonSnapshot(bad);
-catch ME,rejected=strcmp(ME.identifier,'Anderson:CheckpointTransport');end
-assert(rejected,'A saved importer with changed species identity was accepted.');
-[rx,parts]=counterCancellerSupport(1,connected,D,cores,O,T,L,Q,R,P);
-assert(all(ismember([3 4 5 6],rx))&&all(ismember([5 8],parts)), ...
-    'Downstream isolation omitted a module reaction or a net-cancelled internal state.');
-csv=removalComponentsForCSV(L);assert(isstring(csv.ModuleOrientations)&&contains(csv.ModuleReactionIndices,"3;4"));
-end
-
-function selfTestSolverFallback()
-% Mock backend calls exercise technical failure paths without any LP toolbox.
-A=[1 1];b=1;
-backends=struct('name',{"mock_linprog","mock_COBRA"}, ...
-    'solve',{@solverFailureFixture,@(a,b)struct('candidate',[0.5;0.5],'status',"optimal",'flag',1)});
-[v,solved,info]=positiveFlux(A,b,backends);
-assert(solved&&norm(v-[0.5;0.5],Inf)<1e-12&&info.usedFallback ...
-    &&info.method=="mock_COBRA"&&contains(info.message,"optimstatus"), ...
-    'A technical first-backend failure did not reach the fallback or lost its error context.');
-[v,solved,info]=positiveFlux(A,b,backends(1));
-assert(~solved&&isempty(v)&&info.status=="LP_exception", ...
-    'An unresolved solver exception was classified as biochemical infeasibility.');
-backends(1).solve=@(a,b)struct('candidate',[],'status',"infeasible",'flag',-2);
-backends(2).solve=@solverFailureFixture;
-[v,solved,info]=positiveFlux(A,b,backends);
-assert(solved&&isempty(v)&&info.status=="LP_infeasible"&&~info.usedFallback, ...
-    'A resolved infeasible LP incorrectly continued to another backend.');
-backends(1).solve=@(a,b)struct('candidate',[2;-1],'status',"optimal",'flag',1);
-backends(2).solve=@(a,b)struct('candidate',[0.5;0.5],'status',"optimal",'flag',1);
-[v,solved,info]=positiveFlux(A,b,backends);
-assert(solved&&all(v>0)&&info.usedFallback&&contains(info.message,"positivity"), ...
-    'A numerically invalid first solution passed or prevented a valid fallback.');
-end
-
-function answer = solverFailureFixture(A,b) %#ok<INUSD,STOUT>
-error('Anderson:SyntheticSolverFailure','Synthetic test: Unrecognized field name "optimstatus".');
-end
-
-function selfTestProductionTargeting()
-% Pure target/coverage fixtures: no real model, network or solver is needed.
-cfg=defaultOptions();validateOptions(cfg);cfg.productionTargetOnly=true;
-m=struct('mets',{{'amet[c]';'cys_L[c]';'hcys_L[c]';'amet[e]';'other[c]'}}, ...
-    'circuitCompartment',["c";"c";"c";"e";"c"]);
-imported=[5 3 1 2];currency=false(5,1);
-[selected,flags,selection]=selectProductionSeeds(imported,m,currency,cfg);
-assert(isequal(selected,[1 2 3])&&all(flags)&&all(selection.Selected), ...
-    'The focused production run did not select exactly the three requested I pools.');
-local=productionOptionsForSeed(cfg,true);ordinary=productionOptionsForSeed(cfg,false);
-assert(local.maxCoreReactions==16&&local.maxStatesPerI==500000 ...
-    &&ordinary.maxCoreReactions==10&&ordinary.maxStatesPerI==20000);
-assert(local.requireRemovalIsolation&&local.requireFControlTopology&&local.branchRequireDistinctECs, ...
-    'Focused budgets relaxed an isolation or annotation policy.');
-allCfg=cfg;allCfg.productionTargetOnly=false;
-[selected,flags]=selectProductionSeeds(imported,m,currency,allCfg);
-assert(isequal(selected,[1 2 3 5])&&isequal(flags,[true true true false]));
-allCfg.productionTargetIDs=strings(0,1);
-[selected,flags]=selectProductionSeeds(imported,m,currency,allCfg);
-assert(isequal(selected,imported)&&~any(flags),'Empty target IDs must restore the original imported-pool order.');
-alias=cfg;alias.productionTargetIDs=["M_amet_c";"amet[c]";"M_cys_L_c";"hcys_L[c]"];
-[selected,~,a]=selectProductionSeeds(imported,m,currency,alias);
-assert(isequal(selected,[1 2 3])&&nnz(a.Selected)==3&&contains(a.SelectionStatus(2),"alias"));
-[selected,~,a]=selectProductionSeeds([1 2 5],m,currency,cfg);
-assert(isequal(selected,[1 2])&&a.SelectionStatus(3)=="target_has_no_eligible_import");
-missing=cfg;missing.productionTargetIDs=["amet[e]";"not_present[c]"];
-[selected,~,a]=selectProductionSeeds(imported,m,currency,missing);
-assert(isempty(selected)&&a.SelectionStatus(1)=="target_has_no_eligible_import" ...
-    &&a.SelectionStatus(2)=="target_state_missing_or_ambiguous", ...
-    'A missing target or wrong compartment silently fell back to another pool.');
-coverage=table(selection.I_ID,[0;1;0],[500000;12;4],[true;false;false],[4;0;0],[5;6;4],[2;0;0], ...
-    ["no_match_search_incomplete";"minimum_proven_within_search_class";"no_match_through_tested_depth"], ...
-    'VariableNames',{'I_ID','CoreCount','PathStates','StateBudgetReached','SolverUnresolved', ...
-    'CompletedReactionDepth','SolverAuditRowsOmitted','MinimumStatus'});
-removal=table(selection.I_ID,[10;14;2],[10;14;2],[1;3;1],zeros(3,1), ...
-    'VariableNames',{'I_ID','LinearRows','FLinkedRows','PairLossRows','ExactGross2IToI'});
-pairs=table(["cys_L[c]";"cys_L[c]"],'VariableNames',{'I_Inside'});
-connected=table(strings(0,1),'VariableNames',{'I_ID'});
-C=completeProductionTargetCoverage(selection,coverage,removal,pairs,connected,cfg);
-assert(C.StateBudgetReached(1)&&C.SolverUnresolved(1)==4&&~C.AllComponentsPresent(1));
-assert(C.ProductionPairCount(2)==2&&C.AllComponentsPresent(2)&&C.ConnectedCancellers(2)==0, ...
-    'Available components were incorrectly promoted to an isolated canceller.');
-strict=cfg;strict.allowPairLossAlternative=false;
-C=completeProductionTargetCoverage(selection,coverage,removal,pairs,connected,strict);
-assert(all(C.EligiblePairLossRows==0)&&all(C.PairLossRows>0)&&~any(C.AllComponentsPresent));
-[v,solved,info]=positiveFlux(eye(2),[1;2]);
-assert(solved&&isequal(v,[1;2])&&info.status=="positive_exact_solution");
-[v,solved,info]=positiveFlux(eye(2),[-1;2]);
-assert(solved&&isempty(v)&&info.status=="no_positive_exact_solution");
-[v,solved,info]=positiveFlux(0,1);
-assert(solved&&isempty(v)&&info.status=="inconsistent_balance_constraints");
-end
-
-function selfTestTCellNotation()
-% Parser/identifier regression only: no metabolic model search is performed.
-cfg=defaultOptions();assert(cfg.insideCompartment=="c"&&cfg.outsideCompartment=="e" ...
-    &&cfg.organismTaxID==9606&&~cfg.branchUseVerifiedSeedMap&&~cfg.counterUseVerifiedSeedMap ...
-    &&~cfg.step2UseVerifiedSeedMap,'T-cell defaults were lost.');
-ids=["M_camp_c";"M_camp_e";"M_camp_m";"M_camp_r";"M_camp_x"];
-loader=["camp[c]";"camp[e]";"camp[m]";"camp[r]";"camp[x]"];
-for i=1:numel(ids)
-    assert(uniqueIDMatch(ids(i),loader,'M_')==i,'A T-cell compartment was merged or lost.');
-end
-assert(isempty(uniqueIDMatch("M_camp_x",loader(1:4),'M_')));
-assert(isempty(completeECTokens("TCDB:4.5.6.7")),'A TCDB number was mistaken for an EC.');
-assert(explicitSBMLNoteECs('<p>ECNumbers:EC:1.3.8.7;EC:1.3.99.-;TCDB:4.5.6.7</p>')=="1.3.8.7");
-assert(isempty(explicitSBMLNoteECs('<p>References:1.2.3.4</p><p>ECNumbers:TCDB:4.5.6.7</p>')));
-xml=['<sbml xmlns="http://www.sbml.org/sbml/level3/version1/core" ' ...
-    'xmlns:fbc="http://www.sbml.org/sbml/level3/version1/fbc/version2"><model name="Synthetic T-cell notation">' ...
-    '<notes><p>ECNumbers:7.7.7.7</p></notes><listOfCompartments>' ...
-    '<compartment id="c" name="Cytoplasm"/><compartment id="e" name="Extracellular"/>' ...
-    '<compartment id="x" name="Peroxisome"/></listOfCompartments>' ...
-    '<fbc:listOfGeneProducts><fbc:geneProduct fbc:id="G_5139" fbc:label="5139"/></fbc:listOfGeneProducts>' ...
-    '<listOfSpecies><species id="M_camp_c" name="Cyclic AMP" compartment="c" ' ...
-    'fbc:chemicalFormula="C10H11N5O6P" fbc:charge="-1"/>' ...
-    '<species id="M_camp_e" compartment="e"/><species id="M_camp_x" compartment="x"/>' ...
-    '</listOfSpecies><listOfReactions><reaction id="R_TOY">' ...
-    '<notes><p>References:1.2.3.4</p><p>ECNumbers:EC:2.3.4.5;EC:1.2.3.-;TCDB:4.5.6.7</p></notes>' ...
-    '<listOfReactants><speciesReference species="M_camp_c" stoichiometry="1"/></listOfReactants>' ...
-    '<listOfProducts><speciesReference species="M_camp_e" stoichiometry="1"/></listOfProducts>' ...
-    '</reaction></listOfReactions></model></sbml>'];
-file=[tempname '.xml'];cleanup=onCleanup(@()delete(file)); %#ok<NASGU>
-fid=fopen(file,'w');assert(fid>0);fwrite(fid,xml,'char');fclose(fid);
-metadata=readSBMLNative(file);assert(isequal(metadata.reactions(1).ec,"2.3.4.5") ...
-    &&isempty(metadata.reactions(1).rdfEC)&&metadata.reactions(1).notesEC=="2.3.4.5");
-m=struct('mets',{{'camp[c]';'camp[e]';'camp[x]'}},'rxns',{{'TOY'}}, ...
-    'S',sparse([-1;1;0]),'lb',0,'ub',100,'genes',{{'5139'}});
-m=normalizeModel(m);[base,comp,layout]=readModelLayout(m,file);
-[m,notation]=attachTCellNotation(m,base,comp,metadata);
-assert(all(base=="camp")&&isequal(comp,["c";"e";"x"])&&~layout.communityIDs);
-assert(isequal(notation.rawSpeciesIDs,["M_camp_c";"M_camp_e";"M_camp_x"]) ...
-    &&notation.compartmentNames(3)=="Peroxisome"&&notation.matchedGenes=="5139");
-assert(string(m.metNames{1})=="Cyclic AMP"&&string(m.metFormulas{1})=="C10H11N5O6P" ...
-    &&m.metCharges(1)==-1,'SBML species annotations were not retained.');
-[~,~,known,~,ec,source,info]=readGrossStoichiometry(m,file,metadata);
-assert(known&&ec=="2.3.4.5"&&source==""&&info.notesEC=="2.3.4.5"&&info.rdfEC=="", ...
-    'Explicit notes must survive without fabricating a BiGG source link.');
-end
-
 function selfTestNativeSBML(direct)
 assert(uniqueIDMatch("M_x_u",["i[e]";"x[u]";"x[x]"],'M_')==2, ...
     'SBML underscore to COBRA bracket compartment matching failed.');
@@ -6035,21 +4902,11 @@ wrongPool=L;wrongPool.I_Index(:)=12;
 assert(isempty(Cw),'A different intracellular I pool was joined.');
 reused=L;linked=find(reused.FMode=="F_gated_cosubstrate_import");
 reused.FTransportRow(linked)=find(T.ModelIndex==1,1);
-[Cr,sr,reuseAudit]=connectAndersonTerms(prod,details,cores,O,T,reused,Q,m,comp,currency,R,P,cfg);
+[Cr,sr]=connectAndersonTerms(prod,details,cores,O,T,reused,Q,m,comp,currency,R,P,cfg);
 assert(isempty(Cr)&&sr.reactionReuseRejected==2,'Reused production/removal transport was admitted.');
-assert(height(reuseAudit)==2&&all(reuseAudit.Reason=="reaction_reuse") ...
-    &&all(contains(reuseAudit.ReusedReactionIDs,"Ts")), ...
-    'Reused reaction identities were not recorded.');
 crossO=O;linO=L.OrientationIndex(linked(1));crossO.P(3,linO)=1;crossO.N=crossO.P-crossO.R;
-[Cx,sx,crossAudit]=connectAndersonTerms(prod,details,cores,crossO,T,L,Q,m,comp,currency,R,P,cfg);
+[Cx,sx]=connectAndersonTerms(prod,details,cores,crossO,T,L,Q,m,comp,currency,R,P,cfg);
 assert(isempty(Cx)&&sx.crossTalkRejected==2,'A sink feeding the production core bypassed isolation.');
-assert(height(crossAudit)==2&&all(crossAudit.Reason=="shared_noncurrency_outside_I") ...
-    &&all(contains(crossAudit.ProductionLinearSharedIDs,"x[c]")), ...
-    'Cross-talk participants were not recorded against the correct roles.');
-small=cfg;small.maxConnectionAuditRows=1;
-[short,ss,shortAudit]=connectAndersonTerms(prod,details,cores,crossO,T,L,Q,m,comp,currency,R,P,small);
-assert(isempty(short)&&ss.crossTalkRejected==2&&ss.auditRowsOmitted==1&&height(shortAudit)==1, ...
-    'Audit retention changed the rejection count or failed to report omitted rows.');
 capCfg=cfg;capCfg.maxTripletTests=1;
 [Cc,sc]=connectAndersonTerms(prod,details,cores,O,T,L,Q,m,comp,currency,R,P,capCfg);
 assert(height(Cc)==1&&sc.testLimitReached,'The connection budget was not reported.');
@@ -6243,8 +5100,14 @@ strict=cfg;strict.counterRequireRemoval=true;
 [onlyLeaky,~,~,~]=connectConsumingCounters(F,fp,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,strict);
 assert(height(onlyLeaky)==height(C)&&all(onlyLeaky.LeakOrientationIndex>0));
 noEC=F;noEC.ECResolved(f)=false;noEC.ECs(f)="";
-[none,~,audit,~]=connectConsumingCounters(noEC,fp,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,cfg);
-assert(isempty(none)&&any(audit.Status=="formation_EC_unresolved"),'Missing formation EC was silently accepted.');
+needEC=cfg;needEC.counterRequireFormationEC=true;
+[none,~,audit,~]=connectConsumingCounters(noEC,fp,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,needEC);
+assert(isempty(none)&&any(audit.Status=="formation_EC_unresolved"),'Missing formation EC was silently accepted when required.');
+[relaxed,relaxedParts,~,~]=connectConsumingCounters(noEC,fp,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,cfg);
+assert(height(relaxed)==height(X),'A counter without EC was rejected although no counter EC is required.');
+[relaxedY,~]=wireConsumingCounters(relaxed,noEC,relaxedParts,W,M,rails,O,m,currency,cfg);
+assert(height(relaxedY)==height(Y)&&all(relaxedY.AssignedFormationEC==""), ...
+    'Branch wiring rejected or mislabelled an EC-less counter formation.');
 bad=fp;bad{f}=union(bad{f},3);
 [none,~,audit,~]=connectConsumingCounters(F,bad,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,cfg);
 assert(isempty(none)&&any(audit.Status=="formation_shares_noncurrency_outside_I"),'Formation cross-talk was accepted.');
@@ -6325,6 +5188,7 @@ end
 function selfTestStep2Circuit(previous,oldR,oldP,oldE,F,X,xp,Y,cfg)
 % Synthetic single-neuron/report regressions, run only by explicit selftest.
 cfg.neuronPlacement="inside"; % preserve the earlier direct-neuron regressions
+cfg.step2SearchBlock0=true;cfg.block0RequireEC=true; % original complete-circuit regressions
 nm=numel(previous.mets);nr=numel(previous.rxns);a=nm+(1:5);minIndex=find(string(previous.mets)=="u[c]",1);
 assert(~isempty(minIndex));input=find(string(previous.mets)=="counter_total[c]",1);
 R=blkdiag(oldR,sparse(5,5));P=blkdiag(oldP,sparse(5,5));
@@ -6348,6 +5212,13 @@ ctx=struct('model',m,'base',base,'comp',comp,'currency',currency,'R',R,'P',P,'O'
 result=searchStep2Circuit(ctx,cfg);
 assert(~isempty(result.complete)&&all(result.complete.Block0Distance==2), ...
     'The complete single-neuron circuit with exact cAMP-to-input Block 0 was not found.');
+neuronOnly=cfg;neuronOnly.step2SearchBlock0=false;only=searchStep2Circuit(ctx,neuronOnly);
+assert(isempty(only.complete)&&~isempty(only.neuronCandidates)&&only.stats.block0Queries==0 ...
+    &&any([only.details.neuronStatus]=="neuron_found_Block0_not_searched"), ...
+    'Neuron-only mode searched Block 0 or lost the neuron.');
+noEC=cfg;noEC.block0RequireEC=false;relaxed=searchStep2Circuit(ctx,noEC);
+assert(~isempty(relaxed.complete)&&all(relaxed.complete.Block0Distance==2), ...
+    'Block 0 without EC requirement lost the complete circuit.');
 for k=1:numel(result.motifs)
     motif=result.motifs(k);assert(motif.n1.input==input&&motif.n1.output==a(2));
     assert(motif.block0.mets(1)==a(4)&&motif.block0.mets(end)==minIndex);
@@ -6523,6 +5394,1258 @@ assert(contains(value,'r_A_N1_01')&&contains(value,'r_A_N1_02') ...
     'The adapter intermediates, export cargo and external input were not annotated separately.');
 end
 
+function [model,base,comp,currency,R,P,known,ecComp,metSource,A,MA,info] = mergeCellFreeCompartments( ...
+    model,base,comp,currency,R,P,known,ecComp,metSource,layout,cfg)
+% CELL-FREE MODE (cfg.cellFreeMerge): one reaction vessel, every component
+% supplied, no membranes. Inside each block, all organelle copies of one
+% chemical species (same BaseID in cytosol, mitochondrion, peroxisome, ...)
+% become ONE species. The outside compartment is never merged, so the
+% S-gated I import and the rest of the Anderson topology are unchanged.
+% Gross and net stoichiometry are transformed together:
+%  * a reaction that only moved species between organelles has no net
+%    chemistry left and is removed (carriers, antiporters, ATP-driven
+%    pumps, proton carriers, ATP synthase);
+%  * an organelle-spanning reaction with real chemistry is kept, with any
+%    species that appeared on both sides cancelled;
+%  * isoenzyme copies with identical merged chemistry become ONE reaction
+%    (the same chemistry in one pot is one enzyme activity). Their bounds
+%    are united and their ECs, gene rules and source IDs are pooled.
+tol=1e-9;[m,n]=size(model.S);ids=string(model.mets(:));rxIDs=string(model.rxns(:));
+base=string(base(:));comp=string(comp(:));
+inside=string(cfg.insideCompartment(:));outside=string(cfg.outsideCompartment);
+organelle=comp;block=comp;
+if layout.communityIDs
+    for i=1:m
+        t=regexp(char(ids(i)),'^(?:M_)?(?:AUXOS|PROTS)([CMXNRVG])','tokens','once');
+        if ~isempty(t),organelle(i)=string(t{1});end
+    end
+    cytosol="C";
+else
+    assert(isscalar(inside),'Anderson:CellFree', ...
+        'cellFreeMerge on a model without AUXOS/PROTS blocks needs exactly one insideCompartment.');
+    move=comp~=""&comp~=outside;block(move)=inside;cytosol=inside;
+end
+mergeable=ismember(block,inside)&comp~="";
+
+% ---- metabolites: one state per (block, BaseID); cytosolic ID kept -------
+key="#"+string((1:m)');key(mergeable)=block(mergeable)+"|"+base(mergeable);
+[~,~,group]=unique(key,'stable');group=group(:);nNew=max(group);
+repIdx=zeros(nNew,1);copies=zeros(nNew,1);mergedMetIDs=strings(nNew,1);
+for g=1:nNew
+    members=find(group==g);pick=members(organelle(members)==cytosol);
+    if isempty(pick),pick=members;end
+    repIdx(g)=pick(1);copies(g)=numel(members);mergedMetIDs(g)=joinText(ids(members),';');
+end
+G=sparse(group,(1:m)',1,nNew,m);
+Rm=G*R;Pm=G*P;newCurrency=currency(repIdx);newCurrency=newCurrency(:);
+
+% ---- reactions that span organelles of one block -------------------------
+spanning=false(n,1);cytosolic=false(n,1);
+for j=1:n
+    parts=find(((R(:,j)+P(:,j))>tol)&mergeable);
+    cytosolic(j)=~isempty(parts)&&all(organelle(parts)==cytosol);
+    if numel(parts)<2,continue;end
+    blocks=block(parts);
+    for b=reshape(unique(blocks),1,[])
+        if numel(unique(organelle(parts(blocks==b))))>1,spanning(j)=true;break;end
+    end
+end
+action=repmat("kept_unchanged",n,1);keepRx=true(n,1);
+for j=reshape(find(spanning),1,[])
+    net=full(Pm(:,j)-Rm(:,j));net(abs(net)<tol)=0;
+    Rm(:,j)=sparse(max(-net,0));Pm(:,j)=sparse(max(net,0));known(j)=false;
+    changed=find(net);
+    if isempty(changed)
+        keepRx(j)=false;action(j)="removed_intra_cell_transport_no_net_chemistry";
+    elseif all(newCurrency(changed))
+        keepRx(j)=false;action(j)="removed_intra_cell_transport_currency_only";
+    else
+        action(j)="kept_organelle_spanning_chemistry_shared_species_cancelled";
+    end
+end
+
+% ---- identical merged chemistry: one reaction ----------------------------
+ec=strings(n,1);
+if isfield(model,'circuitResolvedEC'),ec=string(model.circuitResolvedEC(:));end
+canon=strings(n,1);sense=ones(n,1);
+for j=reshape(find(keepRx),1,[])
+    f=cellFreeReactionKey(Rm(:,j),Pm(:,j));r=cellFreeReactionKey(Pm(:,j),Rm(:,j));
+    ordered=sort([f;r]);
+    if ordered(1)~=f,sense(j)=-1;end
+    canon(j)=ordered(1);
+end
+memberOf=(1:n)';orientation=ones(n,1);duplicates=0;
+kept=find(keepRx);
+if ~isempty(kept)
+    [~,~,dg]=unique(canon(kept),'stable');dg=dg(:);
+    for g=1:max(dg)
+        members=kept(dg==g);
+        if numel(members)<2,continue;end
+        % Representative: annotated EC first, then all-cytosolic, then order.
+        [~,order]=sortrows([-double(ec(members)~="") -double(cytosolic(members)) members]);
+        rep=members(order(1));
+        for j=reshape(members,1,[])
+            memberOf(j)=rep;orientation(j)=sense(j)*sense(rep);
+            if j~=rep
+                keepRx(j)=false;action(j)="merged_into_identical_reaction";duplicates=duplicates+1;
+            end
+        end
+        if action(rep)=="kept_unchanged",action(rep)="kept_representative_of_identical_reactions";end
+    end
+end
+lb=model.lb(:);ub=model.ub(:);
+for j=reshape(find(memberOf~=(1:n)'),1,[])
+    rep=memberOf(j);
+    if orientation(j)>0,l=model.lb(j);u=model.ub(j);else,l=-model.ub(j);u=-model.lb(j);end
+    lb(rep)=min(lb(rep),l);ub(rep)=max(ub(rep),u);
+end
+
+% ---- audits (equations use the ORIGINAL species IDs) ----------------------
+oldEq=strings(n,1);
+for j=1:n,oldEq(j)=equation(R(:,j),P(:,j),model);end
+repID=rxIDs(memberOf);repID(~keepRx & memberOf==(1:n)')="";
+A=table(rxIDs,action,repID,orientation,model.lb(:),model.ub(:),spanning,oldEq, ...
+    'VariableNames',{'OriginalReactionID','CellFreeAction','RepresentativeID', ...
+    'OrientationVsRepresentative','OriginalLB','OriginalUB','SpannedOrganelles','OriginalEquation'});
+MA=table(ids(repIdx),base(repIdx),block(repIdx),copies,mergedMetIDs, ...
+    'VariableNames',{'CellFreeMetaboliteID','BaseID','Block','OrganelleCopies','MergedOriginalIDs'});
+
+% ---- build the merged model ----------------------------------------------
+old=model;keep=find(keepRx);nKeep=numel(keep);
+model=cellFreeSubsetRows(model,repIdx,keep,m,n);
+model.mets=cellstr(ids(repIdx));
+R=Rm(:,keep);P=Pm(:,keep);model.S=P-R;
+model.lb=lb(keep);model.ub=ub(keep);known=known(:);known=known(keep);
+if isfield(model,'rev')&&numel(model.rev)==nKeep,model.rev=double(model.lb<0);end
+mergedRxnIDs=strings(nKeep,1);mergedSource=strings(nKeep,1);
+hasSource=isfield(old,'circuitSourceBiGG')&&numel(old.circuitSourceBiGG)==n;
+for k=1:nKeep
+    rep=keep(k);members=find(memberOf==rep);
+    mergedRxnIDs(k)=joinText(rxIDs(members),';');
+    if hasSource
+        values=string(old.circuitSourceBiGG(members));
+        mergedSource(k)=joinText(unique(values(values~=""),'stable'),';');
+    end
+    if numel(members)<2,continue;end
+    model.grRules{k}=char(cellFreeOrJoin(string(old.grRules(members)),' or '));
+    model.rules{k}=char(cellFreeOrJoin(string(old.rules(members)),' | '));
+    if isfield(old,'rxnGeneMat')&&size(old.rxnGeneMat,1)==n&&size(model.rxnGeneMat,1)==nKeep
+        model.rxnGeneMat(k,:)=any(old.rxnGeneMat(members,:)~=0,1);
+    end
+    for f={'circuitResolvedEC','circuitSBMLEC'}
+        if isfield(old,f{1})&&numel(old.(f{1}))==n
+            codes=completeECTokens(string(old.(f{1})(members)));
+            if ~isempty(codes),model.(f{1})(k)=join(codes,'; ');end
+        end
+    end
+    for f={'circuitECSource','circuitECReference'}
+        if isfield(old,f{1})&&numel(old.(f{1}))==n
+            values=string(old.(f{1})(members));values=unique(values(values~=""),'stable');
+            model.(f{1})(k)=joinText(values,'; ');
+        end
+    end
+    if isfield(old,'circuitSourceBiGG')&&numel(old.circuitSourceBiGG)==n&&model.circuitSourceBiGG(k)==""
+        values=string(old.circuitSourceBiGG(members));values=values(values~="");
+        if ~isempty(values),model.circuitSourceBiGG(k)=values(1);end
+    end
+end
+if isfield(model,'circuitResolvedEC')&&isfield(model,'circuitECEligible')
+    model.circuitECEligible=string(model.circuitResolvedEC(:))~="";
+end
+base=base(repIdx);comp=comp(repIdx);
+if ~layout.communityIDs,comp(mergeable(repIdx))=inside;end
+currency=newCurrency;ecComp=ecComp(repIdx);metSource=metSource(repIdx);
+model.circuitCompartment=comp;model.circuitBaseIDs=base;
+model.circuitMergedMetIDs=mergedMetIDs;model.circuitMergedRxnIDs=mergedRxnIDs;
+model.circuitMergedSourceBiGG=mergedSource;
+info=struct('metabolitesBefore',m,'metabolitesAfter',nNew,'mergedSpecies',nnz(copies>1), ...
+    'reactionsBefore',n,'reactionsAfter',nKeep, ...
+    'removedNoNetChemistry',nnz(action=="removed_intra_cell_transport_no_net_chemistry"), ...
+    'removedCurrencyOnly',nnz(action=="removed_intra_cell_transport_currency_only"), ...
+    'spanningKept',nnz(action=="kept_organelle_spanning_chemistry_shared_species_cancelled"), ...
+    'duplicatesMerged',duplicates, ...
+    'boundsWidened',nnz(model.lb<old.lb(keep)-tol|model.ub>old.ub(keep)+tol));
+end
+
+function k = cellFreeSeedMatch(seedIDs,sourceID,model,j)
+% EC seed row for reaction j: its own source ID first, then the source IDs
+% of the isoenzyme copies merged into it (cell-free mode only).
+k=find(seedIDs==sourceID,1);
+if ~isempty(k)||~isfield(model,'circuitMergedSourceBiGG') ...
+        ||numel(model.circuitMergedSourceBiGG)~=numel(model.rxns),return;end
+alternatives=split(string(model.circuitMergedSourceBiGG(j)),";");
+alternatives=alternatives(alternatives~="");
+for q=1:numel(alternatives)
+    k=find(seedIDs==alternatives(q),1);
+    if ~isempty(k),return;end
+end
+end
+
+function k = cellFreeReactionKey(a,b)
+% Exact text key of one gross reaction: substrate side | product side.
+ia=find(a);ib=find(b);
+k=string(sprintf('%d:%.9g,',[ia(:)';full(a(ia))']))+"|"+ ...
+    string(sprintf('%d:%.9g,',[ib(:)';full(b(ib))']));
+end
+
+function s = cellFreeOrJoin(values,op)
+% Isoenzymes are alternatives: OR their gene rules, dropping empty ones.
+values=strtrim(values(:));values=values(~ismissing(values));
+values=unique(values(values~=""),'stable');
+if isempty(values)
+    s="";
+elseif isscalar(values)
+    s=values;
+else
+    s="("+join(values,")"+string(op)+"(")+")";
+end
+end
+
+function model = cellFreeSubsetRows(model,metRows,rxnRows,m,n)
+% Keep every per-metabolite and per-reaction model field consistent.
+skip={'S','genes','geneNames','comps','compNames','modelName','modelID', ...
+    'description','proteins','modelVersion','osenseStr'};
+metFields={'mets','b','csense','circuitCompartment','circuitBaseIDs'};
+rxnFields={'rxns','lb','ub','c','rev','grRules','rules','subSystems','eccodes','ecCodes', ...
+    'ecNumbers','circuitSBMLEC','circuitSourceBiGG','circuitResolvedEC','circuitECSource', ...
+    'circuitECReference','circuitECEligible'};
+names=fieldnames(model);
+for q=1:numel(names)
+    f=names{q};
+    if any(strcmp(f,skip)),continue;end
+    x=model.(f);
+    isMet=startsWith(f,'met')||any(strcmp(f,metFields));
+    isRxn=startsWith(f,'rxn')||any(strcmp(f,rxnFields));
+    if m==n&&~isMet&&~isRxn,continue;end % ambiguous size: leave untouched
+    if size(x,1)==m&&(isMet||(~isRxn&&m~=n))
+        model.(f)=x(metRows,:);
+    elseif size(x,1)==n&&(isRxn||(~isMet&&m~=n))
+        model.(f)=x(rxnRows,:);
+    elseif isvector(x)&&numel(x)==m&&isMet
+        model.(f)=x(metRows);
+    elseif isvector(x)&&numel(x)==n&&isRxn
+        model.(f)=x(rxnRows);
+    end
+end
+end
+
+function selfTestCellFreeMerge()
+% Organelle copies merge per block; transport without chemistry disappears;
+% identical isoenzymes collapse with united bounds, ECs and gene rules.
+ids={'M_a_e';'M_AUXOSCa_u';'M_AUXOSMa_u';'M_AUXOSCb_u';'M_AUXOSMb_u';'M_AUXOSCc_u'; ...
+    'M_AUXOSMd_u';'M_AUXOSCatp_u';'M_AUXOSCadp_u';'M_AUXOSCh_u';'M_AUXOSMh_u'; ...
+    'M_PROTSCa_x';'M_PROTSMa_x'};
+rx={'E1c';'E1m';'E1rev';'Tcm';'Pump';'Hleak';'Span';'SpanH';'Imp1';'Imp2';'Xblock'};
+R=zeros(13,11);P=zeros(13,11);
+R(2,1)=1;P(4,1)=1;            % E1c   a[C] -> b[C]
+R(3,2)=1;P(5,2)=1;            % E1m   a[M] -> b[M]
+R(5,3)=1;P(3,3)=1;            % E1rev b[M] -> a[M]  (written backwards)
+R(2,4)=1;P(3,4)=1;            % Tcm   a[C] -> a[M]
+R([2 8],5)=1;P([3 9],5)=1;    % Pump  a[C] + atp -> a[M] + adp
+R(10,6)=1;P(11,6)=1;          % Hleak h[C] -> h[M]
+R([2 6],7)=1;P(7,7)=1;        % Span  a[C] + c[C] -> d[M]
+R([2 6 11],8)=1;P([7 10],8)=1;% SpanH a[C] + c[C] + h[M] -> d[M] + h[C]
+R(1,9)=1;P(2,9)=1;            % Imp1  a[e] -> a[C]
+R(1,10)=1;P(3,10)=1;          % Imp2  a[e] -> a[M]
+R(12,11)=1;P(13,11)=1;        % Xblock a[C,x] -> a[M,x]
+m=struct('mets',{ids},'rxns',{rx},'S',sparse(P-R),'lb',[0;0;0;0;0;0;0;0;0;0;0], ...
+    'ub',[100;100;20;100;100;100;100;100;100;100;100],'comps',{{'e';'u';'x'}}, ...
+    'metComps',[1;2;2;2;2;2;2;2;2;2;2;3;3],'genes',{{'g1';'g2';'g3'}}, ...
+    'grRules',{{'g1';'g2';'g3';'';'';'';'';'';'';'';''}});
+m=normalizeModel(m);
+m.circuitResolvedEC=["1.1.1.1";"1.1.1.2";"";"";"";"";"";"";"";"";""];
+m.circuitSBMLEC=strings(11,1);m.circuitSourceBiGG=["";"E1m";"";"";"";"";"";"";"";"";""];
+[b,c,layout]=readModelLayout(m,'');cfg=resolveModelProfile(defaultOptions(),layout,c);
+cur=ismember(lower(b),lower(cfg.currencyBaseIDs));
+[mm,bb,cc,cu,RR,PP,kk,~,~,A,MA,info]=mergeCellFreeCompartments(m,b,c,cur,sparse(R),sparse(P), ...
+    true(11,1),repmat("other",13,1),repmat("test",13,1),layout,cfg);
+assert(numel(mm.mets)==9&&numel(bb)==9&&numel(cc)==9&&numel(cu)==9&&height(MA)==9, ...
+    'Cell-free merge: wrong number of merged species.');
+assert(any(string(mm.mets)=="M_AUXOSCa_u")&&~any(string(mm.mets)=="M_AUXOSMa_u") ...
+    &&any(string(mm.mets)=="M_AUXOSMd_u")&&any(string(mm.mets)=="M_PROTSCa_x") ...
+    &&any(string(mm.mets)=="M_a_e"),'Cell-free merge: wrong representative species or block mixing.');
+assert(isequal(string(mm.rxns),["E1c";"Span";"Imp1"])&&size(mm.S,2)==3&&numel(kk)==3, ...
+    'Cell-free merge: transports were not removed or identical reactions were not collapsed.');
+assert(norm(full(mm.S-(PP-RR)),Inf)<1e-12,'Cell-free merge: gross and net stoichiometry disagree.');
+assert(mm.lb(1)==-20&&mm.ub(1)==100,'Cell-free merge: bounds of a reversed isoenzyme were not united.');
+codes=completeECTokens(mm.circuitResolvedEC(1));
+assert(all(ismember(["1.1.1.1";"1.1.1.2"],codes))&&mm.circuitSourceBiGG(1)=="E1m" ...
+    &&mm.circuitMergedSourceBiGG(1)=="E1m"&&mm.circuitMergedRxnIDs(1)=="E1c;E1m;E1rev", ...
+    'Cell-free merge: EC numbers or source IDs of isoenzymes were not pooled.');
+assert(cellFreeSeedMatch(["X";"E1m"],"",mm,1)==2&&isempty(cellFreeSeedMatch("X","",mm,1)), ...
+    'Cell-free merge: EC seed lookup does not try merged source IDs.');
+assert(contains(string(mm.grRules{1}),"g1")&&contains(string(mm.grRules{1}),"g3") ...
+    &&contains(string(mm.grRules{1})," or "),'Cell-free merge: gene rules were not joined by OR.');
+assert(A.CellFreeAction(4)=="removed_intra_cell_transport_no_net_chemistry" ...
+    &&A.CellFreeAction(5)=="removed_intra_cell_transport_currency_only" ...
+    &&A.CellFreeAction(11)=="removed_intra_cell_transport_no_net_chemistry" ...
+    &&A.RepresentativeID(3)=="E1c"&&A.OrientationVsRepresentative(3)==-1, ...
+    'Cell-free merge: audit actions are wrong.');
+assert(info.removedNoNetChemistry==3&&info.removedCurrencyOnly==1&&info.duplicatesMerged==4, ...
+    'Cell-free merge: summary counts are wrong.');
+% A merged pool must still expose the import and the merged core step.
+[O,T]=buildPools(mm,bb,cc,cu,RR,PP,kk,cfg);
+assert(height(T)==1&&T.InsideMetaboliteID=="M_AUXOSCa_u"&&any(O.rxn==1), ...
+    'Cell-free merge: import or core admission failed on the merged model.');
+end
+
+function [E,status,count] = applyEmbeddediMM904EC(E,status,model,base)
+% Counter/neuron/Block 0 EC evidence: the iMM904 authors' own annotation
+% (PROTEIN_CLASS), transferred only on an exact iMM904 reaction ID (after
+% removing the AUXOS/PROTS wrapper, including the IDs of isoenzyme copies
+% merged in cell-free mode) AND a matching net chemistry. Fills only empty
+% rows, so model fields, supplied files and verified seeds keep priority.
+T=embeddediMM904ECTable();count=0;n=numel(model.rxns);
+keys=iMM904ReactionKey(T.SourceReactionID);
+map=containers.Map(cellstr(keys),num2cell((1:height(T))'));
+ids=string(model.rxns(:));alt=strings(n,1);
+if isfield(model,'circuitMergedRxnIDs')&&numel(model.circuitMergedRxnIDs)==n
+    alt=string(model.circuitMergedRxnIDs(:));
+end
+names=lower(regexprep(string(base(:)),'[^A-Za-z0-9]+','_'));
+names=regexprep(names,'^_+|_+$','');
+for j=reshape(find(E.codes==""),1,[])
+    candidates=[ids(j);split(alt(j),";")];candidates=candidates(candidates~="");
+    candidates=iMM904ReactionKey(regexprep(regexprep(candidates,'^R_',''),'^(AUXOS|PROTS)',''));
+    row=0;mismatch=false;
+    for q=1:numel(candidates)
+        if ~isKey(map,char(candidates(q))),continue;end
+        k=map(char(candidates(q)));
+        if iMM904SignatureMatches(model.S(:,j),names,T.ChemicalSignature(k)),row=k;break;end
+        mismatch=true;
+    end
+    if row==0
+        if mismatch,status(j)="embedded_iMM904_ID_matched_chemistry_mismatch_EC_withheld";end
+        continue;
+    end
+    E.codes(j)=T.EC(row);E.source(j)="embedded_iMM904_PROTEIN_CLASS_2009";
+    E.reference(j)="iMM904 SBML reaction notes PROTEIN_CLASS for "+T.SourceReactionID(row)+ ...
+        " (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)";
+    status(j)="embedded_iMM904_ID_and_chemistry_matched";count=count+1;
+end
+end
+
+function key = iMM904ReactionKey(x)
+key=regexprep(string(x),'[^A-Za-z0-9]+','_');
+key=regexprep(key,'^_+|_+$','');
+end
+
+function ok = iMM904SignatureMatches(net,names,signature)
+% Same chemistry up to one uniform scale/orientation. Organelle tags in the
+% table are ignored, so merged (cell-free) species still match.
+ok=false;parts=find(abs(net)>1e-10);
+if isempty(parts),return;end
+[actualNames,~,g]=unique(names(parts));actual=accumarray(g(:),full(net(parts)));
+terms=split(string(signature),";");expectedNames=strings(numel(terms),1);coefficient=zeros(numel(terms),1);
+for k=1:numel(terms)
+    pair=split(terms(k),":");if numel(pair)~=2,return;end
+    expectedNames(k)=regexprep(pair(1),'@[a-z]$','');coefficient(k)=str2double(pair(2));
+end
+[uniqueExpected,~,h]=unique(expectedNames);expected=accumarray(h(:),coefficient);
+keepA=abs(actual)>1e-10;keepE=abs(expected)>1e-10;
+actualNames=actualNames(keepA);actual=actual(keepA);
+uniqueExpected=uniqueExpected(keepE);expected=expected(keepE);
+if isempty(actual)||numel(actualNames)~=numel(uniqueExpected)||~all(ismember(actualNames,uniqueExpected)),return;end
+[~,loc]=ismember(actualNames,uniqueExpected);ratio=actual./expected(loc);
+ok=all(isfinite(ratio))&&abs(ratio(1))>1e-12&&max(abs(ratio-ratio(1)))<1e-8;
+end
+
+function selfTestEmbeddediMM904EC()
+% A wrapped and a merged iMM904 ID resolve; wrong chemistry is withheld.
+m=struct('mets',{{'AUXOSCg6p[u]';'AUXOSCf6p[u]';'AUXOSCfdp[u]';'AUXOSCpyr[u]';'AUXOSCala_L[u]'; ...
+    'AUXOSCakg[u]';'AUXOSCglu_L[u]'}},'rxns',{{'AUXOSPGI';'AUXOSPFK';'AUXOSALT_merged'}}, ...
+    'S',sparse([-1 0 0;1 -1 0;0 1 0;0 0 1;0 0 -1;0 0 -1;0 0 1]),'lb',[-10;0;-10],'ub',[10;10;10]);
+m=normalizeModel(m);m.circuitMergedRxnIDs=["AUXOSPGI";"AUXOSPFK";"AUXOSALT_merged;AUXOSALATA_Lm;AUXOSALATA_L"];
+E=struct('codes',strings(3,1),'source',strings(3,1),'reference',strings(3,1));
+[E,status,count]=applyEmbeddediMM904EC(E,repmat("unresolved",3,1),m, ...
+    ["g6p";"f6p";"fdp";"pyr";"ala_L";"akg";"glu_L"]);
+assert(count==2&&E.codes(1)=="5.3.1.9"&&E.codes(3)=="2.6.1.2"&&E.codes(2)=="" ...
+    &&status(2)=="embedded_iMM904_ID_matched_chemistry_mismatch_EC_withheld", ...
+    'Embedded iMM904 EC transfer or its chemistry guard failed.');
+end
+
+function T = embeddediMM904ECTable()
+% EC numbers exactly as annotated by the iMM904 authors (reaction notes field
+% PROTEIN_CLASS; Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37), read from
+% sbml/iMM904.xml in github.com/opencobra/m_model_collection on 2026-11-13.
+% Row format: iMM904 reaction ID | EC | net stoichiometry as
+% metabolite@organelle:coefficient. These are 2009 annotations: some EC
+% entries have since been transferred, so check them before a BRENDA query.
+raw=[
+"13BGH|3.2.1.58|13bdglcn@c:-1;h2o@c:-1;glc_d@c:1"
+"13BGHe|3.2.1.58|13bdglcn@e:-1;h2o@e:-1;glc_d@e:1"
+"13GS|2.4.1.34|udpg@c:-1;13bdglcn@c:1;h@c:1;udp@c:1"
+"2DOXG6PP|3.1.3.68|2doxg6p@c:-1;h2o@c:-1;2dglc@c:1;pi@c:1"
+"2HBO|1.1.1.27|2hb@c:-1;nad@c:-1;2obut@c:1;h@c:1;nadh@c:1"
+"34HPPOR|1.13.11.27|34hpp@c:-1;o2@c:-1;co2@c:1;hgentis@c:1"
+"3DSPHR|1.1.1.102|3dsphgn@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;sphgn@c:1"
+"3HAO|1.13.11.6|3hanthrn@c:-1;o2@c:-1;cmusa@c:1;h@c:1"
+"3IPM3MT|2.1.1.145|3c2hmp@c:-1;amet@c:-1;3ipmmest@c:1;ahcys@c:1"
+"4HGLSDm|1.5.1.12|4hglusa@m:-1;h2o@m:-1;nad@m:-1;e4hglu@m:1;h@m:2;nadh@m:1"
+"AABTN|3.5.1.63|4aabutn@c:-1;h2o@c:-1;4abut@c:1;ac@c:1"
+"AASAD1|1.2.1.31|l2aadp@c:-1;atp@c:-1;h@c:-1;nadph@c:-1;l2aadp6sa@c:1;amp@c:1;nadp@c:1;ppi@c:1"
+"AASAD2|1.2.1.31|l2aadp@c:-1;atp@c:-1;h@c:-1;nadh@c:-1;l2aadp6sa@c:1;amp@c:1;nad@c:1;ppi@c:1"
+"AATA|2.6.1.39|2oxoadp@c:-1;glu_l@c:-1;l2aadp@c:1;akg@c:1"
+"ABTA|2.6.1.19|4abut@c:-1;akg@c:-1;glu_l@c:1;sucsal@c:1"
+"ABUTDm|1.2.1.19|4abutn@m:-1;h2o@m:-1;nad@m:-1;4abut@m:1;h@m:2;nadh@m:1"
+"ACACT1|2.3.1.9|accoa@c:-2;aacoa@c:1;coa@c:1"
+"ACACT1m|2.3.1.9|accoa@m:-2;aacoa@m:1;coa@m:1"
+"ACACT4p|2.3.1.16|3odcoa@x:-1;coa@x:-1;accoa@x:1;occoa@x:1"
+"ACACT5p|2.3.1.16|3oddcoa@x:-1;coa@x:-1;accoa@x:1;dcacoa@x:1"
+"ACACT6p|2.3.1.16|3otdcoa@x:-1;coa@x:-1;accoa@x:1;ddcacoa@x:1"
+"ACACT7p|2.3.1.16|3ohdcoa@x:-1;coa@x:-1;accoa@x:1;tdcoa@x:1"
+"ACACT8p|2.3.1.16|3ohodcoa@x:-1;coa@x:-1;accoa@x:1;pmtcoa@x:1"
+"ACACT9p|2.3.1.16|3ohxccoa@x:-1;coa@x:-1;accoa@x:1;ttccoa@x:1"
+"ACCOACr|6.4.1.2|accoa@c:-1;atp@c:-1;hco3@c:-1;adp@c:1;h@c:1;malcoa@c:1;pi@c:1"
+"ACCOACrm|6.4.1.2|accoa@m:-1;atp@m:-1;hco3@m:-1;adp@m:1;h@m:1;malcoa@m:1;pi@m:1"
+"ACGAM6PS|2.3.1.4|accoa@c:-1;gam6p@c:-1;acgam6p@c:1;coa@c:1;h@c:1"
+"ACGAMPM|5.4.2.3|acgam6p@c:-1;acgam1p@c:1"
+"ACGKm|2.7.2.8|acglu@m:-1;atp@m:-1;acg5p@m:1;adp@m:1"
+"ACGSm|2.3.1.1|accoa@m:-1;glu_l@m:-1;acglu@m:1;coa@m:1;h@m:1"
+"ACHBSm|4.1.3.18|2obut@m:-1;h@m:-1;pyr@m:-1;2ahbut@m:1;co2@m:1"
+"ACLSm|4.1.3.18|h@m:-1;pyr@m:-2;alac_s@m:1;co2@m:1"
+"ACOAHim|3.1.2.1|accoa@m:-1;h2o@m:-1;ac@m:1;coa@m:1;h@m:1"
+"ACOAO4p|1.3.3.6|dcacoa@x:-1;o2@x:-1;dc2coa@x:1;h2o2@x:1"
+"ACOAO5p|1.3.3.6|ddcacoa@x:-1;o2@x:-1;dd2coa@x:1;h2o2@x:1"
+"ACOAO6p|1.3.3.6|o2@x:-1;tdcoa@x:-1;h2o2@x:1;td2coa@x:1"
+"ACOAO7p|1.3.3.6|o2@x:-1;pmtcoa@x:-1;h2o2@x:1;hdd2coa@x:1"
+"ACOAO8p|1.3.3.6|o2@x:-1;stcoa@x:-1;h2o2@x:1;od2coa@x:1"
+"ACOAO9p|1.3.3.6|hexccoa@x:-1;o2@x:-1;h2o2@x:1;hxc2coa@x:1"
+"ACOATA|2.3.1.38|acp@c:-1;accoa@c:-1;acacp@c:1;coa@c:1"
+"ACOATAm|2.3.1.41|acp@m:-1;accoa@m:-1;acacp@m:1;coa@m:1"
+"ACON3MT|2.1.1.145|acon_t@c:-1;amet@c:-1;acon5m@c:1;ahcys@c:1"
+"ACONT|4.2.1.3|cit@c:-1;icit@c:1"
+"ACONT3m|4.2.1.3|2mcit@m:-1;micit@m:1"
+"ACONTm|4.2.1.3|cit@m:-1;icit@m:1"
+"ACOTAim|2.6.1.11|acg5sa@m:-1;glu_l@m:-1;acorn@m:1;akg@m:1"
+"ACP1e|3.1.3.2|fmn@e:-1;h2o@e:-1;pi@e:1;ribflv@e:1"
+"ACS|6.2.1.1|ac@c:-1;atp@c:-1;coa@c:-1;accoa@c:1;amp@c:1;ppi@c:1"
+"ACSm|6.2.1.1|ac@m:-1;atp@m:-1;coa@m:-1;accoa@m:1;amp@m:1;ppi@m:1"
+"ACSp|6.2.1.1|ac@x:-1;atp@x:-1;coa@x:-1;accoa@x:1;amp@x:1;ppi@x:1"
+"ADA|3.5.4.4|adn@c:-1;h@c:-1;h2o@c:-1;ins@c:1;nh4@c:1"
+"ADD|3.5.4.2|ade@c:-1;h@c:-1;h2o@c:-1;hxan@c:1;nh4@c:1"
+"ADK1|2.7.4.3|amp@c:-1;atp@c:-1;adp@c:2"
+"ADK1m|2.7.4.3|amp@m:-1;atp@m:-1;adp@m:2"
+"ADK4m|2.7.4.3|amp@m:-1;itp@m:-1;adp@m:1;idp@m:1"
+"ADMDC|4.1.1.50|amet@c:-1;h@c:-1;ametam@c:1;co2@c:1"
+"ADNCYC|4.6.1.1|atp@c:-1;camp@c:1;ppi@c:1"
+"ADNK1|2.7.1.20|adn@c:-1;atp@c:-1;adp@c:1;amp@c:1;h@c:1"
+"ADNUC|3.2.2.8|adn@c:-1;h2o@c:-1;ade@c:1;rib_d@c:1"
+"ADPT|2.4.2.7|ade@c:-1;prpp@c:-1;amp@c:1;ppi@c:1"
+"ADSK|2.7.1.25|aps@c:-1;atp@c:-1;adp@c:1;h@c:1;paps@c:1"
+"ADSL1r|4.3.2.2|dcamp@c:-1;amp@c:1;fum@c:1"
+"ADSL2r|4.3.2.2|25aics@c:-1;aicar@c:1;fum@c:1"
+"ADSS|6.3.4.4|asp_l@c:-1;gtp@c:-1;imp@c:-1;dcamp@c:1;gdp@c:1;h@c:2;pi@c:1"
+"AGAT_SC|2.3.1.51|1ag3p_sc@c:-0.01;dcacoa@c:-0.02;ddcacoa@c:-0.06;hdcoa@c:-0.17;ocdycacoa@c:-0.09;odecoa@c:-0.24;pmtcoa@c:-0.27;stcoa@c:-0.05;tdcoa@c:-0.1;coa@c:1;pa_sc@c:0.01"
+"AGPRim|1.2.1.38|acg5p@m:-1;h@m:-1;nadph@m:-1;acg5sa@m:1;nadp@m:1;pi@m:1"
+"AGTi|2.6.1.44|ala_l@c:-1;glx@c:-1;gly@c:1;pyr@c:1"
+"AHCi|3.3.1.1|ahcys@c:-1;h2o@c:-1;adn@c:1;hcys_l@c:1"
+"AHSERL|4.2.99.10|achms@c:-1;ch4s@c:-1;ac@c:1;h@c:1;met_l@c:1"
+"AHSERL2|4.2.99.8|achms@c:-1;h2s@c:-1;ac@c:1;h@c:1;hcys_l@c:1"
+"AICART|2.1.2.3|10fthf@c:-1;aicar@c:-1;fprica@c:1;thf@c:1"
+"AIRCr|4.1.1.21|air@c:-1;co2@c:-1;5aizc@c:1;h@c:1"
+"AKGDam|1.2.4.2|akg@m:-1;h@m:-1;lpam@m:-1;co2@m:1;sdhlam@m:1"
+"AKGDbm|2.3.1.61|coa@m:-1;sdhlam@m:-1;dhlam@m:1;succoa@m:1"
+"AKP1|3.1.3.1|ahdt@c:-1;h2o@c:-3;dhnpt@c:1;h@c:2;pi@c:3"
+"ALASm|2.3.1.37|gly@m:-1;h@m:-1;succoa@m:-1;5aop@m:1;co2@m:1;coa@m:1"
+"ALATA_L|2.6.1.2|akg@c:-1;ala_l@c:-1;glu_l@c:1;pyr@c:1"
+"ALATA_Lm|2.6.1.2|akg@m:-1;ala_l@m:-1;glu_l@m:1;pyr@m:1"
+"ALATRS|6.1.1.7|ala_l@c:-1;atp@c:-1;trnaala@c:-1;alatrna@c:1;amp@c:1;ppi@c:1"
+"ALCD2if|1.1.1.1|etoh@c:-1;nad@c:-1;acald@c:1;h@c:1;nadh@c:1"
+"ALCD2ir|1.1.1.1|acald@c:-1;h@c:-1;nadh@c:-1;etoh@c:1;nad@c:1"
+"ALCD2irm|1.1.1.1|acald@m:-1;h@m:-1;nadh@m:-1;etoh@m:1;nad@m:1"
+"ALCD2x|1.1.1.1|etoh@c:-1;nad@c:-1;acald@c:1;h@c:1;nadh@c:1"
+"ALDD19x|1.2.1.39|h2o@c:-1;nad@c:-1;pacald@c:-1;h@c:2;nadh@c:1;pac@c:1"
+"ALDD22x|1.2.1.39|aproa@c:-1;h2o@c:-1;nad@c:-1;ala_b@c:1;h@c:2;nadh@c:1"
+"ALDD2xm|1.2.1.3|acald@m:-1;h2o@m:-1;nad@m:-1;ac@m:1;h@m:2;nadh@m:1"
+"ALDD2y|1.2.1.4|acald@c:-1;h2o@c:-1;nadp@c:-1;ac@c:1;h@c:2;nadph@c:1"
+"ALDD2ym|1.2.1.4|acald@m:-1;h2o@m:-1;nadp@m:-1;ac@m:1;h@m:2;nadph@m:1"
+"ALLTAHr|3.5.3.4|alltt@c:-1;h2o@c:-1;urdglyc@c:1;urea@c:1"
+"ALLTNr|3.5.2.5|alltn@c:-1;h2o@c:-1;alltt@c:1;h@c:1"
+"ALPHNH|3.5.1.54|allphn@c:-1;h@c:-3;h2o@c:-1;co2@c:2;nh4@c:2"
+"AMAOTr|2.6.1.62|8aonn@c:-1;amet@c:-1;amob@c:1;dann@c:1"
+"AMID|3.5.1.4|4gudbd@c:-1;h2o@c:-1;4gudbutn@c:1;nh4@c:1"
+"AMID2|3.5.1.4|h2o@c:-1;pad@c:-1;nh4@c:1;pac@c:1"
+"AMID3|3.5.1.4|h2o@c:-1;iad@c:-1;ind3ac@c:1;nh4@c:1"
+"AMPN|3.2.2.4|amp@c:-1;h2o@c:-1;ade@c:1;r5p@c:1"
+"ANPRT|2.4.2.18|anth@c:-1;prpp@c:-1;ppi@c:1;pran@c:1"
+"ANS|4.1.3.27|chor@c:-1;gln_l@c:-1;anth@c:1;glu_l@c:1;h@c:1;pyr@c:1"
+"AP4AHr|3.6.1.41|ap4a@c:-1;h2o@c:-1;adp@c:2;h@c:2"
+"APRTO2|1.4.3.4|aprut@c:-1;h2o@c:-1;o2@c:-1;h2o2@c:1;n4abutn@c:1;nh4@c:1"
+"ARAB1D2|1.1.1.117|arab_d@c:-1;nadp@c:-1;dara14lac@c:1;h@c:1;nadph@c:1"
+"ARABR|1.1.1.21|arab_l@c:-1;h@c:-1;nadph@c:-1;abt@c:1;nadp@c:1"
+"ARGN|3.5.3.1|arg_l@c:-1;h2o@c:-1;orn@c:1;urea@c:1"
+"ARGSL|4.3.2.1|argsuc@c:-1;arg_l@c:1;fum@c:1"
+"ARGSSr|6.3.4.5|asp_l@c:-1;atp@c:-1;citr_l@c:-1;amp@c:1;argsuc@c:1;h@c:1;ppi@c:1"
+"ARGTRS|6.1.1.19|arg_l@c:-1;atp@c:-1;trnaarg@c:-1;amp@c:1;argtrna@c:1;ppi@c:1"
+"ARGTRSm|6.1.1.19|arg_l@m:-1;atp@m:-1;trnaarg@m:-1;amp@m:1;argtrna@m:1;ppi@m:1"
+"ASADi|1.2.1.11|4pasp@c:-1;h@c:-1;nadph@c:-1;aspsa@c:1;nadp@c:1;pi@c:1"
+"ASNN|3.5.1.1|asn_l@c:-1;h2o@c:-1;asp_l@c:1;nh4@c:1"
+"ASNNe|3.5.1.1|asn_l@e:-1;h2o@e:-1;asp_l@e:1;nh4@e:1"
+"ASNS1|6.3.5.4|asp_l@c:-1;atp@c:-1;gln_l@c:-1;h2o@c:-1;amp@c:1;asn_l@c:1;glu_l@c:1;h@c:1;ppi@c:1"
+"ASNTRS|6.1.1.22|asn_l@c:-1;atp@c:-1;trnaasn@c:-1;amp@c:1;asntrna@c:1;ppi@c:1"
+"ASNTRSm|6.1.1.22|asn_l@m:-1;atp@m:-1;trnaasn@m:-1;amp@m:1;asntrna@m:1;ppi@m:1"
+"ASPCT|2.1.3.2|asp_l@c:-1;cbp@c:-1;cbasp@c:1;h@c:1;pi@c:1"
+"ASPKi|2.7.2.4|asp_l@c:-1;atp@c:-1;4pasp@c:1;adp@c:1"
+"ASPTA|2.6.1.1|akg@c:-1;asp_l@c:-1;glu_l@c:1;oaa@c:1"
+"ASPTAm|2.6.1.1|akg@m:-1;asp_l@m:-1;glu_l@m:1;oaa@m:1"
+"ASPTAp|2.6.1.1|akg@x:-1;asp_l@x:-1;glu_l@x:1;oaa@x:1"
+"ASPTRS|6.1.1.12|asp_l@c:-1;atp@c:-1;trnaasp@c:-1;amp@c:1;asptrna@c:1;ppi@c:1"
+"ASPTRSm|6.1.1.12|asp_l@m:-1;atp@m:-1;trnaasp@m:-1;amp@m:1;asptrna@m:1;ppi@m:1"
+"ATPATF1|2.7.7.53|adp@c:-1;atp@c:-1;h@c:-1;ap4a@c:1;pi@c:1"
+"ATPATF2|2.7.7.53|adp@c:-1;gtp@c:-1;h@c:-1;ap4g@c:1;pi@c:1"
+"ATPATF3|2.7.7.53|gdp@c:-1;gtp@c:-1;h@c:-1;gp4g@c:1;pi@c:1"
+"ATPH1|3.6.1.5|atp@c:-1;h2o@c:-2;amp@c:1;h@c:2;pi@c:2"
+"ATPPRT|2.4.2.17|atp@c:-1;prpp@c:-1;ppi@c:1;prbatp@c:1"
+"ATPS|3.6.3.6|atp@c:-1;h2o@c:-1;adp@c:1;pi@c:1;h@e:1"
+"ATPS3m|3.6.3.14|h@c:-3;adp@m:-1;pi@m:-1;atp@m:1;h@m:2;h2o@m:1"
+"ATPS3v|3.6.3.14|h@c:-3;adp@v:-1;pi@v:-1;atp@v:1;h@v:2;h2o@v:1"
+"BACCL|6.3.4.15|atp@c:-1;btn@c:-1;h@c:-1;btamp@c:1;ppi@c:1"
+"BPNT|3.1.3.7|h2o@c:-1;pap@c:-1;amp@c:1;pi@c:1"
+"BTDD_RR|1.1.1.4|btd_rr@c:-1;nad@c:-1;actn_r@c:1;h@c:1;nadh@c:1"
+"BTSr|2.8.1.6|dtbt@c:-1;s@c:-1;btn@c:1;h@c:2"
+"C3STDH1|5.3.3.1|4mzym_int1@c:-1;nad@c:-1;4mzym_int2@c:1;co2@c:1;h@c:1;nadh@c:1"
+"C3STDH2|5.3.3.1|nad@c:-1;zym_int1@c:-1;co2@c:1;h@c:1;nadh@c:1;zym_int2@c:1"
+"CAT|1.11.1.6|h2o2@c:-2;h2o@c:2;o2@c:1"
+"CATp|1.11.1.6|h2o2@x:-2;h2o@x:2;o2@x:1"
+"CBPS|6.3.5.5|atp@c:-2;gln_l@c:-1;h2o@c:-1;hco3@c:-1;adp@c:2;cbp@c:1;glu_l@c:1;h@c:2;pi@c:1"
+"CDPDGPm_SC|2.7.8.8|cdpdag_sc@m:-0.01;glyc3p@m:-1;cmp@m:1;h@m:1;pgp_sc@m:0.01"
+"CHLPCTD|2.7.7.15|cholp@c:-1;ctp@c:-1;h@c:-1;cdpchol@c:1;ppi@c:1"
+"CHLSTI|5.3.3.5|amet@c:-1;o2@c:-1;zymst@c:-1;ahcys@c:1;ergtetrol@c:1;h@c:1;h2o@c:2"
+"CHOLK|2.7.1.32|atp@c:-1;chol@c:-1;adp@c:1;cholp@c:1;h@c:1"
+"CHORM|5.4.99.5|chor@c:-1;pphn@c:1"
+"CHORS|4.2.3.5|3psme@c:-1;chor@c:1;pi@c:1"
+"CHTNDA|3.5.1.41|chitin@c:-1;h2o@c:-1;ac@c:1;chitos@c:1;h@c:1"
+"CHTNS|2.4.1.16|udpacgal@c:-1;chitin@c:1;h@c:1;udp@c:1"
+"CLPNSm_SC|2.7.8.5|cdpdag_sc@m:-0.01;pg_sc@m:-0.01;clpn_sc@m:0.01;cmp@m:1;h@m:1"
+"CMPN|3.2.2.10|cmp@c:-1;h2o@c:-1;csn@c:1;r5p@c:1"
+"CPPPGO|1.3.3.3|cpppg3@c:-1;h@c:-2;o2@c:-1;co2@c:2;h2o@c:2;pppg9@c:1"
+"CSNATm|2.3.1.7|acrn@m:-1;coa@m:-1;accoa@m:1;crn@m:1"
+"CSNATp|2.3.1.7|accoa@x:-1;crn@x:-1;acrn@x:1;coa@x:1"
+"CSNATr|2.3.1.7|accoa@c:-1;crn@c:-1;acrn@c:1;coa@c:1"
+"CSND|3.5.4.1|csn@c:-1;h@c:-1;h2o@c:-1;nh4@c:1;ura@c:1"
+"CTPS1|6.3.4.2|atp@c:-1;nh4@c:-1;utp@c:-1;adp@c:1;ctp@c:1;h@c:2;pi@c:1"
+"CTPS2|6.3.4.2|atp@c:-1;gln_l@c:-1;h2o@c:-1;utp@c:-1;adp@c:1;ctp@c:1;glu_l@c:1;h@c:2;pi@c:1"
+"CYOOm|1.9.3.1|focytc@m:-4;h@m:-6;o2@m:-1;h@c:6;ficytc@m:4;h2o@m:2"
+"CYOR_u6m|1.10.2.2|ficytc@m:-2;h@m:-1.5;q6h2@m:-1;h@c:1.5;focytc@m:2;q6@m:1"
+"CYSTGL|4.4.1.1|cyst_l@c:-1;h2o@c:-1;2obut@c:1;cys_l@c:1;nh4@c:1"
+"CYSTL|4.4.1.8|cyst_l@c:-1;h2o@c:-1;hcys_l@c:1;nh4@c:1;pyr@c:1"
+"CYSTLp|4.4.1.8|cyst_l@x:-1;h2o@x:-1;hcys_l@x:1;nh4@x:1;pyr@x:1"
+"CYSTRS|6.1.1.16|atp@c:-1;cys_l@c:-1;trnacys@c:-1;amp@c:1;cystrna@c:1;ppi@c:1"
+"CYSTS|4.2.1.22|hcys_l@c:-1;ser_l@c:-1;cyst_l@c:1;h2o@c:1"
+"CYTD|3.5.4.5|cytd@c:-1;h@c:-1;h2o@c:-1;nh4@c:1;uri@c:1"
+"CYTK1|2.7.4.14|atp@c:-1;cmp@c:-1;adp@c:1;cdp@c:1"
+"CYTK2|2.7.4.14|atp@c:-1;dcmp@c:-1;adp@c:1;dcdp@c:1"
+"DADK|2.7.4.11|atp@c:-1;damp@c:-1;adp@c:1;dadp@c:1"
+"DAGCPT_SC|2.7.8.2|12dgr_sc@c:-0.01;cdpchol@c:-1;cmp@c:1;h@c:1;pc_sc@c:0.01"
+"DAGPYP_SC|3.1.3.4|h2o@c:-1;pa_sc@c:-0.01;12dgr_sc@c:0.01;pi@c:1"
+"DASYN_SC|2.7.7.41|ctp@c:-1;h@c:-1;pa_sc@c:-0.01;cdpdag_sc@c:0.01;ppi@c:1"
+"DASYNm_SC|2.7.7.41|ctp@m:-1;h@m:-1;pa_sc@m:-0.01;cdpdag_sc@m:0.01;ppi@m:1"
+"DBTSr|6.3.3.3|atp@c:-1;co2@c:-1;dann@c:-1;adp@c:1;dtbt@c:1;h@c:3;pi@c:1"
+"DCMPDA|3.5.4.12|dcmp@c:-1;h@c:-1;h2o@c:-1;dump@c:1;nh4@c:1"
+"DCTPD|3.5.4.13|dctp@c:-1;h@c:-1;h2o@c:-1;dutp@c:1;nh4@c:1"
+"DCYTD|3.5.4.14|dcyt@c:-1;h@c:-1;h2o@c:-1;duri@c:1;nh4@c:1"
+"DDPA|4.1.2.15|e4p@c:-1;h2o@c:-1;pep@c:-1;2dda7p@c:1;pi@c:1"
+"DDPAm|4.1.2.15|e4p@m:-1;h2o@m:-1;pep@m:-1;2dda7p@m:1;pi@m:1"
+"DESAT14|1.14.19.1|h@c:-1;nadph@c:-1;o2@c:-1;tdcoa@c:-1;h2o@c:2;nadp@c:1;tdecoa@c:1"
+"DESAT16|1.14.19.1|h@c:-1;nadph@c:-1;o2@c:-1;pmtcoa@c:-1;h2o@c:2;hdcoa@c:1;nadp@c:1"
+"DESAT18|1.14.19.1|h@c:-1;nadph@c:-1;o2@c:-1;stcoa@c:-1;h2o@c:2;nadp@c:1;odecoa@c:1"
+"DESAT18_2|1.14.19.1|h@c:-1;nadph@c:-1;o2@c:-1;odecoa@c:-1;h2o@c:2;nadp@c:1;ocdycacoa@c:1"
+"DGK1|2.7.4.8|atp@c:-1;dgmp@c:-1;adp@c:1;dgdp@c:1"
+"DHAD1m|4.2.1.9|23dhmb@m:-1;3mob@m:1;h2o@m:1"
+"DHAK|2.7.1.29|atp@c:-1;dha@c:-1;adp@c:1;dhap@c:1;h@c:1"
+"DHFRi|1.5.1.3|dhf@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;thf@c:1"
+"DHFRim|1.5.1.3|dhf@m:-1;h@m:-1;nadph@m:-1;nadp@m:1;thf@m:1"
+"DHFS|6.3.2.12|atp@c:-1;dhpt@c:-1;glu_l@c:-1;adp@c:1;dhf@c:1;h@c:1;pi@c:1"
+"DHNPAm|4.1.2.25|dhnpt@m:-1;2ahhmp@m:1;gcald@m:1;h@m:1"
+"DHORD4i|1.3.3.1|dhor_s@c:-1;q6@m:-1;orot@c:1;q6h2@m:1"
+"DHORDi|1.3.3.1|dhor_s@c:-1;o2@c:-1;h2o2@c:1;orot@c:1"
+"DHORTS|3.5.2.3|dhor_s@c:-1;h2o@c:-1;cbasp@c:1;h@c:1"
+"DHPSm|2.5.1.15|2ahhmp@m:-1;4abz@m:-1;dhpt@m:1;h2o@m:1"
+"DHQS|4.2.3.4|2dda7p@c:-1;3dhq@c:1;pi@c:1"
+"DHQTi|4.2.1.10|3dhq@c:-1;3dhsk@c:1;h2o@c:1"
+"DIAT|2.6.1.29|accoa@c:-1;sprm@c:-1;n1sprm@c:1;coa@c:1;h@c:1"
+"DIPS|2.1.1.98|amet@c:-1;caphis@c:-1;ahcys@c:1;cmaphis@c:1;h@c:1"
+"DMATT|2.5.1.1|dmpp@c:-1;ipdp@c:-1;grdp@c:1;ppi@c:1"
+"DOLK|2.7.1.108|ctp@c:-1;dolichol@c:-1;cdp@c:1;dolp@c:1;h@c:1"
+"DOLPMMer|2.4.1.109|dolmanp@r:-1;dolp@r:1;h@r:1;mannan@r:1"
+"DOLPMTcer|2.4.1.83|dolp@c:-1;gdpmann@c:-1;gdp@c:1;dolmanp@r:1"
+"DPCOAK|2.7.1.24|atp@c:-1;dpcoa@c:-1;adp@c:1;coa@c:1;h@c:1"
+"DPCOAKm|2.7.1.24|atp@m:-1;dpcoa@m:-1;adp@m:1;coa@m:1;h@m:1"
+"DPMVD|4.1.1.33|5dpmev@c:-1;atp@c:-1;adp@c:1;co2@c:1;ipdp@c:1;pi@c:1"
+"DPR|1.1.1.169|2dhp@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;pant_r@c:1"
+"DPRm|1.1.1.169|2dhp@m:-1;h@m:-1;nadph@m:-1;nadp@m:1;pant_r@m:1"
+"DRBK|2.7.1.15|atp@c:-1;drib@c:-1;2dr5p@c:1;adp@c:1;h@c:1"
+"DTMPK|2.7.4.9|atp@c:-1;dtmp@c:-1;adp@c:1;dtdp@c:1"
+"DUTPDP|3.6.1.23|dutp@c:-1;h2o@c:-1;dump@c:1;h@c:1;ppi@c:1"
+"DXHPScm|1.5.99.6|h2o@c:-1;spmd@c:-1;q6@m:-1;13dampp@c:1;4abutn@c:1;q6h2@m:1"
+"D_LACDcm|1.1.2.4|lac_d@c:-1;ficytc@m:-2;pyr@c:1;focytc@m:2"
+"D_LACDm|1.1.2.4|ficytc@m:-2;lac_d@m:-1;focytc@m:2;pyr@m:1"
+"ECOAH11p|4.2.1.17|h2o@x:-1;hxc2coa@x:-1;3hxccoa@x:1"
+"ECOAH4p|4.2.1.17|3hdcoa@x:-1;dc2coa@x:1;h2o@x:1"
+"ECOAH5p|4.2.1.17|3hddcoa@x:-1;dd2coa@x:1;h2o@x:1"
+"ECOAH6p|4.2.1.17|3htdcoa@x:-1;h2o@x:1;td2coa@x:1"
+"ECOAH7p|4.2.1.17|3hhdcoa@x:-1;h2o@x:1;hdd2coa@x:1"
+"ECOAH8p|4.2.1.17|3hodcoa@x:-1;h2o@x:1;od2coa@x:1"
+"EHGLAT|2.6.1.1|akg@c:-1;e4hglu@c:-1;4h2oglt@c:1;glu_l@c:1"
+"EHGLATm|2.6.1.1|akg@m:-1;e4hglu@m:-1;4h2oglt@m:1;glu_l@m:1"
+"EHGLATp|2.6.1.1|akg@x:-1;e4hglu@x:-1;4h2oglt@x:1;glu_l@x:1"
+"ENO|4.2.1.11|2pg@c:-1;h2o@c:1;pep@c:1"
+"EPMGH|3.2.1.22|epm@c:-1;h2o@c:-1;gal@c:1;man@c:1"
+"ETHAK|2.7.1.82|atp@c:-1;etha@c:-1;adp@c:1;ethamp@c:1;h@c:1"
+"ETHAPT_SC|2.7.8.1|12dgr_sc@c:-0.01;cdpea@c:-1;cmp@c:1;h@c:1;pe_sc@c:0.01"
+"FA120ACPH|3.1.2.14|ddcaacp@c:-1;h2o@c:-1;acp@c:1;ddca@c:1;h@c:1"
+"FA140ACPH|3.1.2.14|h2o@c:-1;myrsacp@c:-1;acp@c:1;h@c:1;ttdca@c:1"
+"FA141ACPH|3.1.2.14|h2o@c:-1;tdeacp@c:-1;acp@c:1;h@c:1;ttdcea@c:1"
+"FA160ACPH|3.1.2.14|h2o@c:-1;palmacp@c:-1;acp@c:1;h@c:1;hdca@c:1"
+"FA161ACPH|3.1.2.14|h2o@c:-1;hdeacp@c:-1;acp@c:1;h@c:1;hdcea@c:1"
+"FA180ACPH|3.1.2.14|h2o@c:-1;ocdcaacp@c:-1;acp@c:1;h@c:1;ocdca@c:1"
+"FA181ACPH|3.1.2.14|h2o@c:-1;octeacp@c:-1;acp@c:1;h@c:1;ocdcea@c:1"
+"FA182ACPH|3.1.2.14|h2o@c:-1;ocdcyaacp@c:-1;acp@c:1;h@c:1;ocdcya@c:1"
+"FACOAL100p|6.2.1.3|atp@x:-1;coa@x:-1;dca@x:-1;amp@x:1;dcacoa@x:1;ppi@x:1"
+"FACOAL120p|6.2.1.3|atp@x:-1;coa@x:-1;ddca@x:-1;amp@x:1;ddcacoa@x:1;ppi@x:1"
+"FACOAL140|6.2.1.3|atp@c:-1;coa@c:-1;ttdca@c:-1;amp@c:1;ppi@c:1;tdcoa@c:1"
+"FACOAL140p|6.2.1.3|atp@x:-1;coa@x:-1;ttdca@x:-1;amp@x:1;ppi@x:1;tdcoa@x:1"
+"FACOAL141|6.2.1.3|atp@c:-1;coa@c:-1;ttdcea@c:-1;amp@c:1;ppi@c:1;tdecoa@c:1"
+"FACOAL141p|6.2.1.3|atp@x:-1;coa@x:-1;ttdcea@x:-1;amp@x:1;ppi@x:1;tdecoa@x:1"
+"FACOAL160|6.2.1.3|atp@c:-1;coa@c:-1;hdca@c:-1;amp@c:1;pmtcoa@c:1;ppi@c:1"
+"FACOAL160p|6.2.1.3|atp@x:-1;coa@x:-1;hdca@x:-1;amp@x:1;pmtcoa@x:1;ppi@x:1"
+"FACOAL161|6.2.1.3|atp@c:-1;coa@c:-1;hdcea@c:-1;amp@c:1;hdcoa@c:1;ppi@c:1"
+"FACOAL161p|6.2.1.3|atp@x:-1;coa@x:-1;hdcea@x:-1;amp@x:1;hdcoa@x:1;ppi@x:1"
+"FACOAL180|6.2.1.3|atp@c:-1;coa@c:-1;ocdca@c:-1;amp@c:1;ppi@c:1;stcoa@c:1"
+"FACOAL181|6.2.1.3|atp@c:-1;coa@c:-1;ocdcea@c:-1;amp@c:1;odecoa@c:1;ppi@c:1"
+"FACOAL182|6.2.1.3|atp@c:-1;coa@c:-1;ocdcya@c:-1;amp@c:1;ocdycacoa@c:1;ppi@c:1"
+"FACOAL240p|6.2.1.3|atp@x:-1;coa@x:-1;ttc@x:-1;amp@x:1;ppi@x:1;ttccoa@x:1"
+"FACOAL260p|6.2.1.3|atp@x:-1;coa@x:-1;hexc@x:-1;amp@x:1;hexccoa@x:1;ppi@x:1"
+"FACOAL80p|6.2.1.2|atp@x:-1;coa@x:-1;octa@x:-1;amp@x:1;occoa@x:1;ppi@x:1"
+"FALDH|1.2.1.1|fald@c:-1;gthrd@c:-1;nad@c:-1;sfglutth@c:1;h@c:1;nadh@c:1"
+"FAS100|2.3.1.85|h@c:-3;malcoa@c:-1;nadph@c:-2;octa@c:-1;co2@c:1;coa@c:1;dca@c:1;h2o@c:1;nadp@c:2"
+"FAS100COA|2.3.1.86|h@c:-3;malcoa@c:-1;nadph@c:-2;occoa@c:-1;co2@c:1;coa@c:1;dcacoa@c:1;h2o@c:1;nadp@c:2"
+"FAS120|2.3.1.85|dca@c:-1;h@c:-3;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;ddca@c:1;h2o@c:1;nadp@c:2"
+"FAS120COA|2.3.1.86|dcacoa@c:-1;h@c:-3;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;ddcacoa@c:1;h2o@c:1;nadp@c:2"
+"FAS140|2.3.1.85|ddca@c:-1;h@c:-3;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;ttdca@c:1"
+"FAS140COA|2.3.1.86|ddcacoa@c:-1;h@c:-3;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;tdcoa@c:1"
+"FAS141|2.3.1.85|ddca@c:-1;h@c:-4;malcoa@c:-1;nadph@c:-3;o2@c:-1;co2@c:1;coa@c:1;h2o@c:3;nadp@c:3;ttdcea@c:1"
+"FAS160|2.3.1.85|h@c:-3;malcoa@c:-1;nadph@c:-2;ttdca@c:-1;co2@c:1;coa@c:1;h2o@c:1;hdca@c:1;nadp@c:2"
+"FAS160COA|2.3.1.86|h@c:-3;malcoa@c:-1;nadph@c:-2;tdcoa@c:-1;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;pmtcoa@c:1"
+"FAS161|2.3.1.85|h@c:-4;malcoa@c:-1;nadph@c:-3;o2@c:-1;ttdca@c:-1;co2@c:1;coa@c:1;h2o@c:3;hdcea@c:1;nadp@c:3"
+"FAS180|2.3.1.85|h@c:-3;hdca@c:-1;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;ocdca@c:1"
+"FAS180COA|2.3.1.86|h@c:-3;malcoa@c:-1;nadph@c:-2;pmtcoa@c:-1;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;stcoa@c:1"
+"FAS181|2.3.1.85|h@c:-4;hdca@c:-1;malcoa@c:-1;nadph@c:-3;o2@c:-1;co2@c:1;coa@c:1;h2o@c:3;nadp@c:3;ocdcea@c:1"
+"FAS240_L|2.3.1.85|h@c:-9;malcoa@c:-3;nadph@c:-6;ocdca@c:-1;co2@c:3;coa@c:3;h2o@c:3;nadp@c:6;ttc@c:1"
+"FAS260|2.3.1.85|h@c:-3;malcoa@c:-1;nadph@c:-2;ttc@c:-1;co2@c:1;coa@c:1;h2o@c:1;hexc@c:1;nadp@c:2"
+"FAS80COA_L|2.3.1.86|accoa@c:-1;h@c:-9;malcoa@c:-3;nadph@c:-6;co2@c:3;coa@c:3;h2o@c:3;nadp@c:6;occoa@c:1"
+"FAS80_L|2.3.1.85|accoa@c:-1;h@c:-8;malcoa@c:-3;nadph@c:-6;co2@c:3;coa@c:4;h2o@c:2;nadp@c:6;octa@c:1"
+"FBA|4.1.2.13|fdp@c:-1;dhap@c:1;g3p@c:1"
+"FBA2|4.1.2.13|f1p@c:-1;dhap@c:1;glyald@c:1"
+"FBA3|4.1.2.13|s17bp@c:-1;dhap@c:1;e4p@c:1"
+"FBP|3.1.3.11|fdp@c:-1;h2o@c:-1;f6p@c:1;pi@c:1"
+"FBP26|3.1.3.46|f26bp@c:-1;h2o@c:-1;f6p@c:1;pi@c:1"
+"FCLTm|4.99.1.1|fe2@m:-1;ppp9@m:-1;h@m:2;pheme@m:1"
+"FDH|1.2.1.2|for@c:-1;nad@c:-1;co2@c:1;nadh@c:1"
+"FDNG|1.2.2.1|for@c:-1;h@c:-1;q6@m:-1;co2@c:1;q6h2@m:1"
+"FKYNH|3.5.1.9|lfmkynr@c:-1;h2o@c:-1;lkynr@c:1;for@c:1;h@c:1"
+"FMETTRSm|2.1.2.9|10fthf@m:-1;mettrna@m:-1;fmettrna@m:1;h@m:1;thf@m:1"
+"FMNAT|2.7.7.2|atp@c:-1;fmn@c:-1;h@c:-1;fad@c:1;ppi@c:1"
+"FMNATm|2.7.7.2|atp@m:-1;fmn@m:-1;h@m:-1;fad@m:1;ppi@m:1"
+"FOLD3m|2.5.1.15|2ahhmd@m:-1;4abz@m:-1;dhpt@m:1;ppi@m:1"
+"FRDcm|1.3.99.1|fum@c:-1;fadh2@m:-1;succ@c:1;fad@m:1"
+"FRDm|1.3.99.1|fadh2@m:-1;fum@m:-1;fad@m:1;succ@m:1"
+"FRTT|2.5.1.29|frdp@c:-1;ipdp@c:-1;ggdp@c:1;ppi@c:1"
+"FRUK|2.7.1.56|atp@c:-1;f1p@c:-1;adp@c:1;fdp@c:1;h@c:1"
+"FTHFCL|6.3.3.2|5fthf@c:-1;atp@c:-1;adp@c:1;methf@c:1;pi@c:1"
+"FTHFCLm|6.3.3.2|5fthf@m:-1;atp@m:-1;adp@m:1;methf@m:1;pi@m:1"
+"FTHFLi|6.3.4.3|atp@c:-1;for@c:-1;thf@c:-1;10fthf@c:1;adp@c:1;pi@c:1"
+"FTHFLmi|6.3.4.3|atp@m:-1;for@m:-1;thf@m:-1;10fthf@m:1;adp@m:1;pi@m:1"
+"FUM|4.2.1.2|fum@c:-1;h2o@c:-1;mal_l@c:1"
+"FUMAC|3.7.1.2|4fumacac@c:-1;h2o@c:-1;acac@c:1;fum@c:1;h@c:1"
+"FUMm|4.2.1.2|fum@m:-1;h2o@m:-1;mal_l@m:1"
+"G12MT1g|2.4.1.131|gdpmann@g:-1;m2macchitppdol@g:-1;gdp@g:1;h@g:1;m3macchitppdol@g:1"
+"G12MT2g|2.4.1.131|gdpmann@g:-1;m3macchitppdol@g:-1;gdp@g:1;h@g:1;m4macchitppdol@g:1"
+"G13MTg|2.4.1.132|gdpmann@g:-1;macchitppdol@g:-1;gdp@g:1;h@g:1;m1macchitppdol@g:1"
+"G3PD1ir|1.1.1.8|dhap@c:-1;h@c:-1;nadh@c:-1;glyc3p@c:1;nad@c:1"
+"G3PD1irm|1.1.1.8|dhap@m:-1;h@m:-1;nadh@m:-1;glyc3p@m:1;nad@m:1"
+"G3PDm|1.1.99.5|fad@m:-1;glyc3p@m:-1;dhap@m:1;fadh2@m:1"
+"G5SD|1.2.1.41|glu5p@c:-1;h@c:-1;nadph@c:-1;glu5sa@c:1;nadp@c:1;pi@c:1"
+"G5SD2|1.2.1.41|glu5p@c:-1;h@c:-1;nadh@c:-1;glu5sa@c:1;nad@c:1;pi@c:1"
+"G6PDA|3.5.99.6|gam6p@c:-1;h2o@c:-1;f6p@c:1;nh4@c:1"
+"G6PDH2|1.1.1.49|g6p@c:-1;nadp@c:-1;6pgl@c:1;h@c:1;nadph@c:1"
+"G6PI|5.3.1.9|g6p@c:-1;g6p_b@c:1"
+"G6PI3|5.3.1.9|g6p_b@c:-1;f6p@c:1"
+"GALIGH|3.2.1.22|1dgali@c:-1;h2o@c:-1;gal@c:1;inost@c:1"
+"GALK|2.7.1.6|atp@c:-1;gal@c:-1;adp@c:1;gal1p@c:1;h@c:1"
+"GALS3|3.2.1.22|h2o@c:-1;melib@c:-1;gal@c:1;glc_d@c:1"
+"GALT|2.7.7.10|gal1p@c:-1;h@c:-1;utp@c:-1;ppi@c:1;udpgal@c:1"
+"GALU|2.7.7.9|g1p@c:-1;h@c:-1;utp@c:-1;ppi@c:1;udpg@c:1"
+"GAPD|1.2.1.12|g3p@c:-1;nad@c:-1;pi@c:-1;13dpg@c:1;h@c:1;nadh@c:1"
+"GARFTi|2.1.2.2|10fthf@c:-1;gar@c:-1;fgam@c:1;h@c:1;thf@c:1"
+"GBEZ|2.4.1.18|14glun@c:-1;glycogen@c:1;h2o@c:1"
+"GCC2am|1.4.4.2|gly@m:-1;h@m:-1;lpam@m:-1;alpam@m:1;co2@m:1"
+"GCC2bim|2.1.2.10|alpam@m:-1;thf@m:-1;dhlam@m:1;mlthf@m:1;nh4@m:1"
+"GCC2cm|1.8.1.4|dhlam@m:-1;nad@m:-1;h@m:1;lpam@m:1;nadh@m:1"
+"GCCam|1.4.4.2|gly@m:-1;h@m:-1;lpro@m:-1;alpro@m:1;co2@m:1"
+"GCCbim|2.1.2.10|alpro@m:-1;thf@m:-1;dhlpro@m:1;mlthf@m:1;nh4@m:1"
+"GCCcm|1.8.1.4|dhlpro@m:-1;nad@m:-1;h@m:1;lpro@m:1;nadh@m:1"
+"GDPMANNtg|2.4.1.83|gdpmann@c:-1;gmp@g:-1;gmp@c:1;gdpmann@g:1"
+"GF6PTA|2.6.1.16|f6p@c:-1;gln_l@c:-1;gam6p@c:1;glu_l@c:1"
+"GGLGH|3.2.1.22|ggl@c:-1;h2o@c:-1;gal@c:1;glyc@c:1"
+"GHMT2r|2.1.2.1|ser_l@c:-1;thf@c:-1;gly@c:1;h2o@c:1;mlthf@c:1"
+"GHMT2rm|2.1.2.1|ser_l@m:-1;thf@m:-1;gly@m:1;h2o@m:1;mlthf@m:1"
+"GK1|2.7.4.8|atp@c:-1;gmp@c:-1;adp@c:1;gdp@c:1"
+"GK2|2.7.4.8|datp@c:-1;gmp@c:-1;dadp@c:1;gdp@c:1"
+"GLCGSD|3.2.1.3|glycogen@c:-1;h2o@c:-1;glc_d@c:1"
+"GLCGSDv|3.2.1.3|glycogen@v:-1;h2o@v:-1;glc_d@v:1"
+"GLCP|2.4.1.1|glycogen@c:-1;pi@c:-1;g1p@c:1"
+"GLCS2|2.4.1.11|udpg@c:-1;glycogen@c:1;h@c:1;udp@c:1"
+"GLNS|6.3.1.2|atp@c:-1;glu_l@c:-1;nh4@c:-1;adp@c:1;gln_l@c:1;h@c:1;pi@c:1"
+"GLNTRS|6.1.1.18|atp@c:-1;gln_l@c:-1;trnagln@c:-1;amp@c:1;glntrna@c:1;ppi@c:1"
+"GLPT|2.3.1.97|glp@c:-1;tdcoa@c:-1;coa@c:1;tglp@c:1"
+"GLU5K|2.7.2.11|atp@c:-1;glu_l@c:-1;adp@c:1;glu5p@c:1"
+"GLUCYS|6.3.2.2|atp@c:-1;cys_l@c:-1;glu_l@c:-1;adp@c:1;glucys@c:1;h@c:1;pi@c:1"
+"GLUDC|4.1.1.15|glu_l@c:-1;h@c:-1;4abut@c:1;co2@c:1"
+"GLUDxi|1.4.1.2|glu_l@c:-1;h2o@c:-1;nad@c:-1;akg@c:1;h@c:1;nadh@c:1;nh4@c:1"
+"GLUDyi|1.4.1.4|akg@c:-1;h@c:-1;nadph@c:-1;nh4@c:-1;glu_l@c:1;h2o@c:1;nadp@c:1"
+"GLUK|2.7.1.2|atp@c:-1;glc_d@c:-1;adp@c:1;g6p_b@c:1;h@c:1"
+"GLUN|3.5.1.2|gln_l@c:-1;h2o@c:-1;glu_l@c:1;nh4@c:1"
+"GLUPRT|2.4.2.14|gln_l@c:-1;h2o@c:-1;prpp@c:-1;glu_l@c:1;ppi@c:1;pram@c:1"
+"GLUSx|1.4.1.14|akg@c:-1;gln_l@c:-1;h@c:-1;nadh@c:-1;glu_l@c:2;nad@c:1"
+"GLUTRS|6.1.1.17|atp@c:-1;glu_l@c:-1;trnaglu@c:-1;amp@c:1;glutrna@c:1;ppi@c:1"
+"GLUTRSm|6.1.1.17|atp@m:-1;glu_l@m:-1;trnaglu@m:-1;amp@m:1;glutrna@m:1;ppi@m:1"
+"GLYATi|2.3.1.29|2aobut@c:-1;coa@c:-1;accoa@c:1;gly@c:1"
+"GLYCDy|1.1.1.6|glyc@c:-1;nadp@c:-1;dha@c:1;h@c:1;nadph@c:1"
+"GLYCLm|2.1.2.10|gly@m:-1;nad@m:-1;thf@m:-1;co2@m:1;mlthf@m:1;nadh@m:1;nh4@m:1"
+"GLYGS|2.4.1.11|h2o@c:-1;udpg@c:-1;14glun@c:1;h@c:1;udp@c:1"
+"GLYK|2.7.1.30|atp@c:-1;glyc@c:-1;adp@c:1;glyc3p@c:1;h@c:1"
+"GLYOX|3.1.2.6|h2o@c:-1;lgt_s@c:-1;gthrd@c:1;h@c:1;lac_d@c:1"
+"GLYOXm|3.1.2.6|h2o@m:-1;lgt_s@m:-1;gthrd@m:1;h@m:1;lac_d@m:1"
+"GLYTRS|6.1.1.14|atp@c:-1;gly@c:-1;trnagly@c:-1;amp@c:1;glytrna@c:1;ppi@c:1"
+"GMPS2|6.3.5.2|atp@c:-1;gln_l@c:-1;h2o@c:-1;xmp@c:-1;amp@c:1;glu_l@c:1;gmp@c:1;h@c:2;ppi@c:1"
+"GND|1.1.1.44|6pgc@c:-1;nadp@c:-1;co2@c:1;nadph@c:1;ru5p_d@c:1"
+"GPDDA1|3.1.4.46|g3pc@c:-1;h2o@c:-1;chol@c:1;glyc3p@c:1;h@c:1"
+"GRTT|2.5.1.10|grdp@c:-1;ipdp@c:-1;frdp@c:1;ppi@c:1"
+"GTHO|1.8.1.7|gthox@c:-1;h@c:-1;nadph@c:-1;gthrd@c:2;nadp@c:1"
+"GTHOm|1.8.1.7|gthox@m:-1;h@m:-1;nadph@m:-1;gthrd@m:2;nadp@m:1"
+"GTHP|1.11.1.9|gthrd@c:-2;h2o2@c:-1;gthox@c:1;h2o@c:2"
+"GTHPm|1.11.1.9|gthrd@m:-2;h2o2@m:-1;gthox@m:1;h2o@m:2"
+"GTHS|6.3.2.3|atp@c:-1;glucys@c:-1;gly@c:-1;adp@c:1;gthrd@c:1;h@c:1;pi@c:1"
+"GTMLT|2.3.2.2|ala_l@c:-1;gthrd@c:-1;cgly@c:1;gluala@c:1"
+"GTPCI|3.5.4.16|gtp@c:-1;h2o@c:-1;ahdt@c:1;for@c:1;h@c:1"
+"GTPCII|3.5.4.25|gtp@c:-1;h2o@c:-3;25dhpp@c:1;for@c:1;h@c:2;ppi@c:1"
+"GTPH1|3.6.1.5|gtp@c:-1;h2o@c:-2;gmp@c:1;h@c:2;pi@c:2"
+"GUAD|3.5.4.3|gua@c:-1;h@c:-1;h2o@c:-1;nh4@c:1;xan@c:1"
+"GUAPRT|2.4.2.8|gua@c:-1;prpp@c:-1;gmp@c:1;ppi@c:1"
+"HACD10p|1.1.1.35|3hxccoa@x:-1;nad@x:-1;3ohxccoa@x:1;h@x:1;nadh@x:1"
+"HACD4p|1.1.1.35|3odcoa@x:-1;h@x:-1;nadh@x:-1;3hdcoa@x:1;nad@x:1"
+"HACD5p|1.1.1.35|3oddcoa@x:-1;h@x:-1;nadh@x:-1;3hddcoa@x:1;nad@x:1"
+"HACD6p|1.1.1.35|3otdcoa@x:-1;h@x:-1;nadh@x:-1;3htdcoa@x:1;nad@x:1"
+"HACD7p|1.1.1.35|3ohdcoa@x:-1;h@x:-1;nadh@x:-1;3hhdcoa@x:1;nad@x:1"
+"HACD8p|1.1.1.35|3ohodcoa@x:-1;h@x:-1;nadh@x:-1;3hodcoa@x:1;nad@x:1"
+"HACNHm|4.2.1.36|b124tc@m:-1;h2o@m:-1;hicit@m:1"
+"HCITSm|4.1.3.21|accoa@m:-1;akg@m:-1;h2o@m:-1;coa@m:1;h@m:1;hcit@m:1"
+"HCITSn|4.1.3.21|accoa@n:-1;akg@n:-1;h2o@n:-1;coa@n:1;h@n:1;hcit@n:1"
+"HCO3E|4.2.1.1|co2@c:-1;h2o@c:-1;h@c:1;hco3@c:1"
+"HCYSMT|2.1.1.10|amet@c:-1;hcys_l@c:-1;ahcys@c:1;h@c:1;met_l@c:1"
+"HETZK|2.7.1.50|4mhetz@c:-1;atp@c:-1;4mpetz@c:1;adp@c:1;h@c:1"
+"HEX1|2.7.1.1|atp@c:-1;glc_d@c:-1;adp@c:1;g6p@c:1;h@c:1"
+"HEX4|2.7.1.7|atp@c:-1;man@c:-1;adp@c:1;h@c:1;man6p@c:1"
+"HEX7|2.7.1.1|atp@c:-1;fru@c:-1;adp@c:1;f6p@c:1;h@c:1"
+"HGNTOR|1.13.11.5|hgentis@c:-1;o2@c:-1;4mlacac@c:1;h@c:1"
+"HICITDm|1.1.1.155|hicit@m:-1;nad@m:-1;h@m:1;nadh@m:1;oxag@m:1"
+"HISTD|1.1.1.23|h2o@c:-1;histd@c:-1;nad@c:-2;h@c:3;his_l@c:1;nadh@c:2"
+"HISTP|3.1.3.15|h2o@c:-1;hisp@c:-1;histd@c:1;pi@c:1"
+"HISTRS|6.1.1.21|atp@c:-1;his_l@c:-1;trnahis@c:-1;amp@c:1;histrna@c:1;ppi@c:1"
+"HISTRSm|6.1.1.21|atp@m:-1;his_l@m:-1;trnahis@m:-1;amp@m:1;histrna@m:1;ppi@m:1"
+"HKYNH|3.7.1.3|h2o@c:-1;hlkynr@c:-1;3hanthrn@c:1;ala_l@c:1"
+"HMBS|4.3.1.8|h2o@c:-1;ppbng@c:-4;hmbil@c:1;nh4@c:4"
+"HMGCOAR|1.1.1.34|coa@c:-1;mev_r@c:-1;nadp@c:-2;h@c:2;hmgcoa@c:1;nadph@c:2"
+"HMGCOAS|4.1.3.5|coa@c:-1;h@c:-1;hmgcoa@c:-1;aacoa@c:1;accoa@c:1;h2o@c:1"
+"HMGCOASm|4.1.3.5|coa@m:-1;h@m:-1;hmgcoa@m:-1;aacoa@m:1;accoa@m:1;h2o@m:1"
+"HMPK1|2.7.1.49|4ahmmp@c:-1;atp@c:-1;4ampm@c:1;adp@c:1;h@c:1"
+"HPPKm|2.7.6.3|2ahhmp@m:-1;atp@m:-1;2ahhmd@m:1;amp@m:1;h@m:1"
+"HPROa|1.5.1.2|1p3h5c@c:-1;h@c:-2;nadh@c:-1;4hpro_lt@c:1;nad@c:1"
+"HPROb|1.5.1.2|1p3h5c@c:-1;h@c:-2;nadph@c:-1;4hpro_lt@c:1;nadp@c:1"
+"HPROxm|1.5.1.12|4hpro_lt@m:-1;nad@m:-1;1p3h5c@m:1;h@m:2;nadh@m:1"
+"HPROym|1.5.1.12|4hpro_lt@m:-1;nadp@m:-1;1p3h5c@m:1;h@m:2;nadph@m:1"
+"HSDxi|1.1.1.3|aspsa@c:-1;h@c:-1;nadh@c:-1;hom_l@c:1;nad@c:1"
+"HSDyi|1.1.1.3|aspsa@c:-1;h@c:-1;nadph@c:-1;hom_l@c:1;nadp@c:1"
+"HSERTA|2.3.1.31|accoa@c:-1;hom_l@c:-1;achms@c:1;coa@c:1"
+"HSK|2.7.1.39|atp@c:-1;hom_l@c:-1;adp@c:1;h@c:1;phom@c:1"
+"HSTPT|2.6.1.9|glu_l@c:-1;imacp@c:-1;akg@c:1;hisp@c:1"
+"HXPRT|2.4.2.8|hxan@c:-1;prpp@c:-1;imp@c:1;ppi@c:1"
+"ICDHxm|1.1.1.41|icit@m:-1;nad@m:-1;akg@m:1;co2@m:1;nadh@m:1"
+"ICDHy|1.1.1.42|icit@c:-1;nadp@c:-1;akg@c:1;co2@c:1;nadph@c:1"
+"ICDHym|1.1.1.42|icit@m:-1;nadp@m:-1;akg@m:1;co2@m:1;nadph@m:1"
+"ICDHyp|1.1.1.42|icit@x:-1;nadp@x:-1;akg@x:1;co2@x:1;nadph@x:1"
+"ICL|4.1.3.1|icit@c:-1;glx@c:1;succ@c:1"
+"IGPDH|4.2.1.19|eig3p@c:-1;h2o@c:1;imacp@c:1"
+"IGPS|4.1.1.48|2cpr5p@c:-1;h@c:-1;3ig3p@c:1;co2@c:1;h2o@c:1"
+"ILETA|2.6.1.42|akg@c:-1;ile_l@c:-1;3mop@c:1;glu_l@c:1"
+"ILETAm|2.6.1.42|akg@m:-1;ile_l@m:-1;3mop@m:1;glu_l@m:1"
+"ILETRS|6.1.1.5|atp@c:-1;ile_l@c:-1;trnaile@c:-1;amp@c:1;iletrna@c:1;ppi@c:1"
+"ILETRSm|6.1.1.5|atp@m:-1;ile_l@m:-1;trnaile@m:-1;amp@m:1;iletrna@m:1;ppi@m:1"
+"IMPC|3.5.4.10|h2o@c:-1;imp@c:-1;fprica@c:1"
+"IMPD|1.1.1.205|h2o@c:-1;imp@c:-1;nad@c:-1;h@c:1;nadh@c:1;xmp@c:1"
+"INDPYRD|4.1.1.74|h@c:-1;indpyr@c:-1;co2@c:1;id3acald@c:1"
+"INSK|2.7.1.73|atp@c:-1;ins@c:-1;adp@c:1;h@c:1;imp@c:1"
+"IPDDI|5.3.3.2|ipdp@c:-1;dmpp@c:1"
+"IPMD|1.1.1.85|3c2hmp@c:-1;nad@c:-1;3c4mop@c:1;h@c:1;nadh@c:1"
+"IPPMIa|4.2.1.33|3c2hmp@c:-1;2ippm@c:1;h2o@c:1"
+"IPPMIb|4.2.1.33|2ippm@c:-1;h2o@c:-1;3c3hmp@c:1"
+"IPPS|4.1.3.12|3mob@c:-1;accoa@c:-1;h2o@c:-1;3c3hmp@c:1;coa@c:1;h@c:1"
+"IPPSm|4.1.3.12|3mob@m:-1;accoa@m:-1;h2o@m:-1;3c3hmp@m:1;coa@m:1;h@m:1"
+"ITCOALm|6.2.1.5|atp@m:-1;coa@m:-1;itacon@m:-1;adp@m:1;itaccoa@m:1;pi@m:1"
+"KARA1im|1.1.1.86|alac_s@m:-1;h@m:-1;nadph@m:-1;23dhmb@m:1;nadp@m:1"
+"KARA2im|1.1.1.86|2ahbut@m:-1;h@m:-1;nadph@m:-1;23dhmp@m:1;nadp@m:1"
+"KYN|3.7.1.3|lkynr@c:-1;h2o@c:-1;ala_l@c:1;anth@c:1;h@c:1"
+"KYN3OX|1.14.13.9|lkynr@c:-1;h@c:-1;nadph@c:-1;o2@c:-1;h2o@c:1;hlkynr@c:1;nadp@c:1"
+"LALDO3|1.1.1.21|h@c:-1;mthgxl@c:-1;nadph@c:-1;lald_l@c:1;nadp@c:1"
+"LCADi|1.2.1.21|h2o@c:-1;lald_l@c:-1;nad@c:-1;h@c:2;lac_l@c:1;nadh@c:1"
+"LEUTA|2.6.1.6|akg@c:-1;leu_l@c:-1;4mop@c:1;glu_l@c:1"
+"LEUTAm|2.6.1.6|akg@m:-1;leu_l@m:-1;4mop@m:1;glu_l@m:1"
+"LEUTRS|6.1.1.4|atp@c:-1;leu_l@c:-1;trnaleu@c:-1;amp@c:1;leutrna@c:1;ppi@c:1"
+"LEUTRSm|6.1.1.4|atp@m:-1;leu_l@m:-1;trnaleu@m:-1;amp@m:1;leutrna@m:1;ppi@m:1"
+"LGTHL|4.4.1.5|gthrd@c:-1;mthgxl@c:-1;lgt_s@c:1"
+"LNS14DM|1.14.14.1|h@c:-2;lanost@c:-1;nadph@c:-3;o2@c:-3;44mctr@c:1;for@c:1;h2o@c:4;nadp@c:3"
+"LNS14DMx|1.14.14.1|h@c:-2;lanost@c:-1;nadh@c:-3;o2@c:-3;44mctr@c:1;for@c:1;h2o@c:4;nad@c:3"
+"LNSTLS|5.4.99.7|ssq23epx@c:-1;lanost@c:1"
+"LPCAT_SC|2.3.1.23|1agpc_sc@c:-0.01;dcacoa@c:-0.02;ddcacoa@c:-0.06;hdcoa@c:-0.17;ocdycacoa@c:-0.09;odecoa@c:-0.24;pmtcoa@c:-0.27;stcoa@c:-0.05;tdcoa@c:-0.1;coa@c:1;pc_sc@c:0.01"
+"LYSTRS|6.1.1.6|atp@c:-1;lys_l@c:-1;trnalys@c:-1;amp@c:1;lystrna@c:1;ppi@c:1"
+"LYSTRSm|6.1.1.6|atp@m:-1;lys_l@m:-1;trnalys@m:-1;amp@m:1;lystrna@m:1;ppi@m:1"
+"L_LACD2cm|1.1.2.3|lac_l@c:-1;ficytc@m:-2;pyr@c:1;focytc@m:2"
+"MACACI|5.2.1.2|4mlacac@c:-1;4fumacac@c:1"
+"MALS|4.1.3.2|accoa@c:-1;glx@c:-1;h2o@c:-1;coa@c:1;h@c:1;mal_l@c:1"
+"MALSp|4.1.3.2|accoa@x:-1;glx@x:-1;h2o@x:-1;coa@x:1;h@x:1;mal_l@x:1"
+"MALT|3.2.1.20|h2o@c:-1;malt@c:-1;glc_d@c:2"
+"MAN1PT|2.7.7.13|gtp@c:-1;h@c:-1;man1p@c:-1;gdpmann@c:1;ppi@c:1"
+"MAN6PI|5.3.1.8|man6p@c:-1;f6p@c:1"
+"MCITDm|4.2.1.79|hcit@m:-1;b124tc@m:1;h2o@m:1"
+"MCITL2m|4.1.3.30|micit@m:-1;pyr@m:1;succ@m:1"
+"MCITSm|4.1.3.31|h2o@m:-1;oaa@m:-1;ppcoa@m:-1;2mcit@m:1;coa@m:1;h@m:1"
+"MCOATA|2.3.1.39|acp@c:-1;malcoa@c:-1;coa@c:1;malacp@c:1"
+"MCOATAm|2.3.1.39|acp@m:-1;malcoa@m:-1;coa@m:1;malacp@m:1"
+"MDH|1.1.1.37|mal_l@c:-1;nad@c:-1;h@c:1;nadh@c:1;oaa@c:1"
+"MDHm|1.1.1.37|mal_l@m:-1;nad@m:-1;h@m:1;nadh@m:1;oaa@m:1"
+"MDHp|1.1.1.37|mal_l@x:-1;nad@x:-1;h@x:1;nadh@x:1;oaa@x:1"
+"ME1m|1.1.1.38|mal_l@m:-1;nad@m:-1;co2@m:1;nadh@m:1;pyr@m:1"
+"ME2m|1.1.1.40|mal_l@m:-1;nadp@m:-1;co2@m:1;nadph@m:1;pyr@m:1"
+"MELTGH|3.2.1.22|h2o@c:-1;melt@c:-1;gal@c:1;sbt_d@c:1"
+"METAT|2.5.1.6|atp@c:-1;h2o@c:-1;met_l@c:-1;amet@c:1;pi@c:1;ppi@c:1"
+"METS|2.1.1.13|5mthf@c:-1;hcys_l@c:-1;h@c:1;met_l@c:1;thf@c:1"
+"METTRS|6.1.1.10|atp@c:-1;met_l@c:-1;trnamet@c:-1;amp@c:1;mettrna@c:1;ppi@c:1"
+"METTRSm|6.1.1.10|atp@m:-1;met_l@m:-1;trnamet@m:-1;amp@m:1;mettrna@m:1;ppi@m:1"
+"MEVK1|2.7.1.36|atp@c:-1;mev_r@c:-1;5pmev@c:1;adp@c:1;h@c:1"
+"MEVK2|2.7.1.36|ctp@c:-1;mev_r@c:-1;5pmev@c:1;cdp@c:1;h@c:1"
+"MEVK3|2.7.1.36|gtp@c:-1;mev_r@c:-1;5pmev@c:1;gdp@c:1;h@c:1"
+"MEVK4|2.7.1.36|mev_r@c:-1;utp@c:-1;5pmev@c:1;h@c:1;udp@c:1"
+"MFAPS_SC|2.1.1.16|amet@c:-1;ptdmeeta_sc@c:-0.01;ahcys@c:1;h@c:1;ptd2meeta_sc@c:0.01"
+"MGSA|4.2.3.3|dhap@c:-1;mthgxl@c:1;pi@c:1"
+"MHPGLUT|2.1.1.14|hcys_l@c:-1;mhpglu@c:-1;hpglu@c:1;met_l@c:1"
+"MI1456PKn|2.7.1.151|atp@n:-1;mi1456p@n:-1;adp@n:1;h@n:1;mi13456p@n:1"
+"MI145P6Kn|2.7.1.151|atp@n:-1;mi145p@n:-1;adp@n:1;h@n:1;mi1456p@n:1"
+"MI145PKn|2.7.1.127|atp@n:-1;mi145p@n:-1;adp@n:1;h@n:1;mi1345p@n:1"
+"MI1PP|3.1.3.25|h2o@c:-1;mi1p_d@c:-1;inost@c:1;pi@c:1"
+"MI1PS|5.5.1.4|g6p@c:-1;mi1p_d@c:1"
+"MOHMT|2.1.2.11|3mob@c:-1;h2o@c:-1;mlthf@c:-1;2dhp@c:1;thf@c:1"
+"MTAP|2.4.2.28|5mta@c:-1;pi@c:-1;5mdr1p@c:1;ade@c:1"
+"MTHFC|3.5.4.9|h2o@c:-1;methf@c:-1;10fthf@c:1;h@c:1"
+"MTHFCm|3.5.4.9|h2o@m:-1;methf@m:-1;10fthf@m:1;h@m:1"
+"MTHFD|1.5.1.5|mlthf@c:-1;nadp@c:-1;methf@c:1;nadph@c:1"
+"MTHFD2i|1.5.1.5|mlthf@c:-1;nad@c:-1;methf@c:1;nadh@c:1"
+"MTHFDm|1.5.1.5|mlthf@m:-1;nadp@m:-1;methf@m:1;nadph@m:1"
+"MTHFR3|1.5.1.20|h@c:-2;mlthf@c:-1;nadph@c:-1;5mthf@c:1;nadp@c:1"
+"MTRI|5.3.1.23|5mdr1p@c:-1;5mdru1p@c:1"
+"NABTNO|1.2.1.3|h2o@c:-1;n4abutn@c:-1;nad@c:-1;4aabutn@c:1;h@c:2;nadh@c:1"
+"NADDPp|3.6.1.22|h2o@x:-1;nad@x:-1;amp@x:1;h@x:2;nmn@x:1"
+"NADH2_u6cm|1.6.99.3|h@c:-1;nadh@c:-1;q6@m:-1;nad@c:1;q6h2@m:1"
+"NADH2_u6m|1.6.99.3|h@m:-1;nadh@m:-1;q6@m:-1;nad@m:1;q6h2@m:1"
+"NADK|2.7.1.23|atp@c:-1;nad@c:-1;adp@c:1;h@c:1;nadp@c:1"
+"NADKm|2.7.1.23|atp@m:-1;nad@m:-1;adp@m:1;h@m:1;nadp@m:1"
+"NADN|3.2.2.5|h2o@c:-1;nad@c:-1;adprib@c:1;h@c:1;ncam@c:1"
+"NADNm|3.2.2.5|h2o@m:-1;nad@m:-1;adprib@m:1;h@m:1;ncam@m:1"
+"NADS1|6.3.1.5|atp@c:-1;dnad@c:-1;nh4@c:-1;amp@c:1;h@c:1;nad@c:1;ppi@c:1"
+"NADS1n|6.3.1.5|atp@n:-1;dnad@n:-1;nh4@n:-1;amp@n:1;h@n:1;nad@n:1;ppi@n:1"
+"NAPRT|2.4.2.11|h@c:-1;nac@c:-1;prpp@c:-1;nicrnt@c:1;ppi@c:1"
+"NAPRTm|2.4.2.11|h@m:-1;nac@m:-1;prpp@m:-1;nicrnt@m:1;ppi@m:1"
+"NDP1|3.6.1.6|adp@c:-1;h2o@c:-1;amp@c:1;h@c:1;pi@c:1"
+"NDP3|3.6.1.6|gdp@c:-1;h2o@c:-1;gmp@c:1;h@c:1;pi@c:1"
+"NDP3g|3.6.1.6|gdp@g:-1;h2o@g:-1;gmp@g:1;h@g:1;pi@g:1"
+"NDP4|3.6.1.6|dgdp@c:-1;h2o@c:-1;dgmp@c:1;h@c:1;pi@c:1"
+"NDP7|3.6.1.6|h2o@c:-1;udp@c:-1;h@c:1;pi@c:1;ump@c:1"
+"NDPK1|2.7.4.6|atp@c:-1;gdp@c:-1;adp@c:1;gtp@c:1"
+"NDPK2|2.7.4.6|atp@c:-1;udp@c:-1;adp@c:1;utp@c:1"
+"NDPK3|2.7.4.6|atp@c:-1;cdp@c:-1;adp@c:1;ctp@c:1"
+"NDPK4|2.7.4.6|atp@c:-1;dtdp@c:-1;adp@c:1;dttp@c:1"
+"NDPK5|2.7.4.6|atp@c:-1;dgdp@c:-1;adp@c:1;dgtp@c:1"
+"NDPK6|2.7.4.6|atp@c:-1;dudp@c:-1;adp@c:1;dutp@c:1"
+"NDPK7|2.7.4.6|atp@c:-1;dcdp@c:-1;adp@c:1;dctp@c:1"
+"NDPK8|2.7.4.6|atp@c:-1;dadp@c:-1;adp@c:1;datp@c:1"
+"NDPK9|2.7.4.6|atp@c:-1;idp@c:-1;adp@c:1;itp@c:1"
+"NMNAT|2.7.7.1|atp@c:-1;h@c:-1;nmn@c:-1;nad@c:1;ppi@c:1"
+"NMNATm|2.7.7.1|atp@m:-1;h@m:-1;nmn@m:-1;nad@m:1;ppi@m:1"
+"NNAMr|3.5.1.19|h2o@c:-1;ncam@c:-1;nac@c:1;nh4@c:1"
+"NNAMrm|3.5.1.19|h2o@m:-1;ncam@m:-1;nac@m:1;nh4@m:1"
+"NNAT|2.7.7.18|atp@c:-1;h@c:-1;nicrnt@c:-1;dnad@c:1;ppi@c:1"
+"NNATm|2.7.7.18|atp@m:-1;h@m:-1;nicrnt@m:-1;dnad@m:1;ppi@m:1"
+"NNDPR|2.4.2.19|h@c:-2;prpp@c:-1;quln@c:-1;co2@c:1;nicrnt@c:1;ppi@c:1"
+"NNDPRm|2.4.2.19|h@m:-2;prpp@m:-1;quln@m:-1;co2@m:1;nicrnt@m:1;ppi@m:1"
+"NNMT|2.1.1.1|amet@c:-1;ncam@c:-1;1mncam@c:1;ahcys@c:1"
+"NTD1|3.1.3.5|dump@c:-1;h2o@c:-1;duri@c:1;pi@c:1"
+"NTD10|3.1.3.5|h2o@c:-1;xmp@c:-1;pi@c:1;xtsn@c:1"
+"NTD11|3.1.3.5|h2o@c:-1;imp@c:-1;ins@c:1;pi@c:1"
+"NTD2|3.1.3.5|h2o@c:-1;ump@c:-1;pi@c:1;uri@c:1"
+"NTD3|3.1.3.5|dcmp@c:-1;h2o@c:-1;dcyt@c:1;pi@c:1"
+"NTD4|3.1.3.5|cmp@c:-1;h2o@c:-1;cytd@c:1;pi@c:1"
+"NTD5|3.1.3.5|dtmp@c:-1;h2o@c:-1;pi@c:1;thymd@c:1"
+"NTD6|3.1.3.5|damp@c:-1;h2o@c:-1;dad_2@c:1;pi@c:1"
+"NTD7|3.1.3.5|amp@c:-1;h2o@c:-1;adn@c:1;pi@c:1"
+"NTD8|3.1.3.5|dgmp@c:-1;h2o@c:-1;dgsn@c:1;pi@c:1"
+"NTD9|3.1.3.5|gmp@c:-1;h2o@c:-1;gsn@c:1;pi@c:1"
+"NTP3|3.6.1.15|gtp@c:-1;h2o@c:-1;gdp@c:1;h@c:1;pi@c:1"
+"NTP4|3.6.1.15|dgtp@c:-1;h2o@c:-1;dgdp@c:1;h@c:1;pi@c:1"
+"NTRLASE|3.5.5.1|h2o@c:-2;ind3acnl@c:-1;ind3ac@c:1;nh4@c:1"
+"NTRLASE2|3.5.5.1|aprop@c:-1;h2o@c:-2;ala_l@c:1;nh4@c:1"
+"NTRLASE3|3.5.5.1|acybut@c:-1;h2o@c:-2;glu_l@c:1;nh4@c:1"
+"OBDHm|1.2.7.2|2obut@m:-1;coa@m:-1;nad@m:-1;co2@m:1;nadh@m:1;ppcoa@m:1"
+"OCBTi|2.1.3.3|cbp@c:-1;orn@c:-1;citr_l@c:1;h@c:1;pi@c:1"
+"OHACT1|2.3.1.84|accoa@c:-1;etoh@c:-1;aces@c:1;coa@c:1"
+"OHACT2|2.3.1.84|accoa@c:-1;iamoh@c:-1;coa@c:1;iamac@c:1"
+"OHACT3|2.3.1.84|2mbtoh@c:-1;accoa@c:-1;2mbac@c:1;coa@c:1"
+"OHACT4|2.3.1.84|accoa@c:-1;ibutoh@c:-1;coa@c:1;ibutac@c:1"
+"OHACT5|2.3.1.84|2phetoh@c:-1;accoa@c:-1;coa@c:1;pheac@c:1"
+"OHPBAT|2.6.1.52|glu_l@c:-1;ohpb@c:-1;akg@c:1;phthr@c:1"
+"OMPDC|4.1.1.23|h@c:-1;orot5p@c:-1;co2@c:1;ump@c:1"
+"ORNDC|4.1.1.17|h@c:-1;orn@c:-1;co2@c:1;ptrc@c:1"
+"ORNTA|2.6.1.13|akg@c:-1;orn@c:-1;glu_l@c:1;glu5sa@c:1"
+"ORNTACim|2.3.1.35|acorn@m:-1;glu_l@m:-1;acglu@m:1;orn@m:1"
+"ORPT|2.4.2.10|orot5p@c:-1;ppi@c:-1;orot@c:1;prpp@c:1"
+"P5CDm|1.5.1.12|1pyr5c@m:-1;h2o@m:-2;nad@m:-1;glu_l@m:1;h@m:1;nadh@m:1"
+"P5CR|1.5.1.2|1pyr5c@c:-1;h@c:-2;nadph@c:-1;nadp@c:1;pro_l@c:1"
+"PANTS|6.3.2.1|ala_b@c:-1;atp@c:-1;pant_r@c:-1;amp@c:1;h@c:1;pnto_r@c:1;ppi@c:1"
+"PAPSR|1.8.4.8|paps@c:-1;trdrd@c:-1;h@c:2;pap@c:1;so3@c:1;trdox@c:1"
+"PC|6.4.1.1|atp@c:-1;hco3@c:-1;pyr@c:-1;adp@c:1;h@c:1;oaa@c:1;pi@c:1"
+"PCDAGAT|2.3.1.43|12dgr_sc@c:-1;pc_sc@c:-1;1agpc_sc@c:1;triglyc_sc@c:1"
+"PDE1|3.1.4.17|camp@c:-1;h2o@c:-1;amp@c:1;h@c:1"
+"PDE2|3.1.4.17|35cdamp@c:-1;h2o@c:-1;damp@c:1;h@c:1"
+"PDE3|3.1.4.17|35cimp@c:-1;h2o@c:-1;h@c:1;imp@c:1"
+"PDE4|3.1.4.17|35cgmp@c:-1;h2o@c:-1;gmp@c:1;h@c:1"
+"PDE5|3.1.4.17|35ccmp@c:-1;h2o@c:-1;cmp@c:1;h@c:1"
+"PDHcm|1.8.1.4|dhlam@m:-1;nad@m:-1;h@m:1;lpam@m:1;nadh@m:1"
+"PDHm|1.2.4.1|coa@m:-1;nad@m:-1;pyr@m:-1;accoa@m:1;co2@m:1;nadh@m:1"
+"PDX5PO|1.4.3.5|o2@c:-1;pdx5p@c:-1;h2o2@c:1;pydx5p@c:1"
+"PEPAT|2.3.1.88|accoa@c:-1;pepd@c:-1;apep@c:1;coa@c:1;h@c:1"
+"PETHCT|2.7.7.14|ctp@c:-1;ethamp@c:-1;h@c:-1;cdpea@c:1;ppi@c:1"
+"PETOHM_SC|2.1.1.17|amet@c:-1;pe_sc@c:-0.01;ahcys@c:1;h@c:1;ptdmeeta_sc@c:0.01"
+"PFK|2.7.1.11|atp@c:-1;f6p@c:-1;adp@c:1;fdp@c:1;h@c:1"
+"PFK26|2.7.1.105|atp@c:-1;f6p@c:-1;adp@c:1;f26bp@c:1;h@c:1"
+"PFK_2|2.7.1.11|atp@c:-1;tag6p_d@c:-1;adp@c:1;h@c:1;tagdp_d@c:1"
+"PFK_3|2.7.1.11|atp@c:-1;s7p@c:-1;adp@c:1;h@c:1;s17bp@c:1"
+"PGAMT|5.4.2.10|gam1p@c:-1;gam6p@c:1"
+"PGCD|1.1.1.95|3pg@c:-1;nad@c:-1;3php@c:1;h@c:1;nadh@c:1"
+"PGI|5.3.1.9|g6p@c:-1;f6p@c:1"
+"PGK|2.7.2.3|3pg@c:-1;atp@c:-1;13dpg@c:1;adp@c:1"
+"PGL|3.1.1.31|6pgl@c:-1;h2o@c:-1;6pgc@c:1;h@c:1"
+"PGM|5.4.2.1|2pg@c:-1;3pg@c:1"
+"PGMT|5.4.2.2|g1p@c:-1;g6p@c:1"
+"PGPPAm_SC|3.1.3.27|h2o@m:-1;pgp_sc@m:-0.01;pg_sc@m:0.01;pi@m:1"
+"PHCDm|1.5.1.12|1p3h5c@m:-1;h2o@m:-2;nad@m:-1;e4hglu@m:1;h@m:1;nadh@m:1"
+"PHETA1|2.6.1.58|akg@c:-1;phe_l@c:-1;glu_l@c:1;phpyr@c:1"
+"PHETRS|6.1.1.20|atp@c:-1;phe_l@c:-1;trnaphe@c:-1;amp@c:1;phetrna@c:1;ppi@c:1"
+"PHETRSm|6.1.1.20|atp@m:-1;phe_l@m:-1;trnaphe@m:-1;amp@m:1;phetrna@m:1;ppi@m:1"
+"PI45BPP_SC|3.1.4.11|h2o@c:-1;ptd145bp_sc@c:-0.01;12dgr_sc@c:0.01;h@c:1;mi145p@c:1"
+"PI4P5K_SC|2.7.1.68|atp@c:-1;ptd4ino_sc@c:-0.01;adp@c:1;h@c:1;ptd145bp_sc@c:0.01"
+"PIN3K_SC|2.7.1.137|atp@c:-1;ptd1ino_sc@c:-0.01;adp@c:1;h@c:1;ptd3ino_sc@c:0.01"
+"PIN4K_SC|2.7.1.67|atp@c:-1;ptd1ino_sc@c:-0.01;adp@c:1;h@c:1;ptd4ino_sc@c:0.01"
+"PIN4Kn_SC|2.7.1.67|atp@n:-1;ptd1ino_sc@n:-0.01;adp@n:1;h@n:1;ptd4ino_sc@n:0.01"
+"PINOS_SC|2.7.8.11|cdpdag_sc@c:-0.01;inost@c:-1;cmp@c:1;h@c:1;ptd1ino_sc@c:0.01"
+"PMANM|5.4.2.8|man1p@c:-1;man6p@c:1"
+"PMETM_SC|2.1.1.16|amet@c:-1;ptd2meeta_sc@c:-0.01;ahcys@c:1;h@c:1;pc_sc@c:0.01"
+"PMEVK|2.7.4.2|5pmev@c:-1;atp@c:-1;5dpmev@c:1;adp@c:1"
+"PMI12346PH|3.6.1.52|h2o@c:-1;ppmi12346p@c:-1;h@c:1;minohp@c:1;pi@c:1"
+"PMPK|2.7.4.7|4ampm@c:-1;atp@c:-1;2mahmp@c:1;adp@c:1"
+"PNP|2.4.2.1|pi@c:-1;rnam@c:-1;h@c:1;ncam@c:1;r1p@c:1"
+"PNTK|2.7.1.33|atp@c:-1;pnto_r@c:-1;4ppan@c:1;adp@c:1;h@c:1"
+"POLYAO|1.5.3.11|n1aspmd@c:-1;h2o@c:-1;o2@c:-1;aproa@c:1;aprut@c:1;h2o2@c:1"
+"POLYAO2|1.5.3.11|n1sprm@c:-1;h2o@c:-1;o2@c:-1;n1aspmd@c:1;aproa@c:1;h2o2@c:1"
+"POLYAO3|1.5.3.11|h2o@c:-1;o2@c:-1;sprm@c:-1;aproa@c:1;h2o2@c:1;spmd@c:1"
+"PPA|3.6.1.1|h2o@c:-1;ppi@c:-1;h@c:1;pi@c:2"
+"PPAm|3.6.1.1|h2o@m:-1;ppi@m:-1;h@m:1;pi@m:2"
+"PPBNGS|4.2.1.24|5aop@c:-2;h@c:1;h2o@c:2;ppbng@c:1"
+"PPCDC|4.1.1.36|4ppcys@c:-1;h@c:-1;co2@c:1;pan4p@c:1"
+"PPCK|4.1.1.49|atp@c:-1;oaa@c:-1;adp@c:1;co2@c:1;pep@c:1"
+"PPM|5.4.2.7|r1p@c:-1;r5p@c:1"
+"PPNCL2|6.3.2.5|4ppan@c:-1;ctp@c:-1;cys_l@c:-1;4ppcys@c:1;cmp@c:1;h@c:1;ppi@c:1"
+"PPND|1.3.1.12|nad@c:-1;pphn@c:-1;34hpp@c:1;co2@c:1;nadh@c:1"
+"PPND2|1.3.1.13|nadp@c:-1;pphn@c:-1;34hpp@c:1;co2@c:1;nadph@c:1"
+"PPNDH|4.2.1.51|h@c:-1;pphn@c:-1;co2@c:1;h2o@c:1;phpyr@c:1"
+"PPPGOm|1.3.3.4|o2@m:-3;pppg9@m:-2;h2o@m:6;ppp9@m:2"
+"PPTTm|2.5.1.33|ipdp@m:-1;pendp@m:-1;hexdp@m:1;ppi@m:1"
+"PRAGSr|6.3.4.13|atp@c:-1;gly@c:-1;pram@c:-1;adp@c:1;gar@c:1;h@c:1;pi@c:1"
+"PRAIS|6.3.3.1|atp@c:-1;fpram@c:-1;adp@c:1;air@c:1;h@c:2;pi@c:1"
+"PRAIi|5.3.1.24|pran@c:-1;2cpr5p@c:1"
+"PRAMPC|3.5.4.19|h2o@c:-1;prbamp@c:-1;prfp@c:1"
+"PRASCS|6.3.2.6|5aizc@c:-1;asp_l@c:-1;atp@c:-1;25aics@c:1;adp@c:1;h@c:1;pi@c:1"
+"PRATPP|3.6.1.31|h2o@c:-1;prbatp@c:-1;h@c:1;ppi@c:1;prbamp@c:1"
+"PRFGS|6.3.5.3|atp@c:-1;fgam@c:-1;gln_l@c:-1;h2o@c:-1;adp@c:1;fpram@c:1;glu_l@c:1;h@c:1;pi@c:1"
+"PRMICIi|5.3.1.16|prfp@c:-1;prlp@c:1"
+"PROTRS|6.1.1.15|atp@c:-1;pro_l@c:-1;trnapro@c:-1;amp@c:1;ppi@c:1;protrna@c:1"
+"PRPPS|2.7.6.1|atp@c:-1;r5p@c:-1;amp@c:1;h@c:1;prpp@c:1"
+"PSCVTi|2.5.1.19|pep@c:-1;skm5p@c:-1;3psme@c:1;pi@c:1"
+"PSERDg_SC|4.1.1.65|h@g:-1;ps_sc@g:-0.01;co2@g:1;pe_sc@g:0.01"
+"PSERDm_SC|4.1.1.65|h@m:-1;ps_sc@m:-0.01;co2@m:1;pe_sc@m:0.01"
+"PSERDv_SC|4.1.1.65|h@v:-1;ps_sc@v:-0.01;co2@v:1;pe_sc@v:0.01"
+"PSERS_SC|2.7.8.8|cdpdag_sc@c:-0.01;ser_l@c:-1;cmp@c:1;h@c:1;ps_sc@c:0.01"
+"PSERSm_SC|2.7.8.8|cdpdag_sc@m:-0.01;ser_l@m:-1;cmp@m:1;h@m:1;ps_sc@m:0.01"
+"PSERT|2.6.1.52|3php@c:-1;glu_l@c:-1;akg@c:1;pser_l@c:1"
+"PSP_L|3.1.3.3|h2o@c:-1;pser_l@c:-1;pi@c:1;ser_l@c:1"
+"PTPATi|2.7.7.3|atp@c:-1;h@c:-1;pan4p@c:-1;dpcoa@c:1;ppi@c:1"
+"PTPATim|2.7.7.3|atp@m:-1;h@m:-1;pan4p@m:-1;dpcoa@m:1;ppi@m:1"
+"PUNP1|2.4.2.1|adn@c:-1;pi@c:-1;ade@c:1;r1p@c:1"
+"PUNP1m|2.4.2.1|adn@m:-1;pi@m:-1;ade@m:1;r1p@m:1"
+"PUNP2|2.4.2.1|dad_2@c:-1;pi@c:-1;2dr1p@c:1;ade@c:1"
+"PUNP3|2.4.2.1|gsn@c:-1;pi@c:-1;gua@c:1;r1p@c:1"
+"PUNP3m|2.4.2.1|gsn@m:-1;pi@m:-1;gua@m:1;r1p@m:1"
+"PUNP4|2.4.2.1|dgsn@c:-1;pi@c:-1;2dr1p@c:1;gua@c:1"
+"PUNP5|2.4.2.1|ins@c:-1;pi@c:-1;hxan@c:1;r1p@c:1"
+"PUNP6|2.4.2.1|din@c:-1;pi@c:-1;2dr1p@c:1;hxan@c:1"
+"PUNP7|2.4.2.1|pi@c:-1;xtsn@c:-1;r1p@c:1;xan@c:1"
+"PYAM5PO|1.4.3.5|h2o@c:-1;o2@c:-1;pyam5p@c:-1;h2o2@c:1;nh4@c:1;pydx5p@c:1"
+"PYDAMK|2.7.1.35|atp@c:-1;pydam@c:-1;adp@c:1;h@c:1;pyam5p@c:1"
+"PYDXK|2.7.1.35|atp@c:-1;pydx@c:-1;adp@c:1;h@c:1;pydx5p@c:1"
+"PYDXNK|2.7.1.35|atp@c:-1;pydxn@c:-1;adp@c:1;h@c:1;pdx5p@c:1"
+"PYDXNO|1.4.3.5|o2@c:-1;pydxn@c:-1;h2o2@c:1;pydx@c:1"
+"PYDXO|1.4.3.5|h2o@c:-2;nh4@c:-1;o2@c:-0.5;pydx@c:-1;h2o2@c:2;pydam@c:1"
+"PYK|2.7.1.40|adp@c:-1;h@c:-1;pep@c:-1;atp@c:1;pyr@c:1"
+"PYNP2r|2.4.2.2|pi@c:-1;uri@c:-1;r1p@c:1;ura@c:1"
+"PYR5CDm|1.5.1.12|glu5sa@m:-1;h2o@m:-1;nadp@m:-1;glu_l@m:1;h@m:2;nadph@m:1"
+"PYRDC|4.1.1.1|h@c:-1;pyr@c:-1;acald@c:1;co2@c:1"
+"PYRDC2|4.1.1.1|acald@c:-1;h@c:-1;pyr@c:-1;actn_r@c:1;co2@c:1"
+"RAFGH|3.2.1.22|h2o@c:-1;raffin@c:-1;gal@c:1;sucr@c:1"
+"RBFK|2.7.1.26|atp@c:-1;ribflv@c:-1;adp@c:1;fmn@c:1;h@c:1"
+"RBFKm|2.7.1.26|atp@m:-1;ribflv@m:-1;adp@m:1;fmn@m:1;h@m:1"
+"RBFSa|2.5.1.9|4r5au@c:-1;db4p@c:-1;dmlz@c:1;h2o@c:2;pi@c:1"
+"RBFSb|2.5.1.9|dmlz@c:-2;4r5au@c:1;ribflv@c:1"
+"RBK|2.7.1.15|atp@c:-1;rib_d@c:-1;adp@c:1;h@c:1;r5p@c:1"
+"RNDR1|1.17.4.1|adp@c:-1;trdrd@c:-1;dadp@c:1;h2o@c:1;trdox@c:1"
+"RNDR1n|1.17.4.1|adp@n:-1;trdrd@n:-1;dadp@n:1;h2o@n:1;trdox@n:1"
+"RNDR2|1.17.4.1|gdp@c:-1;trdrd@c:-1;dgdp@c:1;h2o@c:1;trdox@c:1"
+"RNDR2n|1.17.4.1|gdp@n:-1;trdrd@n:-1;dgdp@n:1;h2o@n:1;trdox@n:1"
+"RNDR3|1.17.4.1|cdp@c:-1;trdrd@c:-1;dcdp@c:1;h2o@c:1;trdox@c:1"
+"RNDR3n|1.17.4.1|cdp@n:-1;trdrd@n:-1;dcdp@n:1;h2o@n:1;trdox@n:1"
+"RNDR4|1.17.4.1|trdrd@c:-1;udp@c:-1;dudp@c:1;h2o@c:1;trdox@c:1"
+"RNDR4n|1.17.4.1|trdrd@n:-1;udp@n:-1;dudp@n:1;h2o@n:1;trdox@n:1"
+"RNMK|2.7.1.22|atp@c:-1;rnam@c:-1;adp@c:1;h@c:1;nmn@c:1"
+"RNTR1|1.17.4.2|atp@c:-1;trdrd@c:-1;datp@c:1;h2o@c:1;trdox@c:1"
+"RNTR2|1.17.4.2|gtp@c:-1;trdrd@c:-1;dgtp@c:1;h2o@c:1;trdox@c:1"
+"RNTR3|1.17.4.2|ctp@c:-1;trdrd@c:-1;dctp@c:1;h2o@c:1;trdox@c:1"
+"RNTR4|1.17.4.2|trdrd@c:-1;utp@c:-1;dutp@c:1;h2o@c:1;trdox@c:1"
+"RPE|5.1.3.1|ru5p_d@c:-1;xu5p_d@c:1"
+"RPI|5.3.1.6|r5p@c:-1;ru5p_d@c:1"
+"SACCD1|1.5.1.10|l2aadp6sa@c:-1;glu_l@c:-1;h@c:-1;nadph@c:-1;h2o@c:1;nadp@c:1;saccrp_l@c:1"
+"SACCD2|1.5.1.7|h2o@c:-1;nad@c:-1;saccrp_l@c:-1;akg@c:1;h@c:1;lys_l@c:1;nadh@c:1"
+"SADT|2.7.7.4|atp@c:-1;h@c:-1;so4@c:-1;aps@c:1;ppi@c:1"
+"SAM24MT|2.1.1.41|amet@c:-1;zymst@c:-1;ahcys@c:1;fecost@c:1;h@c:1"
+"SBTD_D2|1.1.1.14|nad@c:-1;sbt_d@c:-1;fru@c:1;h@c:1;nadh@c:1"
+"SBTD_L|1.1.1.14|nad@c:-1;sbt_l@c:-1;h@c:1;nadh@c:1;srb_l@c:1"
+"SBTR|1.1.1.21|glc_d@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;sbt_d@c:1"
+"SERATi|2.3.1.30|accoa@c:-1;ser_l@c:-1;acser@c:1;coa@c:1"
+"SERD_L|4.3.1.17|ser_l@c:-1;nh4@c:1;pyr@c:1"
+"SERPT|2.3.1.50|h@c:-1;pmtcoa@c:-1;ser_l@c:-1;3dsphgn@c:1;co2@c:1;coa@c:1"
+"SERTRS|6.1.1.11|atp@c:-1;ser_l@c:-1;trnaser@c:-1;amp@c:1;ppi@c:1;sertrna@c:1"
+"SFGTH|3.1.2.12|sfglutth@c:-1;h2o@c:-1;for@c:1;gthrd@c:1;h@c:1"
+"SHK3D|1.1.1.25|3dhsk@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;skm@c:1"
+"SHKK|2.7.1.71|atp@c:-1;skm@c:-1;adp@c:1;h@c:1;skm5p@c:1"
+"SHSL1|4.2.99.9|cys_l@c:-1;suchms@c:-1;cyst_l@c:1;h@c:1;succ@c:1"
+"SHSL4r|4.2.99.9|h2o@c:-1;suchms@c:-1;2obut@c:1;h@c:1;nh4@c:1;succ@c:1"
+"SLFAT|2.7.7.5|adp@c:-1;h@c:-1;so4@c:-1;aps@c:1;pi@c:1"
+"SPMDAT1|2.3.1.57|accoa@c:-1;spmd@c:-1;n1aspmd@c:1;coa@c:1;h@c:1"
+"SPMS|2.5.1.16|ametam@c:-1;ptrc@c:-1;5mta@c:1;h@c:1;spmd@c:1"
+"SPRMS|2.5.1.22|ametam@c:-1;spmd@c:-1;5mta@c:1;h@c:1;sprm@c:1"
+"SQLEr|1.14.99.7|h@r:-1;nadph@r:-1;o2@r:-1;sql@r:-1;ssq23epx@r:1;h2o@r:1;nadp@r:1"
+"SQLErx|1.14.99.7|h@r:-1;nadh@r:-1;o2@r:-1;sql@r:-1;ssq23epx@r:1;h2o@r:1;nad@r:1"
+"SQLS|2.5.1.21|frdp@c:-2;h@c:-1;nadph@c:-1;nadp@c:1;ppi@c:2;sql@c:1"
+"SSALy|1.2.1.16|h2o@c:-1;nadp@c:-1;sucsal@c:-1;h@c:2;nadph@c:1;succ@c:1"
+"SUCD1m|1.3.99.1|fad@m:-1;succ@m:-1;fadh2@m:1;fum@m:1"
+"SUCD2_u6m|1.3.5.1|q6@m:-1;succ@m:-1;fum@m:1;q6h2@m:1"
+"SUCD3_u6m|1.3.5.1|fadh2@m:-1;q6@m:-1;fad@m:1;q6h2@m:1"
+"SUCOASm|6.2.1.5|atp@m:-1;coa@m:-1;succ@m:-1;adp@m:1;pi@m:1;succoa@m:1"
+"SUCRe|3.2.1.26|h2o@e:-1;sucr@e:-1;fru@e:1;glc_d@e:1"
+"SULR|1.8.2.2|h2o@c:-3;h2s@c:-1;nadp@c:-3;h@c:5;nadph@c:3;so3@c:1"
+"TALA|2.2.1.2|g3p@c:-1;s7p@c:-1;e4p@c:1;f6p@c:1"
+"TAUDO|1.14.11.17|akg@c:-1;o2@c:-1;taur@c:-1;aacald@c:1;co2@c:1;h@c:1;so3@c:1;succ@c:1"
+"THFATm|2.1.2.10|h2o@m:-1;methf@m:-1;5fthf@m:1;h@m:1"
+"THFGLUS|6.3.2.17|atp@c:-1;glu_l@c:-1;thf@c:-1;adp@c:1;h@c:1;pi@c:1;thfglu@c:1"
+"THMDPe|3.1.3.2|h2o@e:-2;thmpp@e:-1;h@e:1;pi@e:2;thm@e:1"
+"THMPe|3.1.3.2|h2o@e:-1;thmmp@e:-1;pi@e:1;thm@e:1"
+"THRA2i|4.1.2.5|athr_l@c:-1;acald@c:1;gly@c:1"
+"THRAi|4.1.2.5|thr_l@c:-1;acald@c:1;gly@c:1"
+"THRD_L|4.3.1.19|thr_l@c:-1;2obut@c:1;nh4@c:1"
+"THRD_Lm|4.3.1.19|thr_l@m:-1;2obut@m:1;nh4@m:1"
+"THRS|4.2.3.1|h2o@c:-1;phom@c:-1;pi@c:1;thr_l@c:1"
+"THRTRS|6.1.1.3|atp@c:-1;thr_l@c:-1;trnathr@c:-1;amp@c:1;ppi@c:1;thrtrna@c:1"
+"THRTRSm|6.1.1.3|atp@m:-1;thr_l@m:-1;trnathr@m:-1;amp@m:1;ppi@m:1;thrtrna@m:1"
+"TKT1|2.2.1.1|r5p@c:-1;xu5p_d@c:-1;g3p@c:1;s7p@c:1"
+"TKT2|2.2.1.1|e4p@c:-1;xu5p_d@c:-1;f6p@c:1;g3p@c:1"
+"TMDK1|2.7.1.21|atp@c:-1;thymd@c:-1;adp@c:1;dtmp@c:1;h@c:1"
+"TMDPK|2.7.6.2|atp@c:-1;thm@c:-1;amp@c:1;h@c:1;thmpp@c:1"
+"TMDPP|2.4.2.4|pi@c:-1;thymd@c:-1;2dr1p@c:1;thym@c:1"
+"TMDPPK|2.7.4.15|atp@c:-1;thmpp@c:-1;adp@c:1;thmtp@c:1"
+"TMDS|2.1.1.45|dump@c:-1;mlthf@c:-1;dhf@c:1;dtmp@c:1"
+"TMN|3.5.99.2|h2o@c:-1;thm@c:-1;4ahmmp@c:1;4mhetz@c:1;h@c:1"
+"TMPKr|2.7.4.16|atp@c:-1;thmmp@c:-1;adp@c:1;thmpp@c:1"
+"TMPPP|2.5.1.3|2mahmp@c:-1;4mpetz@c:-1;h@c:-1;ppi@c:1;thmmp@c:1"
+"TPI|5.3.1.1|dhap@c:-1;g3p@c:1"
+"TRDR|1.8.1.9|h@c:-1;nadph@c:-1;trdox@c:-1;nadp@c:1;trdrd@c:1"
+"TRDRm|1.8.1.9|h@m:-1;nadph@m:-1;trdox@m:-1;nadp@m:1;trdrd@m:1"
+"TRE6PP|3.1.3.12|h2o@c:-1;tre6p@c:-1;pi@c:1;tre@c:1"
+"TRE6PS|2.4.1.15|g6p@c:-1;udpg@c:-1;h@c:1;tre6p@c:1;udp@c:1"
+"TREH|3.2.1.28|h2o@c:-1;tre@c:-1;glc_d@c:2"
+"TREHv|3.2.1.28|h2o@v:-1;tre@v:-1;glc_d@v:2"
+"TRPO2|1.13.11.11|o2@c:-1;trp_l@c:-1;lfmkynr@c:1"
+"TRPS1|4.2.1.20|3ig3p@c:-1;ser_l@c:-1;g3p@c:1;h2o@c:1;trp_l@c:1"
+"TRPTRS|6.1.1.2|atp@c:-1;trnatrp@c:-1;trp_l@c:-1;amp@c:1;ppi@c:1;trptrna@c:1"
+"TRPTRSm|6.1.1.2|atp@m:-1;trnatrp@m:-1;trp_l@m:-1;amp@m:1;ppi@m:1;trptrna@m:1"
+"TYRNFT|2.1.2.3|10fthf@c:-1;tyr_l@c:-1;nfortyr@c:1;h@c:1;thf@c:1"
+"TYRTAi|2.6.1.5|34hpp@c:-1;glu_l@c:-1;akg@c:1;tyr_l@c:1"
+"TYRTAim|2.6.1.5|34hpp@m:-1;glu_l@m:-1;akg@m:1;tyr_l@m:1"
+"TYRTAip|2.6.1.5|34hpp@x:-1;glu_l@x:-1;akg@x:1;tyr_l@x:1"
+"TYRTRS|6.1.1.1|atp@c:-1;trnatyr@c:-1;tyr_l@c:-1;amp@c:1;ppi@c:1;tyrtrna@c:1"
+"TYRTRSm|6.1.1.1|atp@m:-1;trnatyr@m:-1;tyr_l@m:-1;amp@m:1;ppi@m:1;tyrtrna@m:1"
+"UDPACGLP|2.7.7.23|acgam1p@c:-1;h@c:-1;utp@c:-1;ppi@c:1;udpacgal@c:1"
+"UDPG4E|5.1.3.2|udpg@c:-1;udpgal@c:1"
+"UGLT|2.7.7.12|gal1p@c:-1;udpg@c:-1;g1p@c:1;udpgal@c:1"
+"UGLYCHr|3.5.3.19|h@c:-2;h2o@c:-1;urdglyc@c:-1;co2@c:1;glx@c:1;nh4@c:2"
+"UMPK|2.7.4.14|atp@c:-1;ump@c:-1;adp@c:1;udp@c:1"
+"UPP3MT|2.1.1.107|amet@c:-2;uppg3@c:-1;ahcys@c:2;dscl@c:1;h@c:1"
+"UPP3S|4.2.1.75|hmbil@c:-1;h2o@c:1;uppg3@c:1"
+"UPPDC1|4.1.1.37|h@c:-4;uppg3@c:-1;co2@c:4;cpppg3@c:1"
+"UPPRT|2.4.2.9|prpp@c:-1;ura@c:-1;ppi@c:1;ump@c:1"
+"UREASE|6.3.4.6|atp@c:-1;hco3@c:-1;urea@c:-1;adp@c:1;allphn@c:1;h@c:1;pi@c:1"
+"URIK1|2.7.1.48|atp@c:-1;uri@c:-1;adp@c:1;h@c:1;ump@c:1"
+"URIK2|2.7.1.48|gtp@c:-1;uri@c:-1;gdp@c:1;h@c:1;ump@c:1"
+"UTPH1|3.6.1.5|h2o@c:-2;utp@c:-1;h@c:2;pi@c:2;ump@c:1"
+"VALTA|2.6.1.42|akg@c:-1;val_l@c:-1;3mob@c:1;glu_l@c:1"
+"VALTAim|2.6.1.42|akg@m:-1;val_l@m:-1;3mob@m:1;glu_l@m:1"
+"VALTRS|6.1.1.9|atp@c:-1;trnaval@c:-1;val_l@c:-1;amp@c:1;ppi@c:1;valtrna@c:1"
+"VALTRSm|6.1.1.9|atp@m:-1;trnaval@m:-1;val_l@m:-1;amp@m:1;ppi@m:1;valtrna@m:1"
+"XPPT|2.4.2.22|prpp@c:-1;xan@c:-1;ppi@c:1;xmp@c:1"
+"XYLK|2.7.1.17|atp@c:-1;xylu_d@c:-1;adp@c:1;h@c:1;xu5p_d@c:1"
+"XYLR|1.1.1.21|h@c:-1;nadph@c:-1;xyl_d@c:-1;nadp@c:1;xylt@c:1"
+"XYLTD_D|1.1.1.9|nad@c:-1;xylt@c:-1;h@c:1;nadh@c:1;xylu_d@c:1"
+"YUMPS|4.2.1.70|r5p@c:-1;ura@c:-1;h2o@c:1;psd5p@c:1"
+];
+cells=split(raw,"|");
+T=table(cells(:,1),cells(:,2),cells(:,3), ...
+    'VariableNames',{'SourceReactionID','EC','ChemicalSignature'});
+end
+
+function step2Progress(path,msg,restart)
+% Console plus a small text file that survives a closed MATLAB session.
+fprintf('%s\n',msg);
+mode='a';if restart,mode='w';end
+fid=fopen(path,mode);if fid<0,return;end
+fprintf(fid,'%s\n',msg);fclose(fid);
+end
+
+function [rx,parts,control] = step2PrefixWithoutCounter(ctx,w)
+% Branch module + canceller support of parent w, without its counter.
+b=find(ctx.M.ModuleID==ctx.Y.ModuleID(w),1);c=find(ctx.C.ConnectedID==ctx.Y.ConnectedID(w),1);
+[rx,parts]=counterCancellerSupport(c,ctx.C,ctx.D,ctx.cores,ctx.O,ctx.T,ctx.L,ctx.Q,ctx.R,ctx.P);
+fast=ctx.rails(ctx.M.FastRailIndex(b));slow=ctx.rails(ctx.M.SlowRailIndex(b));
+control=[fast.rx slow.rx];rx=[rx control];parts=union(parts,union(fast.parts,slow.parts));
+end
+
+function [result,alternatives,audit,how] = step2SharedBlock0(target,rx,parts,control, ...
+    baseRx,baseParts,baseControl,ctx,G,cfg,requireEC,shared)
+% Adding a counter only forbids more reactions/species and adds controlled
+% ECs, so every Block 0 valid for the full parent is also valid without
+% the counter. Search once without the counter, then keep the alternatives
+% that also pass with it. Re-search the full parent only when the shared
+% search found alternatives but the counter rules out all of them.
+if ~cfg.step2ShareBlock0Search
+    [result,alternatives,audit]=findStep2Block0(target,rx,parts,control,ctx,G,cfg,requireEC);
+    how="full";return;
+end
+key=sprintf('%d,',[double(requireEC) target sort(baseRx) 0 sort(baseControl)]);
+how="reused";
+if isKey(shared,key)
+    base=shared(key);
+else
+    [r,a,au]=findStep2Block0(target,baseRx,baseParts,baseControl,ctx,G,cfg,requireEC);
+    base=struct('result',r,'alternatives',a,'audit',au);shared(key)=base;how="shared_new";
+end
+if ~base.result.found
+    % Nothing without the counter means nothing with it (within the same
+    % budgets; a budget-limited shared search is reported as such).
+    result=base.result;alternatives=base.alternatives;audit=base.audit;return;
+end
+keep=false(1,numel(base.alternatives));
+for k=1:numel(base.alternatives)
+    ors=base.alternatives(k).o;ok=~any(ismember(ctx.O.rxn(ors),rx));
+    for o=reshape(ors,1,[])
+        if ~ok,break;end
+        ok=isempty(step2Overlap(G.parts{o},parts,target,ctx.currency));
+    end
+    if ok&&requireEC,[~,ok]=step2AssignEC([control ctx.O.rxn(ors)],ctx,cfg);end
+    keep(k)=ok;
+end
+if any(keep)
+    alternatives=base.alternatives(keep);result=alternatives(1);audit=base.audit;return;
+end
+[result,alternatives,audit]=findStep2Block0(target,rx,parts,control,ctx,G,cfg,requireEC);
+how="full_rerun";
+end
+
+function stats = step2CountShared(stats,how)
+switch how
+    case "shared_new",stats.sharedBlock0Searches=stats.sharedBlock0Searches+1;
+    case "reused",stats.sharedBlock0Reused=stats.sharedBlock0Reused+1;
+    case "full_rerun",stats.block0FullReruns=stats.block0FullReruns+1;
+end
+end
+
+function [cfg,profile] = applyModelProfileDefaults(cfg,layout,userOptions)
+% Organism-dependent defaults. Options the user passed explicitly win.
+profile=string(cfg.modelProfile);
+if profile=="auto"
+    if layout.communityIDs,profile="yeast_iMM904_community";else,profile="single_cell";end
+end
+if profile=="single_cell"
+    defaults={'cancellerI',"";'counterUseEmbeddediMM904EC',false; ...
+        'branchInputID',"f6p";'excludedReactionIDs',strings(0,1)};
+    for k=1:size(defaults,1)
+        if ~isfield(userOptions,defaults{k,1}),cfg.(defaults{k,1})=defaults{k,2};end
+    end
+end
+end
+
+function id = resolveMetaboliteChoice(choice,model,base,comp,cfg)
+% Exact model ID if it exists; otherwise the first inside-compartment
+% species with that BaseID (case-insensitive). Unknown names pass through.
+id=string(choice);
+if id==""||any(string(model.mets)==id),return;end
+hit=find(lower(string(base))==lower(id)&ismember(string(comp),string(cfg.insideCompartment(:))),1);
+if ~isempty(hit),id=string(model.mets{hit});end
+end
+
+function selfTestModelProfile()
+layoutYeast=struct('communityIDs',true);layoutCell=struct('communityIDs',false);
+cfg=defaultOptions();
+[y,py]=applyModelProfileDefaults(cfg,layoutYeast,struct());
+[t,pt]=applyModelProfileDefaults(cfg,layoutCell,struct());
+[u,~]=applyModelProfileDefaults(cfg,layoutCell,struct('cancellerI',"pyr"));
+assert(py=="yeast_iMM904_community"&&y.cancellerI=="pyr"&&y.counterUseEmbeddediMM904EC ...
+    &&pt=="single_cell"&&t.cancellerI==""&&~t.counterUseEmbeddediMM904EC&&t.branchInputID=="f6p" ...
+    &&isempty(t.excludedReactionIDs)&&u.cancellerI=="pyr",'Model profile defaults are wrong.');
+m=struct('mets',{{'f6p[c]';'f6p[e]';'g6p[c]'}});cfg.insideCompartment="c";
+assert(resolveMetaboliteChoice("f6p",m,["f6p";"f6p";"g6p"],["c";"e";"c"],cfg)=="f6p[c]" ...
+    &&resolveMetaboliteChoice("g6p[c]",m,["f6p";"f6p";"g6p"],["c";"e";"c"],cfg)=="g6p[c]" ...
+    &&resolveMetaboliteChoice("",m,["f6p";"f6p";"g6p"],["c";"e";"c"],cfg)=="", ...
+    'Branch input BaseID resolution failed.');
+uri='http://identifiers.org/ec-code/EC:2.3.1.26';
+hit=regexp(uri,'(?:ec-code|ec_code|enzyme-commission)[/:](?:EC:)?([1-7]\.[0-9]+\.[0-9]+\.[0-9]+)(?![0-9.\-])','tokens','once');
+assert(~isempty(hit)&&string(hit{1})=="2.3.1.26",'EC URIs with an EC: prefix are not read.');
+end
+
 function s = joinText(values,delimiter)
 % Guarantee a scalar empty string for zero-row joins (including empty tables).
 values=string(values);values=values(~ismissing(values));
@@ -6555,8 +6678,8 @@ function [base,comp]=splitCompartments(mets)
     base=strings(size(mets));comp=strings(size(mets));
     for ii=1:numel(mets)
         x=char(mets(ii));
-        t=regexp(x,'^(.*)\[([A-Za-z_][A-Za-z0-9_]*)\]$','tokens','once');
-        if isempty(t),t=regexp(x,'^(.*)_([cegilmnrx])$','tokens','once');end
+        t=regexp(x,'^(.*)\[([a-zA-Z])\]$','tokens','once');
+        if isempty(t),t=regexp(x,'^(.*)_([ecm])$','tokens','once');end
         if ~isempty(t),base(ii)=string(t{1});comp(ii)=string(t{2});
         else,base(ii)=string(x);comp(ii)="";end
     end
@@ -6769,7 +6892,7 @@ function [codes,fields]=modelECTokens(model,j)
 % Union all known EC fields, including a populated fallback after an empty one.
     codes=strings(0,1);fields=strings(0,1);
     names={'rxnECNumbers','rxnEC','eccodes','ecCodes','ecNumbers','rxnECNumber', ...
-        'rxnECcodes','rxnEnzymeClassification','circuitSBMLRDFEC','circuitSBMLNotesEC','circuitSBMLEC'};
+        'rxnECcodes','rxnEnzymeClassification','circuitSBMLEC'};
     for q=1:numel(names)
         if ~isfield(model,names{q}),continue;end
         value=ecAnnotationAt(model.(names{q}),j,numel(model.rxns));
@@ -6816,7 +6939,6 @@ function codes=completeECTokens(value)
         text=string(value);text=text(~ismissing(text));
         if isempty(text),return;end
         text=char(join(text(:),' '));
-        text=regexprep(text,'(?i)TCDB\s*:\s*[A-Za-z0-9_.-]+',' ');
         hit=regexp(text,'(?<![0-9.])[1-7]\.[0-9]+\.[0-9]+\.[0-9]+(?![0-9.\-])','match');
         codes=string(hit(:));
     end

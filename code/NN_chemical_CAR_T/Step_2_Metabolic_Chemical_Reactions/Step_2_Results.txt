@@ -1,9 +1,7 @@
 BLOCK 0 -> FAST/SLOW BRANCHES -> ANDERSON CANCELLER -> CONSUMING COUNTER -> ONE CONSUMING NEURON
-Model identity: Puniya2021 - Naive CD4+ T cell metabolic model
-Human T-cell notation: c=cytoplasm; e=extracellular; every organelle remains a separate species pool.
-00_Metabolite_Catalog.csv and 00_Reaction_Notation.csv map exact loader IDs to raw SBML IDs.
-00_Gene_Notation.csv preserves FBC gene-product IDs and labels; gene labels do not establish protein activity or CAR expression.
-Code revision: direct_intracellular_consuming_neuron_chains_2026_11_16.
+Code revision: direct_intracellular_consuming_neuron_chains_2026_11_16; cell-free merge and cancellerI 2026-11-19.
+cancellerI=; counter/neuron/Block 0 may use embedded iMM904 ECs=0.
+CELL-FREE MODE: one vessel; organelle copies merged per block; intracellular transports removed; identical isoenzymes merged.
 Direction policy: model-bound orientations; reverse steps included only when allowReverse and the lower bound permit them.
 allowReverse=1; counterMode=consume_I; EC map is partial and source/signature checked.
 Neuron layout: m_c = m_Nin_1 is consumed directly inside the counter compartment; no exporter or external input pool is required.
@@ -37,13 +35,13 @@ UPSTREAM SEARCH DIAGNOSTICS
 ============================================================
 Production mode=multi_reaction; maximum module reactions=10; I-state budget=20000.
 Stages enabled: removal=1; branches=1; counter=1; Step2=1. Required supplied import-gate evidence=0.
-  Intracellular reaction orientations: 1707; enabled=1; inspect 00_Reaction_Filter_Audit.csv.
-  I import transporters: 1021; enabled=1; inspect 01_Import_Transporters.csv.
-  Imported I pools: 539; enabled=1; inspect 02_Search_Coverage.csv.
-  Seed-dependent production modules: 123; enabled=1; inspect 02_Autocatalytic_Cores.csv.
-  Import plus production pairs: 172; enabled=1; inspect 03_Production_Candidates.csv.
-  Linear I-removal candidates: 1312; enabled=1; inspect 05_Linear_Removal_Candidates.csv.
-  Pair-loss candidates: 13; enabled=1; inspect 05_Quadratic_Removal_Candidates.csv.
+  Intracellular reaction orientations: 2469; enabled=1; inspect 00_Reaction_Filter_Audit.csv.
+  I import transporters: 1025; enabled=1; inspect 01_Import_Transporters.csv.
+  Imported I pools: 542; enabled=1; inspect 02_Search_Coverage.csv.
+  Seed-dependent production modules: 220; enabled=1; inspect 02_Autocatalytic_Cores.csv.
+  Import plus production pairs: 256; enabled=1; inspect 03_Production_Candidates.csv.
+  Linear I-removal candidates: 1868; enabled=1; inspect 05_Linear_Removal_Candidates.csv.
+  Pair-loss candidates: 19; enabled=1; inspect 05_Quadratic_Removal_Candidates.csv.
   Connected Anderson cancellers: 0; enabled=1; inspect 06_Connected_Anderson_Candidates.csv.
   EC-qualified fast/slow modules: 500; enabled=1; inspect 07_Branch_Modules.csv.
   Branch plus canceller connections: 0; enabled=1; inspect 08_Branches_Canceller_Wiring.csv.
@@ -52,8 +50,8 @@ Stages enabled: removal=1; branches=1; counter=1; Step2=1. Required supplied imp
   Branch-canceller-counter parents: 0; enabled=1; inspect 11_Branches_Canceller_Counter_Wiring.csv.
 First empty required upstream stage: Connected Anderson cancellers.
 Inspect 06_Connected_Anderson_Candidates.csv and its preceding stage before diagnosing neuron connectivity.
-Production coverage: budget reached for 243 I pools; solver-unresolved closures=77. See 02_Search_Coverage.csv.
-Production minimum sizes proven within the enumerated search class for 15 I pools. See Minimum_Production_Report.txt.
+Production coverage: budget reached for 306 I pools; solver-unresolved closures=87. See 02_Search_Coverage.csv.
+Production minimum sizes proven within the enumerated search class for 17 I pools. See Minimum_Production_Report.txt.
 A minimum applies to production alone. Longer modules may be needed to satisfy downstream isolation and wiring.
 Neuron and Block 0 candidate searches were not entered: there are no upstream branch-canceller-counter parents.
 This report therefore does not establish a neuron-connectivity failure.
@@ -71,7 +69,11 @@ Parents with an isolated structural connector awaiting EC qualification: 0.
 Single-neuron rails passing current policies: 0; neuron candidates tested: 0.
 Distinct complete motifs found: 0; complete motifs printed: 0.
 Limits reached: parent=0; neuron calls=0; neuron candidate tests=0; complete retention=0; parent Block0 budget-limited calls=0.
+Step 2 time limit reached=0 (step2MaxSeconds=21600); elapsed 0 s.
+Block 0: shared upstream searches=0; counter variants answered from a shared search=0; full per-parent re-searches=0.
 Complete counts require one neuron and a Block 0 connector rechecked against all downstream reactions and EC assignments.
+Block 0 searched=0; Block 0 requires EC=0. With Block 0 off, look for neuronStatus neuron_found_Block0_not_searched.
+Parents with at least one passing neuron: 0; passing neuron candidates: 0.
 Partial parents and rejected diagnostic paths never contribute to the complete count. Printing does not determine search limits.
 No whole-cell flux, atom-transfer, thermodynamic or kinetic validation is claimed. Additional co-substrates remain required.
 
@@ -80,3 +82,5 @@ NEURON ENTRY REJECTIONS
 ============================================================
 
 No complete motif passed. Printing 0 of 0 PARTIAL parents with all known reactions and explicit missing roles.
+Parents with a passing neuron are printed first: 0 of 0 parents have one.
+Within each group: fewest canceller reactions first, then fewest Block 0 reactions.
