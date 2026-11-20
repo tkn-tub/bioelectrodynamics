@@ -91,7 +91,36 @@ function results = A_Master(modelInput, userOptions)
 %   STRUCTURAL SCREEN: EC and transporter GPR requirements are OFF.
 %   Missing EC/GPR annotations are reported, never inferred from stoichiometry.
 %   Compartments come from SBML/model metadata. model_aux searches u and x
-%   separately; these species pools are never merged or treated as proteins.
+%   separately; the two blocks are never merged or treated as proteins.
+%   cellFreeMerge=true (default): ONE reaction vessel, no membranes. Inside
+%   each block, organelle copies of a species (cytosol, mitochondrion,
+%   peroxisome, ...) become one species; transports with no net chemistry
+%   are removed and identical isoenzyme copies become one reaction. The
+%   outside compartment and the S-gated I import are kept. Set
+%   cellFreeMerge=false to recover the compartmentalised cell model.
+%   cancellerI="pyr" (default): the canceller is searched ONLY for this I
+%   (BaseID such as "pyr", or an exact ID such as "AUXOSCpyr[u]"; a string
+%   array allows several). Set cancellerI="" to search every imported I.
+%   counterUseEmbeddediMM904EC=true (default): the counter, neuron and
+%   Block 0 stages may use the iMM904 authors' EC annotations (760
+%   reactions, exact reaction ID plus matching chemistry). The fast/slow
+%   branch stage keeps its own EC rules.
+%   counterRequireFormationEC=false, counterRequireLeakEC=false (default):
+%   the counter only has to accumulate C linearly with the I it consumes,
+%   so its reactions need no EC. A counter reaction WITH an EC still joins
+%   the distinct-EC checks; one without an EC is simply left out of them.
+%   Step 2 speed: step2ShareBlock0Search=true runs the cAMP -> m_in search
+%   once per (branch module, canceller) and only re-checks each counter
+%   variant against it (the counter can only forbid more, never allow more).
+%   step2MaxSeconds=21600 (6 h) stops Step 2 cleanly and still writes all
+%   outputs. Progress is written to Step2_Progress.txt in outputDir.
+%   step2SearchBlock0=false (default): Step 2 searches the neuron only; the
+%   cAMP -> m_in connector (Block 0) is skipped and parents with a passing
+%   neuron are reported as "neuron_found_Block0_not_searched". Set it true
+%   to add Block 0. block0RequireEC=false (default): Block 0 reactions need
+%   no EC and stay out of the distinct-EC assignment.
+%   excludedReactionIDs: lumped pseudo-reactions that no single enzyme
+%   catalyses (default: thiazole-phosphate synthesis THZPSN1_SC/2_SC).
 %   Original currency exclusions are retained. No EC numbers are excluded.
 %   productionMode="multi_reaction" is the default, with up to 10 existing
 %   steps for an I-dependent module implementing effective I+X->2I+W.
@@ -247,7 +276,11 @@ for label=reshape(unique(comp),1,[])
 end
 if layout.communityIDs
     report(fid,'AUXOS/PROTS prefixes identify separate model blocks, not protein synthesis.');
-    report(fid,'Original organelle labels remain in species IDs; no metabolite states are merged.');
+    if cfg.cellFreeMerge
+        report(fid,'cellFreeMerge=1: organelle copies of each species are merged inside each block (details below).');
+    else
+        report(fid,'Original organelle labels remain in species IDs; no metabolite states are merged.');
+    end
 end
 report(fid,sprintf('Annotation filters: requireCoreEC=%d; requireTransportGPR=%d.', ...
     cfg.requireCoreEC,cfg.requireTransportGPR));
@@ -286,6 +319,37 @@ writetable(ecAudit,fullfile(cfg.outputDir,'00_EC_Annotation_Audit.csv'));
 writetable(grossAudit,fullfile(cfg.outputDir,'00_Gross_Stoichiometry_Audit.csv'));
 report(fid,ecInfo);
 
+% CELL-FREE MODE: merge organelle copies BEFORE every search stage, so that
+% all downstream blocks see one pot with one pool per chemical species.
+cellFreeAudit=table();cellFreeMetAudit=table();cellFreeInfo=struct();
+if cfg.cellFreeMerge
+    [model,baseMet,comp,currency,Rgross,Pgross,grossKnown,ecComp,metSource,cellFreeAudit, ...
+        cellFreeMetAudit,cellFreeInfo]=mergeCellFreeCompartments(model,baseMet,comp,currency, ...
+        Rgross,Pgross,grossKnown,ecComp,layout.source,layout,cfg); %#ok<ASGLU>
+    layout.source=metSource;
+    writetable(cellFreeAudit,fullfile(cfg.outputDir,'00_CellFree_Reaction_Merge.csv'));
+    writetable(cellFreeMetAudit,fullfile(cfg.outputDir,'00_CellFree_Metabolite_Merge.csv'));
+    report(fid,'CELL-FREE MODE: one vessel, no membranes; organelle copies merged inside each block.');
+    report(fid,sprintf('  Metabolites %d -> %d (%d species had several organelle copies).', ...
+        cellFreeInfo.metabolitesBefore,cellFreeInfo.metabolitesAfter,cellFreeInfo.mergedSpecies));
+    report(fid,sprintf('  Reactions %d -> %d: removed %d intracellular transports with no net chemistry and %d with a currency-only net change.', ...
+        cellFreeInfo.reactionsBefore,cellFreeInfo.reactionsAfter, ...
+        cellFreeInfo.removedNoNetChemistry,cellFreeInfo.removedCurrencyOnly));
+    report(fid,sprintf('  Organelle-spanning reactions kept with shared species cancelled: %d; identical copies merged: %d; representatives with widened bounds: %d.', ...
+        cellFreeInfo.spanningKept,cellFreeInfo.duplicatesMerged,cellFreeInfo.boundsWidened));
+    report(fid,'  The outside compartment and the I import transporters are NOT merged: the S-gated import stays in the topology.');
+    report(fid,'  Inspect 00_CellFree_Reaction_Merge.csv and 00_CellFree_Metabolite_Merge.csv.');
+    metNames=string(model.mets);
+    if isfield(model,'metNames') && numel(model.metNames)==numel(model.mets)
+        metNames=string(model.metNames(:));
+    end
+    metCatalog=table((1:numel(model.mets))',string(model.mets),metNames,baseMet,comp,currency,layout.source, ...
+        model.circuitMergedMetIDs, ...
+        'VariableNames',{'ModelIndex','MetaboliteID','MetaboliteName','BaseID','Compartment', ...
+        'ExcludedAsSignal','CompartmentSource','CellFreeMergedIDs'});
+    writetable(metCatalog,fullfile(cfg.outputDir,'00_Metabolite_Catalog.csv'));
+end
+
 [oriented,transport,poolAudit] = buildPools(model,baseMet,comp,currency,Rgross,Pgross,grossKnown,cfg);
 writetable(poolAudit,fullfile(cfg.outputDir,'00_Reaction_Filter_Audit.csv'));
 writetable(transport,fullfile(cfg.outputDir,'01_Import_Transporters.csv'));
@@ -301,7 +365,17 @@ if isempty(oriented.rxn) || isempty(transport)
 end
 cores = emptyCores();statsRows=cell(0,12);directProductionAudit=directProductionAuditTable(cell(0,15));
 productionDepthCoverage=productionDepthAuditTable(cell(0,8));
-signals = unique(transport.InsideIndex,'stable');
+signals = unique(transport.InsideIndex,'stable');signals=reshape(signals,[],1);
+wantedI=lower(strtrim(string(cfg.cancellerI(:))));wantedI=wantedI(wantedI~="");
+if ~isempty(wantedI)
+    keepI=ismember(lower(baseMet(signals)),wantedI)|ismember(lower(string(model.mets(signals))),wantedI);
+    report(fid,sprintf('cancellerI=%s: %d of %d imported I pools kept (%s).',joinText(wantedI,','), ...
+        nnz(keepI),numel(signals),joinText(string(model.mets(signals(keepI))),'; ')));
+    if ~any(keepI)
+        report(fid,'cancellerI matched no imported I pool: check the BaseID in 00_Metabolite_Catalog.csv and 01_Import_Transporters.csv.');
+    end
+    signals=signals(keepI);
+end
 for q=1:numel(signals)
     seed = signals(q);
     [found,stats,oneAudit,oneDepth] = findCores(seed,oriented,currency,cfg,model);
@@ -551,6 +625,8 @@ results.productionPairs=productionPairs;results.directProductionAudit=directProd
 results.minimumCoreTable=minimumCoreTable;results.minimumProductionPairs=minimumProductionPairs;
 results.productionDepthCoverage=productionDepthCoverage;
 results.sbmlMetadata=sbmlInfo;
+results.cellFreeReactionMerge=cellFreeAudit;results.cellFreeMetaboliteMerge=cellFreeMetAudit;
+results.cellFreeSummary=cellFreeInfo;
 save(fullfile(cfg.outputDir,'Anderson_Production_Results.mat'),'results');
 report(fid,['Finished. Outputs: ' cfg.outputDir]);
 end
@@ -578,8 +654,8 @@ cfg = struct('outputDir',fullfile(pwd,'Anderson_Transport_Production_Results'), 
     'branchRequireMatchedInterfaces',false,'branchMaxParticipants',16, ...
     'branchMaxRails',5000,'branchMaxPairTests',200000,'branchMaxModules',500, ...
     'branchMaxWiringTests',100000,'branchMaxWiring',10000, ...
-    'connectCounter',true,'counterMode',"consume_I",'counterRequireFormationEC',true, ...
-    'counterRequireRemoval',false,'counterRequireLeakEC',true,'counterUseVerifiedSeedMap',true, ...
+    'connectCounter',true,'counterMode',"consume_I",'counterRequireFormationEC',false, ...
+    'counterRequireRemoval',false,'counterRequireLeakEC',false,'counterUseVerifiedSeedMap',true, ...
     'counterECFile','Counter_EC_Evidence.tsv','counterGateEvidenceFile','Counter_Gate_Evidence.tsv', ...
     'counterCargoID',"",'counterRequireGateEvidence',false,'counterRequireIsolation',true, ...
     'counterDistinctECFromBranches',true,'counterRequireBoundaryFeed',false, ...
@@ -595,10 +671,14 @@ cfg = struct('outputDir',fullfile(pwd,'Anderson_Transport_Production_Results'), 
     'neuronTransportMaxLinksPerParent',1000, ...
     'neuronAdapterMaxDepth',3,'neuronAdapterMaxStates',2000,'neuronAdapterMaxExpansions',20000, ...
     'step2DistinctECs',true,'step2PrintTop',10,'step2PrintPartialWhenEmpty',true, ...
-    'step2MaxParents',1000,'step2MaxParticipants',16,'neuronMaxTestsPerRail',50000, ...
+    'step2MaxParents',1000,'step2MaxSeconds',21600,'step2ShareBlock0Search',true, ...
+    'step2SearchBlock0',false,'block0RequireEC',false, ...
+    'step2MaxParticipants',16,'neuronMaxTestsPerRail',50000, ...
     'neuronMaxRails',2000,'step2MaxNeuronTests',100000,'step2MaxCompleteMotifs',1000, ...
     'block0MaxDepth',20,'block0MaxStates',50000,'block0MaxExpansions',100000, ...
     'block0MaxAlternatives',10,'block0MaxParticipants',16, ...
+    'cellFreeMerge',true,'cancellerI',"pyr",'counterUseEmbeddediMM904EC',true, ...
+    'excludedReactionIDs',["THZPSN1_SC";"THZPSN2_SC"], ...
     'currencyBaseIDs',block0DefaultCurrencyIDs());
 end
 
@@ -610,7 +690,7 @@ for key={'maxCoreReactions','maxStatesPerI','printTop','maxECLookups','maxProduc
         'counterMaxComponents','counterMaxConnectionTests','counterMaxConnections', ...
         'counterMaxWiringTests','counterMaxWiring','step2PrintTop','step2MaxParents', ...
         'step2MaxParticipants','neuronMaxTestsPerRail','neuronMaxRails','step2MaxNeuronTests', ...
-        'step2MaxCompleteMotifs','block0MaxDepth','block0MaxStates','block0MaxExpansions', ...
+        'step2MaxCompleteMotifs','block0MaxDepth','block0MaxStates','block0MaxExpansions','step2MaxSeconds', ...
         'block0MaxAlternatives','block0MaxParticipants', ...
         'neuronTransportMaxTests','neuronTransportMaxLinksPerParent', ...
         'neuronAdapterMaxStates','neuronAdapterMaxExpansions','neuronChainMinDepth', ...
@@ -642,10 +722,13 @@ for key={'allowReverse','requireTransportGPR','requireCoreEC','onlineEC', ...
         'counterRequireFormationEC','counterRequireRemoval','connectStep2','step2UseVerifiedSeedMap', ...
         'step2DistinctECs','step2PrintPartialWhenEmpty','rejectAtomImbalancedProduction', ...
         'requireResolvedProductionAtomBalance','productionMinimumOnly','neuronTransportRequireGPR', ...
-        'neuronDiagnoseRejectedChains'}
+        'neuronDiagnoseRejectedChains','cellFreeMerge','counterUseEmbeddediMM904EC','step2ShareBlock0Search', ...
+        'step2SearchBlock0','block0RequireEC'}
     assert(islogical(c.(key{1})) && isscalar(c.(key{1})), ...
         'Anderson:Flag','%s must be a logical scalar.',key{1});
 end
+assert(isstring(string(c.cancellerI))&&~any(ismissing(string(c.cancellerI))), ...
+    'Anderson:CancellerI','cancellerI must be "" or a string (array) of BaseIDs or metabolite IDs.');
 assert(isscalar(string(c.counterMode))&&ismember(string(c.counterMode),["consume_I","membrane"]), ...
     'Anderson:CounterMode','counterMode must be consume_I or membrane.');
 assert(isscalar(string(c.productionMode))&&ismember(string(c.productionMode),["single_reaction","multi_reaction"]), ...
@@ -1023,7 +1106,19 @@ n=numel(model.rxns); m=numel(model.mets);
 O=struct('rxn',zeros(1,0),'direction',zeros(1,0),'R',sparse(m,0), ...
     'P',sparse(m,0),'N',sparse(m,0),'consumers',{cell(m,1)},'grossKnown',false(1,0));
 rows=cell(0,17);auditRows=cell(0,9);
+% Lumped multi-enzyme pseudo-reactions listed in cfg.excludedReactionIDs
+% (matched after removing the AUXOS/PROTS wrapper) never enter any pool.
+excludedRx=false(n,1);
+if isfield(cfg,'excludedReactionIDs')&&~isempty(cfg.excludedReactionIDs)
+    unwrapped=regexprep(regexprep(string(model.rxns(:)),'^R_',''),'^(AUXOS|PROTS)','');
+    excludedRx=ismember(lower(unwrapped),lower(string(cfg.excludedReactionIDs(:))));
+end
 for j=1:n
+    if excludedRx(j)
+        auditRows(end+1,:)={string(model.rxns{j}),0,"excluded_by_excludedReactionIDs",false, ...
+            false,false,false,0,0}; %#ok<AGROW>
+        continue;
+    end
     dirs=[]; if model.ub(j)>0,dirs=1;end
     if cfg.allowReverse && model.lb(j)<0,dirs=[dirs -1];end %#ok<AGROW>
     [gpr,glist,~]=decodeGPR(string(model.grRules{j}),string(model.rules{j}),string(model.genes));
@@ -1910,7 +2005,7 @@ end
 if cfg.branchUseVerifiedSeedMap
     seed=verifiedBranchECSeeds();
     for j=reshape(find(E.codes=="" & sourceID~=""),1,[])
-        k=find(seed.SourceReactionID==sourceID(j),1);
+        k=cellFreeSeedMatch(seed.SourceReactionID,sourceID(j),model,j);
         if isempty(k),status(j)="source_ID_outside_partial_EC_seed_map";continue;end
         if ~branchSignatureMatches(model.S(:,j),base,seed.ChemicalSignature(k))
             status(j)="explicit_BiGG_link_but_seed_chemistry_mismatch";continue;
@@ -2253,13 +2348,16 @@ end
 if cfg.counterUseVerifiedSeedMap
     seeds=verifiedCounterECSeeds();
     for j=reshape(find(E.codes==""&sourceID~=""),1,[])
-        k=find(seeds.SourceReactionID==sourceID(j),1);if isempty(k),continue;end
+        k=cellFreeSeedMatch(seeds.SourceReactionID,sourceID(j),model,j);if isempty(k),continue;end
         if ~branchSignatureMatches(model.S(:,j),base,seeds.ChemicalSignature(k))
             status(j)="explicit_BiGG_link_but_counter_seed_chemistry_mismatch";continue;
         end
         E.codes(j)=seeds.EC(k);E.source(j)="verified_partial_counter_BiGG_seed_2026_11_13";
         E.reference(j)=seeds.Reference(k);status(j)="source_ID_and_chemical_signature_matched";
     end
+end
+if cfg.counterUseEmbeddediMM904EC
+    [E,status]=applyEmbeddediMM904EC(E,status,model,base);
 end
 A=table(string(model.rxns),sourceID,E.codes,E.source,E.reference,status,E.codes~="", ...
     'VariableNames',{'ReactionID','SourceReactionID','EC','AnnotationSource','Reference','Status','CounterECEligible'});
@@ -2411,10 +2509,19 @@ for x=1:height(X)
         if any(ismember(rx,brx)),stats.reactionReuseRejected=stats.reactionReuseRejected+1;continue;end
         shared=intersect(support{x},union(fast.parts,slow.parts));shared(currency(shared))=[];
         if cfg.counterRequireIsolation&&~isempty(shared),stats.crossTalkRejected=stats.crossTalkRejected+1;continue;end
-        assigned=completeECTokens(M.AssignedECs(b));sets=cell(1,numel(assigned)+1);
+        assigned=completeECTokens(M.AssignedECs(b));sets=cell(1,numel(assigned));
         for k=1:numel(assigned),sets{k}=assigned(k);end
-        sets{end}=completeECTokens(F.ECs(f));
-        if X.LeakOrientationIndex(x)>0,sets{end+1}=completeECTokens(X.LeakECs(x));end
+        % A counter reaction without an EC joins the distinct-EC check only
+        % when an EC is required for it (counterRequireFormationEC/LeakEC).
+        formationSet=completeECTokens(F.ECs(f));
+        hasFormationEC=~isempty(formationSet)||cfg.counterRequireFormationEC;
+        if hasFormationEC,sets{end+1}=formationSet;end
+        hasLeakEC=false;
+        if X.LeakOrientationIndex(x)>0
+            leakSet=completeECTokens(X.LeakECs(x));
+            hasLeakEC=~isempty(leakSet)||cfg.counterRequireLeakEC;
+            if hasLeakEC,sets{end+1}=leakSet;end
+        end
         [codes,ecOK]=distinctBranchECs(sets,cfg.counterDistinctECFromBranches);
         if ~ecOK,stats.ECRejected=stats.ECRejected+1;continue;end
         genes=strings(0,1);branchGenes=strings(0,1);
@@ -2428,8 +2535,9 @@ for x=1:height(X)
         if cfg.branchRejectSharedKnownGenes&&~isempty(knownOverlap)
             stats.knownGeneOverlapRejected=stats.knownGeneOverlapRejected+1;continue;
         end
-        formationEC=codes(numel(assigned)+1);leakEC="";
-        if X.LeakOrientationIndex(x)>0,leakEC=codes(end);end
+        formationEC="";leakEC="";
+        if hasFormationEC,formationEC=codes(numel(assigned)+1);end
+        if hasLeakEC,leakEC=codes(end);end
         rows(end+1,:)={size(rows,1)+1,W.WiringID(w),W.ModuleID(w),X.ConnectedID(x), ...
             X.CounterConnectionID(x),F.FormationID(f),X.I_ID(x),X.C_ID(x),X.CounterType(x), ...
             formationEC,leakEC,numel(unique(codes))==numel(codes),W.BothControlInterfacesMatched(w), ...
@@ -2538,7 +2646,7 @@ end
 if cfg.step2UseVerifiedSeedMap
     seeds=verifiedStep2ECSeeds();
     for j=reshape(find(E.codes==""&source~=""),1,[])
-        k=find(seeds.SourceReactionID==source(j),1);if isempty(k),continue;end
+        k=cellFreeSeedMatch(seeds.SourceReactionID,source(j),model,j);if isempty(k),continue;end
         if ~branchSignatureMatches(model.S(:,j),base,seeds.ChemicalSignature(k))
             status(j)="Step2_seed_chemical_signature_mismatch";continue;
         end
@@ -2850,22 +2958,37 @@ c=find(ctx.C.ConnectedID==ctx.Y.ConnectedID(w),1);
 [rx,parts]=counterCancellerSupport(c,ctx.C,ctx.D,ctx.cores,ctx.O,ctx.T,ctx.L,ctx.Q,ctx.R,ctx.P);
 fast=ctx.rails(ctx.M.FastRailIndex(b));slow=ctx.rails(ctx.M.SlowRailIndex(b));
 control=[fast.rx slow.rx];rx=[rx control];parts=union(parts,union(fast.parts,slow.parts));
-f=ctx.X.FormationID(x);fr=ctx.F.ReactionIndex(f);rx(end+1)=fr;control(end+1)=fr;
+% Counter reactions are always part of the circuit (rx, parts), but take
+% part in the distinct-EC assignment only when they carry an EC: the counter
+% may use EC-less chemistry (counterRequireFormationEC/LeakEC=false).
+f=ctx.X.FormationID(x);fr=ctx.F.ReactionIndex(f);rx(end+1)=fr;
+if ctx.E.codes(fr)~="",control(end+1)=fr;end
 parts=union(parts,ctx.XP{x});
 if ctx.X.LeakOrientationIndex(x)>0
-    lr=ctx.O.rxn(ctx.X.LeakOrientationIndex(x));rx(end+1)=lr;control(end+1)=lr;
+    lr=ctx.O.rxn(ctx.X.LeakOrientationIndex(x));rx(end+1)=lr;
+    if ctx.E.codes(lr)~="",control(end+1)=lr;end
 end
 rx=unique(rx,'stable');
 end
 
 function [codes,ok] = step2AssignEC(rx,ctx,cfg)
-sets=cell(1,numel(rx));for k=1:numel(rx),sets{k}=completeECTokens(ctx.E.codes(rx(k)));end
+% ctx.ecTokenSets/geneTokenSets (built once in searchStep2Circuit) avoid
+% re-parsing EC text and gene rules inside the Block 0/neuron inner loops.
+cached=isfield(ctx,'ecTokenSets')&&numel(ctx.ecTokenSets)==numel(ctx.model.rxns);
+sets=cell(1,numel(rx));
+for k=1:numel(rx)
+    if cached,sets{k}=ctx.ecTokenSets{rx(k)};else,sets{k}=completeECTokens(ctx.E.codes(rx(k)));end
+end
 [codes,ok]=distinctBranchECs(sets,cfg.step2DistinctECs);if ~ok,return;end
 if cfg.branchRejectSharedKnownGenes
     seen=strings(0,1);
     for j=reshape(rx,1,[])
-        [~,g,~]=decodeGPR(string(ctx.model.grRules{j}),string(ctx.model.rules{j}),string(ctx.model.genes));
-        genes=split(g,';');genes=genes(genes~="");
+        if cached
+            genes=ctx.geneTokenSets{j};
+        else
+            [~,g,~]=decodeGPR(string(ctx.model.grRules{j}),string(ctx.model.rules{j}),string(ctx.model.genes));
+            genes=split(g,';');genes=genes(genes~="");
+        end
         if ~isempty(intersect(seen,genes)),ok=false;return;end
         seen=union(seen,genes);
     end
@@ -3244,21 +3367,62 @@ stats=struct('parentsTested',0,'parentLimitReached',false,'neuron1Rails',0, ...
     'parentBlock0Found',0,'parentBlock0StructuralOnly',0,'block0BudgetLimitedCalls',0,'block0Queries',0, ...
     'transportTests',0,'exportLinks',0,'exportBudgetLimitedCalls',0,'qualifiedNeuronCandidates',0, ...
     'adapterStates',0,'adapterExpansions',0,'adapterBudgetLimitedCalls',0, ...
-    'neuronChainStates',0,'neuronDiagnosticStates',0,'neuronDiagnosticLimitCalls',0);
+    'neuronChainStates',0,'neuronDiagnosticStates',0,'neuronDiagnosticLimitCalls',0, ...
+    'timeLimitReached',false,'sharedBlock0Searches',0,'sharedBlock0Reused',0,'block0FullReruns',0,'elapsedSeconds',0);
 cache=containers.Map('KeyType','char','ValueType','any');stop=false;
+shared=containers.Map('KeyType','char','ValueType','any');
+% Parse every reaction's EC and gene sets once (used in all inner loops).
+nR=numel(ctx.model.rxns);ctx.ecTokenSets=cell(nR,1);ctx.geneTokenSets=cell(nR,1);
+for j=1:nR
+    ctx.ecTokenSets{j}=completeECTokens(ctx.E.codes(j));
+    [~,g,~]=decodeGPR(string(ctx.model.grRules{j}),string(ctx.model.rules{j}),string(ctx.model.genes));
+    g=split(string(g),';');ctx.geneTokenSets{j}=g(g~="");
+end
+progressPath=fullfile(cfg.outputDir,'Step2_Progress.txt');clock0=tic;
+step2Progress(progressPath,sprintf('Step 2 started %s: %d parent circuits available, cap %g, time limit %g s.', ...
+    datestr(now,31),height(ctx.Y),cfg.step2MaxParents,cfg.step2MaxSeconds),true);
 if cfg.connectStep2&&cfg.counterMode=="consume_I"
+% Visit the least expensive parents first (fewest canceller reactions), so
+% that parent, neuron-test and time caps cut the expensive ones.
+parentCost=zeros(height(ctx.Y),1);
 for w=1:height(ctx.Y)
+    parentCost(w)=step2CancellerReactionCount(ctx,find(ctx.C.ConnectedID==ctx.Y.ConnectedID(w),1));
+end
+[~,parentOrder]=sortrows([parentCost (1:height(ctx.Y))']);
+for w=reshape(parentOrder,1,[])
     if stats.parentsTested>=cfg.step2MaxParents,stats.parentLimitReached=true;break;end
+    if toc(clock0)>cfg.step2MaxSeconds
+        stats.timeLimitReached=true;
+        step2Progress(progressPath,sprintf('Time limit reached after %d parents; writing outputs.',stats.parentsTested),false);
+        break;
+    end
     stats.parentsTested=stats.parentsTested+1;
     [rx,parts,control,b,x,c]=step2Prefix(ctx,w);target=ctx.M.InputIndex(b);
     key=sprintf('%d,',[target sort(rx) 0 sort(control)]);
-    if isKey(cache,key),saved=cache(key);b0=saved.best;b0alts=saved.alternatives;passes=saved.passes;
+    if ~cfg.step2SearchBlock0
+        b0=emptyStep2Path(target);b0.status="Block0_not_searched_step2SearchBlock0_false";
+        b0alts=repmat(b0,1,0);passes=struct('mode',{},'result',{},'retained',{},'audit',{});
+    elseif isKey(cache,key),saved=cache(key);b0=saved.best;b0alts=saved.alternatives;passes=saved.passes;
+    elseif ~cfg.block0RequireEC
+        % Block 0 without EC requirement: one structural pass only.
+        stats.block0Queries=stats.block0Queries+1;
+        [baseRx,baseParts]=step2PrefixWithoutCounter(ctx,w);
+        [b0,b0alts,b0audit,how]=step2SharedBlock0(target,rx,parts,[],baseRx,baseParts,[], ...
+            ctx,G0,cfg,false,shared);
+        stats=step2CountShared(stats,how);
+        passes=struct('mode',"structural_only",'result',b0,'retained',numel(b0alts),'audit',b0audit);
+        saved=struct('best',b0,'alternatives',b0alts,'passes',passes);cache(key)=saved;
     else
         stats.block0Queries=stats.block0Queries+1;
-        [b0,b0alts,b0audit]=findStep2Block0(target,rx,parts,control,ctx,G0,cfg,true);
+        [baseRx,baseParts,baseControl]=step2PrefixWithoutCounter(ctx,w);
+        [b0,b0alts,b0audit,how]=step2SharedBlock0(target,rx,parts,control,baseRx,baseParts,baseControl, ...
+            ctx,G0,cfg,true,shared);
+        stats=step2CountShared(stats,how);
         passes=struct('mode',"EC_qualified",'result',b0,'retained',numel(b0alts),'audit',b0audit);
         if ~b0.found
-            [raw,rawalts,rawaudit]=findStep2Block0(target,rx,parts,[],ctx,G0,cfg,false);
+            [raw,rawalts,rawaudit,how]=step2SharedBlock0(target,rx,parts,[],baseRx,baseParts,[], ...
+                ctx,G0,cfg,false,shared);
+            stats=step2CountShared(stats,how);
             passes(end+1)=struct('mode',"structural_only",'result',raw,'retained',numel(rawalts),'audit',rawaudit);
             if raw.found,b0=raw;b0alts=rawalts;end
         end
@@ -3324,6 +3488,7 @@ for w=1:height(ctx.Y)
             if isempty(preview),preview=n1(a);previewTransport=link;end
             if ~startsWith(neuronStatus,"complete_")
                 neuronStatus="neuron_found_Block0_or_full_circuit_pending";
+                if ~cfg.step2SearchBlock0,neuronStatus="neuron_found_Block0_not_searched";end
             end
             exportID="";if link.rx>0,exportID=string(ctx.model.rxns{link.rx});end
             neuronRows(end+1,:)={size(neuronRows,1)+1,ctx.Y.CounterWiringID(w), ...
@@ -3333,15 +3498,19 @@ for w=1:height(ctx.Y)
                 string(ctx.model.mets{n1(a).output}),"neuron_only_candidate_not_a_complete_circuit", ...
                 string(ctx.model.mets{link.cargo}),numel(link.adapterO),joinText(string(ctx.model.rxns(link.adapterRx)),';'), ...
                 numel(n1(a).conversionO),joinText(string(ctx.model.mets(n1(a).mets)),' -> ')}; %#ok<AGROW>
+            if ~cfg.step2SearchBlock0,continue;end % neuron-only mode: no per-neuron Block 0
             fullRx=unique([prefix n1(a).rx],'stable');fullParts=union(prefixParts,n1(a).parts);
-            [full0,fullAlternatives]=findStep2Block0(target,fullRx,fullParts,ctrl,ctx,G0,cfg,true);
+            blockControl=[];if cfg.block0RequireEC,blockControl=ctrl;end
+            [full0,fullAlternatives]=findStep2Block0(target,fullRx,fullParts,blockControl,ctx,G0,cfg,cfg.block0RequireEC);
             if ~full0.found,continue;end
             % A transport-gene conflict in the first retained alternative
-            % must not hide a later compatible Block 0 support.
+            % must not hide a later compatible Block 0 support. Without
+            % block0RequireEC, Block 0 reactions stay out of the EC assignment.
             ok=false;
             for z=1:numel(fullAlternatives)
                 chosen=fullAlternatives(z);controlled=[ctrl ctx.O.rxn(chosen.o)];
-                [assigned,compatible]=step2AssignEC(controlled,ctx,cfg);
+                ecSet=ctrl;if cfg.block0RequireEC,ecSet=controlled;end
+                [assigned,compatible]=step2AssignEC(ecSet,ctx,cfg);
                 if compatible&&step2TransportGenesOK(link.rx,controlled,ctx,cfg)
                     full0=chosen;ok=true;break;
                 end
@@ -3357,6 +3526,9 @@ for w=1:height(ctx.Y)
         end
         if stop,break;end
     end
+    step2Progress(progressPath,sprintf('parent %d/%d (wiring %d): neuron rails %d, tested %d -> %s | Block 0 %s | %.0f s', ...
+        stats.parentsTested,min(height(ctx.Y),cfg.step2MaxParents),ctx.Y.CounterWiringID(w), ...
+        parentRails,neuronTests,neuronStatus,b0.status,toc(clock0)),false);
     id=numel(details)+1;details(id)=struct('id',ctx.Y.CounterWiringID(w),'w',w,'x',x,'b',b,'c',c, ...
         'rx',rx,'parts',parts,'controlRx',control,'block0',b0,'block0Alternatives',b0alts, ...
         'diagnostic',step2DiagnosticGraphPath(target,ctx,G0),'neuronStatus',neuronStatus, ...
@@ -3367,6 +3539,9 @@ for w=1:height(ctx.Y)
     if stop,break;end
 end
 end
+stats.elapsedSeconds=toc(clock0);
+step2Progress(progressPath,sprintf('Step 2 finished: %d parents in %.0f s (time limit reached=%d).', ...
+    stats.parentsTested,stats.elapsedSeconds,stats.timeLimitReached),false);
 step2=struct('stats',stats,'details',details,'motifs',motifs,'reactionPool',ctx.O);
 step2.block0Alternatives=step2Block0AlternativeTable(block0Rows);
 step2.block0Coverage=cellTable(block0CoverageRows,{'ParentID','Pass','Status','PathStates','Expansions', ...
@@ -3455,7 +3630,12 @@ function writeStep2Report(path,S,ctx,cfg)
 fid=fopen(path,'w');assert(fid>0,'Anderson:Step2Report','Cannot write Step_2_Results.txt.');
 cleanup=onCleanup(@()fclose(fid)); %#ok<NASGU>
 report(fid,'BLOCK 0 -> FAST/SLOW BRANCHES -> ANDERSON CANCELLER -> CONSUMING COUNTER -> ONE CONSUMING NEURON');
-report(fid,'Code revision: direct_intracellular_consuming_neuron_chains_2026_11_16.');
+report(fid,'Code revision: direct_intracellular_consuming_neuron_chains_2026_11_16; cell-free merge and cancellerI 2026-11-19.');
+report(fid,sprintf('cancellerI=%s; counter/neuron/Block 0 may use embedded iMM904 ECs=%d.', ...
+    joinText(string(cfg.cancellerI),','),cfg.counterUseEmbeddediMM904EC));
+if cfg.cellFreeMerge
+    report(fid,'CELL-FREE MODE: one vessel; organelle copies merged per block; intracellular transports removed; identical isoenzymes merged.');
+end
 if ~isfield(ctx,'currentChainInventory'),ctx.currentChainInventory=S.consumingChains;end
 report(fid,'Direction policy: model-bound orientations; reverse steps included only when allowReverse and the lower bound permit them.');
 report(fid,sprintf('allowReverse=%d; counterMode=%s; EC map is partial and source/signature checked.',cfg.allowReverse,cfg.counterMode));
@@ -3530,7 +3710,19 @@ report(fid,sprintf('Distinct complete motifs found: %d; complete motifs printed:
 report(fid,sprintf('Limits reached: parent=%d; neuron calls=%d; neuron candidate tests=%d; complete retention=%d; parent Block0 budget-limited calls=%d.', ...
     S.stats.parentLimitReached,S.stats.neuronBudgetLimitedCalls,S.stats.neuronTestLimitReached, ...
     S.stats.completeLimitReached,S.stats.block0BudgetLimitedCalls));
+if isfield(S.stats,'timeLimitReached')
+    report(fid,sprintf('Step 2 time limit reached=%d (step2MaxSeconds=%g); elapsed %.0f s.', ...
+        S.stats.timeLimitReached,cfg.step2MaxSeconds,S.stats.elapsedSeconds));
+    report(fid,sprintf('Block 0: shared upstream searches=%d; counter variants answered from a shared search=%d; full per-parent re-searches=%d.', ...
+        S.stats.sharedBlock0Searches,S.stats.sharedBlock0Reused,S.stats.block0FullReruns));
+end
 report(fid,'Complete counts require one neuron and a Block 0 connector rechecked against all downstream reactions and EC assignments.');
+report(fid,sprintf('Block 0 searched=%d; Block 0 requires EC=%d. With Block 0 off, look for neuronStatus neuron_found_Block0_not_searched.', ...
+    cfg.step2SearchBlock0,cfg.block0RequireEC));
+if isfield(S,'neuronCandidates')
+    report(fid,sprintf('Parents with at least one passing neuron: %d; passing neuron candidates: %d.', ...
+        numel(unique(S.neuronCandidates.ParentID)),height(S.neuronCandidates)));
+end
 report(fid,'Partial parents and rejected diagnostic paths never contribute to the complete count. Printing does not determine search limits.');
 report(fid,'No whole-cell flux, atom-transfer, thermodynamic or kinetic validation is claimed. Additional co-substrates remain required.');
 if cfg.neuronPlacement=="outside"
@@ -3550,17 +3742,52 @@ for status=reshape(unique(S.entryAudit.Status,'stable'),1,[])
     report(fid,sprintf('  %s: %d',status,nnz(S.entryAudit.Status==status)));
 end
 if ~isempty(S.motifs)
-    for k=1:min(numel(S.motifs),cfg.step2PrintTop)
+    % Least expensive first: fewest canceller reactions, then fewest Block 0
+    % reactions, then fewest neuron reactions; ties keep the search order.
+    nMotif=numel(S.motifs);cost=zeros(nMotif,3);
+    for k=1:nMotif
         motif=S.motifs(k);detail=S.details(motif.parentID);
+        cost(k,:)=[step2CancellerReactionCount(ctx,detail.c) motif.block0.distance numel(motif.n1.rx)];
+    end
+    [~,printOrder]=sortrows([cost (1:nMotif)']);
+    report(fid,sprintf(['\nComplete motifs are printed least expensive first: canceller reactions, then Block 0 ' ...
+        'reactions, then neuron reactions. Cheapest: %d canceller, %g Block 0, %d neuron reactions.'], ...
+        cost(printOrder(1),1),cost(printOrder(1),2),cost(printOrder(1),3)));
+    for k=1:min(nMotif,cfg.step2PrintTop)
+        motif=S.motifs(printOrder(k));detail=S.details(motif.parentID);
+        report(fid,sprintf('\nRANK %d | canceller reactions=%d | Block 0 reactions=%g | neuron reactions=%d', ...
+            k,cost(printOrder(k),1),cost(printOrder(k),2),cost(printOrder(k),3)));
         writeStep2Candidate(fid,k,true,detail,motif,ctx,cfg);
     end
 elseif cfg.step2PrintPartialWhenEmpty
+    % Most advanced parents first (a passing neuron), then the least
+    % expensive: fewest canceller reactions, then fewest Block 0 reactions
+    % (Inf when none was found or searched); ties keep the search order.
+    nDetail=numel(S.details);neuronStatus=strings(nDetail,1);cost=zeros(nDetail,2);
+    for k=1:nDetail
+        neuronStatus(k)=string(S.details(k).neuronStatus);
+        cost(k,:)=[step2CancellerReactionCount(ctx,S.details(k).c) S.details(k).block0.distance];
+    end
+    printRank=2*ones(nDetail,1);printRank(startsWith(neuronStatus,"neuron_found"))=1;
+    [~,printOrder]=sortrows([printRank cost (1:nDetail)']);
     report(fid,sprintf('\nNo complete motif passed. Printing %d of %d PARTIAL parents with all known reactions and explicit missing roles.', ...
         min(numel(S.details),cfg.step2PrintTop),numel(S.details)));
+    report(fid,sprintf('Parents with a passing neuron are printed first: %d of %d parents have one.', ...
+        nnz(printRank==1),numel(S.details)));
+    report(fid,'Within each group: fewest canceller reactions first, then fewest Block 0 reactions.');
     for k=1:min(numel(S.details),cfg.step2PrintTop)
-        writeStep2Candidate(fid,k,false,S.details(k),[],ctx,cfg);
+        report(fid,sprintf('\nRANK %d | neuron found=%d | canceller reactions=%d | Block 0 reactions=%g', ...
+            k,printRank(printOrder(k))==1,cost(printOrder(k),1),cost(printOrder(k),2)));
+        writeStep2Candidate(fid,k,false,S.details(printOrder(k)),[],ctx,cfg);
     end
 end
+end
+
+function n = step2CancellerReactionCount(ctx,c)
+% Distinct model reactions of one Anderson canceller: production core, I
+% import, linear sink (plus its F-gated co-substrate import) and pair loss.
+rx=counterCancellerSupport(c,ctx.C,ctx.D,ctx.cores,ctx.O,ctx.T,ctx.L,ctx.Q,ctx.R,ctx.P);
+n=numel(unique(rx));
 end
 
 function writeStep2Candidate(fid,k,complete,d,motif,ctx,cfg)
@@ -3841,6 +4068,10 @@ end
 function step2PrintReaction(fid,role,j,direction,ctx)
 model=ctx.model;a=ctx.R(:,j);b=ctx.P(:,j);if direction<0,tmp=a;a=b;b=tmp;end
 report(fid,char(role));report(fid,['  ID: ' model.rxns{j}]);report(fid,['  Name: ' model.rxnNames{j}]);
+if isfield(model,'circuitMergedRxnIDs')&&numel(model.circuitMergedRxnIDs)==numel(model.rxns) ...
+        &&contains(model.circuitMergedRxnIDs(j),";")
+    report(fid,['  Cell-free merged copies: ' char(model.circuitMergedRxnIDs(j))]);
+end
 report(fid,sprintf('  Direction: %+d relative to model.S',direction));
 ec=ctx.E.codes(j);if ec=="",ec="UNRESOLVED (no annotation inferred)";end
 report(fid,['  Resolved EC: ' char(ec)]);
@@ -4418,6 +4649,10 @@ selfTestNativeSBML(direct);
 selfTestThreeReactionExtension();
 selfTestSingleReactionProduction();
 selfTestMinimumProduction();
+selfTestCellFreeMerge();
+selfTestEmbeddediMM904EC();
+fprintf('PASS: embedded iMM904 EC transfer with chemistry guard.\n');
+fprintf('PASS: cell-free merge of organelle copies, transport removal and isoenzyme collapse.\n');
 fprintf('PASS: import, gross/net distinction, two-step amplification, net-zero rejection,\n');
 fprintf('      co-substrate availability, buffering, bounds, reverse policy, depth/budgets,\n');
 fprintf('      GPR/EC parsing, gating-evidence filtering and transport/core accounting.\n');
@@ -4842,8 +5077,14 @@ strict=cfg;strict.counterRequireRemoval=true;
 [onlyLeaky,~,~,~]=connectConsumingCounters(F,fp,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,strict);
 assert(height(onlyLeaky)==height(C)&&all(onlyLeaky.LeakOrientationIndex>0));
 noEC=F;noEC.ECResolved(f)=false;noEC.ECs(f)="";
-[none,~,audit,~]=connectConsumingCounters(noEC,fp,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,cfg);
-assert(isempty(none)&&any(audit.Status=="formation_EC_unresolved"),'Missing formation EC was silently accepted.');
+needEC=cfg;needEC.counterRequireFormationEC=true;
+[none,~,audit,~]=connectConsumingCounters(noEC,fp,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,needEC);
+assert(isempty(none)&&any(audit.Status=="formation_EC_unresolved"),'Missing formation EC was silently accepted when required.');
+[relaxed,relaxedParts,~,~]=connectConsumingCounters(noEC,fp,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,cfg);
+assert(height(relaxed)==height(X),'A counter without EC was rejected although no counter EC is required.');
+[relaxedY,~]=wireConsumingCounters(relaxed,noEC,relaxedParts,W,M,rails,O,m,currency,cfg);
+assert(height(relaxedY)==height(Y)&&all(relaxedY.AssignedFormationEC==""), ...
+    'Branch wiring rejected or mislabelled an EC-less counter formation.');
 bad=fp;bad{f}=union(bad{f},3);
 [none,~,audit,~]=connectConsumingCounters(F,bad,C,D,cores,O,T,L,Q,E,m,base,currency,R,P,cfg);
 assert(isempty(none)&&any(audit.Status=="formation_shares_noncurrency_outside_I"),'Formation cross-talk was accepted.');
@@ -4924,6 +5165,7 @@ end
 function selfTestStep2Circuit(previous,oldR,oldP,oldE,F,X,xp,Y,cfg)
 % Synthetic single-neuron/report regressions, run only by explicit selftest.
 cfg.neuronPlacement="inside"; % preserve the earlier direct-neuron regressions
+cfg.step2SearchBlock0=true;cfg.block0RequireEC=true; % original complete-circuit regressions
 nm=numel(previous.mets);nr=numel(previous.rxns);a=nm+(1:5);minIndex=find(string(previous.mets)=="u[c]",1);
 assert(~isempty(minIndex));input=find(string(previous.mets)=="counter_total[c]",1);
 R=blkdiag(oldR,sparse(5,5));P=blkdiag(oldP,sparse(5,5));
@@ -4947,6 +5189,13 @@ ctx=struct('model',m,'base',base,'comp',comp,'currency',currency,'R',R,'P',P,'O'
 result=searchStep2Circuit(ctx,cfg);
 assert(~isempty(result.complete)&&all(result.complete.Block0Distance==2), ...
     'The complete single-neuron circuit with exact cAMP-to-input Block 0 was not found.');
+neuronOnly=cfg;neuronOnly.step2SearchBlock0=false;only=searchStep2Circuit(ctx,neuronOnly);
+assert(isempty(only.complete)&&~isempty(only.neuronCandidates)&&only.stats.block0Queries==0 ...
+    &&any([only.details.neuronStatus]=="neuron_found_Block0_not_searched"), ...
+    'Neuron-only mode searched Block 0 or lost the neuron.');
+noEC=cfg;noEC.block0RequireEC=false;relaxed=searchStep2Circuit(ctx,noEC);
+assert(~isempty(relaxed.complete)&&all(relaxed.complete.Block0Distance==2), ...
+    'Block 0 without EC requirement lost the complete circuit.');
 for k=1:numel(result.motifs)
     motif=result.motifs(k);assert(motif.n1.input==input&&motif.n1.output==a(2));
     assert(motif.block0.mets(1)==a(4)&&motif.block0.mets(end)==minIndex);
@@ -5120,6 +5369,1215 @@ assert(contains(value,'r_A_N1_01')&&contains(value,'r_A_N1_02') ...
     &&contains(value,' (m_exp) [export_cargo[c]]') ...
     &&contains(value,' (m_Nin_1) [export_cargo[e]]'), ...
     'The adapter intermediates, export cargo and external input were not annotated separately.');
+end
+
+function [model,base,comp,currency,R,P,known,ecComp,metSource,A,MA,info] = mergeCellFreeCompartments( ...
+    model,base,comp,currency,R,P,known,ecComp,metSource,layout,cfg)
+% CELL-FREE MODE (cfg.cellFreeMerge): one reaction vessel, every component
+% supplied, no membranes. Inside each block, all organelle copies of one
+% chemical species (same BaseID in cytosol, mitochondrion, peroxisome, ...)
+% become ONE species. The outside compartment is never merged, so the
+% S-gated I import and the rest of the Anderson topology are unchanged.
+% Gross and net stoichiometry are transformed together:
+%  * a reaction that only moved species between organelles has no net
+%    chemistry left and is removed (carriers, antiporters, ATP-driven
+%    pumps, proton carriers, ATP synthase);
+%  * an organelle-spanning reaction with real chemistry is kept, with any
+%    species that appeared on both sides cancelled;
+%  * isoenzyme copies with identical merged chemistry become ONE reaction
+%    (the same chemistry in one pot is one enzyme activity). Their bounds
+%    are united and their ECs, gene rules and source IDs are pooled.
+tol=1e-9;[m,n]=size(model.S);ids=string(model.mets(:));rxIDs=string(model.rxns(:));
+base=string(base(:));comp=string(comp(:));
+inside=string(cfg.insideCompartment(:));outside=string(cfg.outsideCompartment);
+organelle=comp;block=comp;
+if layout.communityIDs
+    for i=1:m
+        t=regexp(char(ids(i)),'^(?:M_)?(?:AUXOS|PROTS)([CMXNRVG])','tokens','once');
+        if ~isempty(t),organelle(i)=string(t{1});end
+    end
+    cytosol="C";
+else
+    assert(isscalar(inside),'Anderson:CellFree', ...
+        'cellFreeMerge on a model without AUXOS/PROTS blocks needs exactly one insideCompartment.');
+    move=comp~=""&comp~=outside;block(move)=inside;cytosol=inside;
+end
+mergeable=ismember(block,inside)&comp~="";
+
+% ---- metabolites: one state per (block, BaseID); cytosolic ID kept -------
+key="#"+string((1:m)');key(mergeable)=block(mergeable)+"|"+base(mergeable);
+[~,~,group]=unique(key,'stable');group=group(:);nNew=max(group);
+repIdx=zeros(nNew,1);copies=zeros(nNew,1);mergedMetIDs=strings(nNew,1);
+for g=1:nNew
+    members=find(group==g);pick=members(organelle(members)==cytosol);
+    if isempty(pick),pick=members;end
+    repIdx(g)=pick(1);copies(g)=numel(members);mergedMetIDs(g)=joinText(ids(members),';');
+end
+G=sparse(group,(1:m)',1,nNew,m);
+Rm=G*R;Pm=G*P;newCurrency=currency(repIdx);newCurrency=newCurrency(:);
+
+% ---- reactions that span organelles of one block -------------------------
+spanning=false(n,1);cytosolic=false(n,1);
+for j=1:n
+    parts=find(((R(:,j)+P(:,j))>tol)&mergeable);
+    cytosolic(j)=~isempty(parts)&&all(organelle(parts)==cytosol);
+    if numel(parts)<2,continue;end
+    blocks=block(parts);
+    for b=reshape(unique(blocks),1,[])
+        if numel(unique(organelle(parts(blocks==b))))>1,spanning(j)=true;break;end
+    end
+end
+action=repmat("kept_unchanged",n,1);keepRx=true(n,1);
+for j=reshape(find(spanning),1,[])
+    net=full(Pm(:,j)-Rm(:,j));net(abs(net)<tol)=0;
+    Rm(:,j)=sparse(max(-net,0));Pm(:,j)=sparse(max(net,0));known(j)=false;
+    changed=find(net);
+    if isempty(changed)
+        keepRx(j)=false;action(j)="removed_intra_cell_transport_no_net_chemistry";
+    elseif all(newCurrency(changed))
+        keepRx(j)=false;action(j)="removed_intra_cell_transport_currency_only";
+    else
+        action(j)="kept_organelle_spanning_chemistry_shared_species_cancelled";
+    end
+end
+
+% ---- identical merged chemistry: one reaction ----------------------------
+ec=strings(n,1);
+if isfield(model,'circuitResolvedEC'),ec=string(model.circuitResolvedEC(:));end
+canon=strings(n,1);sense=ones(n,1);
+for j=reshape(find(keepRx),1,[])
+    f=cellFreeReactionKey(Rm(:,j),Pm(:,j));r=cellFreeReactionKey(Pm(:,j),Rm(:,j));
+    ordered=sort([f;r]);
+    if ordered(1)~=f,sense(j)=-1;end
+    canon(j)=ordered(1);
+end
+memberOf=(1:n)';orientation=ones(n,1);duplicates=0;
+kept=find(keepRx);
+if ~isempty(kept)
+    [~,~,dg]=unique(canon(kept),'stable');dg=dg(:);
+    for g=1:max(dg)
+        members=kept(dg==g);
+        if numel(members)<2,continue;end
+        % Representative: annotated EC first, then all-cytosolic, then order.
+        [~,order]=sortrows([-double(ec(members)~="") -double(cytosolic(members)) members]);
+        rep=members(order(1));
+        for j=reshape(members,1,[])
+            memberOf(j)=rep;orientation(j)=sense(j)*sense(rep);
+            if j~=rep
+                keepRx(j)=false;action(j)="merged_into_identical_reaction";duplicates=duplicates+1;
+            end
+        end
+        if action(rep)=="kept_unchanged",action(rep)="kept_representative_of_identical_reactions";end
+    end
+end
+lb=model.lb(:);ub=model.ub(:);
+for j=reshape(find(memberOf~=(1:n)'),1,[])
+    rep=memberOf(j);
+    if orientation(j)>0,l=model.lb(j);u=model.ub(j);else,l=-model.ub(j);u=-model.lb(j);end
+    lb(rep)=min(lb(rep),l);ub(rep)=max(ub(rep),u);
+end
+
+% ---- audits (equations use the ORIGINAL species IDs) ----------------------
+oldEq=strings(n,1);
+for j=1:n,oldEq(j)=equation(R(:,j),P(:,j),model);end
+repID=rxIDs(memberOf);repID(~keepRx & memberOf==(1:n)')="";
+A=table(rxIDs,action,repID,orientation,model.lb(:),model.ub(:),spanning,oldEq, ...
+    'VariableNames',{'OriginalReactionID','CellFreeAction','RepresentativeID', ...
+    'OrientationVsRepresentative','OriginalLB','OriginalUB','SpannedOrganelles','OriginalEquation'});
+MA=table(ids(repIdx),base(repIdx),block(repIdx),copies,mergedMetIDs, ...
+    'VariableNames',{'CellFreeMetaboliteID','BaseID','Block','OrganelleCopies','MergedOriginalIDs'});
+
+% ---- build the merged model ----------------------------------------------
+old=model;keep=find(keepRx);nKeep=numel(keep);
+model=cellFreeSubsetRows(model,repIdx,keep,m,n);
+model.mets=cellstr(ids(repIdx));
+R=Rm(:,keep);P=Pm(:,keep);model.S=P-R;
+model.lb=lb(keep);model.ub=ub(keep);known=known(:);known=known(keep);
+if isfield(model,'rev')&&numel(model.rev)==nKeep,model.rev=double(model.lb<0);end
+mergedRxnIDs=strings(nKeep,1);mergedSource=strings(nKeep,1);
+hasSource=isfield(old,'circuitSourceBiGG')&&numel(old.circuitSourceBiGG)==n;
+for k=1:nKeep
+    rep=keep(k);members=find(memberOf==rep);
+    mergedRxnIDs(k)=joinText(rxIDs(members),';');
+    if hasSource
+        values=string(old.circuitSourceBiGG(members));
+        mergedSource(k)=joinText(unique(values(values~=""),'stable'),';');
+    end
+    if numel(members)<2,continue;end
+    model.grRules{k}=char(cellFreeOrJoin(string(old.grRules(members)),' or '));
+    model.rules{k}=char(cellFreeOrJoin(string(old.rules(members)),' | '));
+    if isfield(old,'rxnGeneMat')&&size(old.rxnGeneMat,1)==n&&size(model.rxnGeneMat,1)==nKeep
+        model.rxnGeneMat(k,:)=any(old.rxnGeneMat(members,:)~=0,1);
+    end
+    for f={'circuitResolvedEC','circuitSBMLEC'}
+        if isfield(old,f{1})&&numel(old.(f{1}))==n
+            codes=completeECTokens(string(old.(f{1})(members)));
+            if ~isempty(codes),model.(f{1})(k)=join(codes,'; ');end
+        end
+    end
+    for f={'circuitECSource','circuitECReference'}
+        if isfield(old,f{1})&&numel(old.(f{1}))==n
+            values=string(old.(f{1})(members));values=unique(values(values~=""),'stable');
+            model.(f{1})(k)=joinText(values,'; ');
+        end
+    end
+    if isfield(old,'circuitSourceBiGG')&&numel(old.circuitSourceBiGG)==n&&model.circuitSourceBiGG(k)==""
+        values=string(old.circuitSourceBiGG(members));values=values(values~="");
+        if ~isempty(values),model.circuitSourceBiGG(k)=values(1);end
+    end
+end
+if isfield(model,'circuitResolvedEC')&&isfield(model,'circuitECEligible')
+    model.circuitECEligible=string(model.circuitResolvedEC(:))~="";
+end
+base=base(repIdx);comp=comp(repIdx);
+if ~layout.communityIDs,comp(mergeable(repIdx))=inside;end
+currency=newCurrency;ecComp=ecComp(repIdx);metSource=metSource(repIdx);
+model.circuitCompartment=comp;model.circuitBaseIDs=base;
+model.circuitMergedMetIDs=mergedMetIDs;model.circuitMergedRxnIDs=mergedRxnIDs;
+model.circuitMergedSourceBiGG=mergedSource;
+info=struct('metabolitesBefore',m,'metabolitesAfter',nNew,'mergedSpecies',nnz(copies>1), ...
+    'reactionsBefore',n,'reactionsAfter',nKeep, ...
+    'removedNoNetChemistry',nnz(action=="removed_intra_cell_transport_no_net_chemistry"), ...
+    'removedCurrencyOnly',nnz(action=="removed_intra_cell_transport_currency_only"), ...
+    'spanningKept',nnz(action=="kept_organelle_spanning_chemistry_shared_species_cancelled"), ...
+    'duplicatesMerged',duplicates, ...
+    'boundsWidened',nnz(model.lb<old.lb(keep)-tol|model.ub>old.ub(keep)+tol));
+end
+
+function k = cellFreeSeedMatch(seedIDs,sourceID,model,j)
+% EC seed row for reaction j: its own source ID first, then the source IDs
+% of the isoenzyme copies merged into it (cell-free mode only).
+k=find(seedIDs==sourceID,1);
+if ~isempty(k)||~isfield(model,'circuitMergedSourceBiGG') ...
+        ||numel(model.circuitMergedSourceBiGG)~=numel(model.rxns),return;end
+alternatives=split(string(model.circuitMergedSourceBiGG(j)),";");
+alternatives=alternatives(alternatives~="");
+for q=1:numel(alternatives)
+    k=find(seedIDs==alternatives(q),1);
+    if ~isempty(k),return;end
+end
+end
+
+function k = cellFreeReactionKey(a,b)
+% Exact text key of one gross reaction: substrate side | product side.
+ia=find(a);ib=find(b);
+k=string(sprintf('%d:%.9g,',[ia(:)';full(a(ia))']))+"|"+ ...
+    string(sprintf('%d:%.9g,',[ib(:)';full(b(ib))']));
+end
+
+function s = cellFreeOrJoin(values,op)
+% Isoenzymes are alternatives: OR their gene rules, dropping empty ones.
+values=strtrim(values(:));values=values(~ismissing(values));
+values=unique(values(values~=""),'stable');
+if isempty(values)
+    s="";
+elseif isscalar(values)
+    s=values;
+else
+    s="("+join(values,")"+string(op)+"(")+")";
+end
+end
+
+function model = cellFreeSubsetRows(model,metRows,rxnRows,m,n)
+% Keep every per-metabolite and per-reaction model field consistent.
+skip={'S','genes','geneNames','comps','compNames','modelName','modelID', ...
+    'description','proteins','modelVersion','osenseStr'};
+metFields={'mets','b','csense','circuitCompartment','circuitBaseIDs'};
+rxnFields={'rxns','lb','ub','c','rev','grRules','rules','subSystems','eccodes','ecCodes', ...
+    'ecNumbers','circuitSBMLEC','circuitSourceBiGG','circuitResolvedEC','circuitECSource', ...
+    'circuitECReference','circuitECEligible'};
+names=fieldnames(model);
+for q=1:numel(names)
+    f=names{q};
+    if any(strcmp(f,skip)),continue;end
+    x=model.(f);
+    isMet=startsWith(f,'met')||any(strcmp(f,metFields));
+    isRxn=startsWith(f,'rxn')||any(strcmp(f,rxnFields));
+    if m==n&&~isMet&&~isRxn,continue;end % ambiguous size: leave untouched
+    if size(x,1)==m&&(isMet||(~isRxn&&m~=n))
+        model.(f)=x(metRows,:);
+    elseif size(x,1)==n&&(isRxn||(~isMet&&m~=n))
+        model.(f)=x(rxnRows,:);
+    elseif isvector(x)&&numel(x)==m&&isMet
+        model.(f)=x(metRows);
+    elseif isvector(x)&&numel(x)==n&&isRxn
+        model.(f)=x(rxnRows);
+    end
+end
+end
+
+function selfTestCellFreeMerge()
+% Organelle copies merge per block; transport without chemistry disappears;
+% identical isoenzymes collapse with united bounds, ECs and gene rules.
+ids={'M_a_e';'M_AUXOSCa_u';'M_AUXOSMa_u';'M_AUXOSCb_u';'M_AUXOSMb_u';'M_AUXOSCc_u'; ...
+    'M_AUXOSMd_u';'M_AUXOSCatp_u';'M_AUXOSCadp_u';'M_AUXOSCh_u';'M_AUXOSMh_u'; ...
+    'M_PROTSCa_x';'M_PROTSMa_x'};
+rx={'E1c';'E1m';'E1rev';'Tcm';'Pump';'Hleak';'Span';'SpanH';'Imp1';'Imp2';'Xblock'};
+R=zeros(13,11);P=zeros(13,11);
+R(2,1)=1;P(4,1)=1;            % E1c   a[C] -> b[C]
+R(3,2)=1;P(5,2)=1;            % E1m   a[M] -> b[M]
+R(5,3)=1;P(3,3)=1;            % E1rev b[M] -> a[M]  (written backwards)
+R(2,4)=1;P(3,4)=1;            % Tcm   a[C] -> a[M]
+R([2 8],5)=1;P([3 9],5)=1;    % Pump  a[C] + atp -> a[M] + adp
+R(10,6)=1;P(11,6)=1;          % Hleak h[C] -> h[M]
+R([2 6],7)=1;P(7,7)=1;        % Span  a[C] + c[C] -> d[M]
+R([2 6 11],8)=1;P([7 10],8)=1;% SpanH a[C] + c[C] + h[M] -> d[M] + h[C]
+R(1,9)=1;P(2,9)=1;            % Imp1  a[e] -> a[C]
+R(1,10)=1;P(3,10)=1;          % Imp2  a[e] -> a[M]
+R(12,11)=1;P(13,11)=1;        % Xblock a[C,x] -> a[M,x]
+m=struct('mets',{ids},'rxns',{rx},'S',sparse(P-R),'lb',[0;0;0;0;0;0;0;0;0;0;0], ...
+    'ub',[100;100;20;100;100;100;100;100;100;100;100],'comps',{{'e';'u';'x'}}, ...
+    'metComps',[1;2;2;2;2;2;2;2;2;2;2;3;3],'genes',{{'g1';'g2';'g3'}}, ...
+    'grRules',{{'g1';'g2';'g3';'';'';'';'';'';'';'';''}});
+m=normalizeModel(m);
+m.circuitResolvedEC=["1.1.1.1";"1.1.1.2";"";"";"";"";"";"";"";"";""];
+m.circuitSBMLEC=strings(11,1);m.circuitSourceBiGG=["";"E1m";"";"";"";"";"";"";"";"";""];
+[b,c,layout]=readModelLayout(m,'');cfg=resolveModelProfile(defaultOptions(),layout,c);
+cur=ismember(lower(b),lower(cfg.currencyBaseIDs));
+[mm,bb,cc,cu,RR,PP,kk,~,~,A,MA,info]=mergeCellFreeCompartments(m,b,c,cur,sparse(R),sparse(P), ...
+    true(11,1),repmat("other",13,1),repmat("test",13,1),layout,cfg);
+assert(numel(mm.mets)==9&&numel(bb)==9&&numel(cc)==9&&numel(cu)==9&&height(MA)==9, ...
+    'Cell-free merge: wrong number of merged species.');
+assert(any(string(mm.mets)=="M_AUXOSCa_u")&&~any(string(mm.mets)=="M_AUXOSMa_u") ...
+    &&any(string(mm.mets)=="M_AUXOSMd_u")&&any(string(mm.mets)=="M_PROTSCa_x") ...
+    &&any(string(mm.mets)=="M_a_e"),'Cell-free merge: wrong representative species or block mixing.');
+assert(isequal(string(mm.rxns),["E1c";"Span";"Imp1"])&&size(mm.S,2)==3&&numel(kk)==3, ...
+    'Cell-free merge: transports were not removed or identical reactions were not collapsed.');
+assert(norm(full(mm.S-(PP-RR)),Inf)<1e-12,'Cell-free merge: gross and net stoichiometry disagree.');
+assert(mm.lb(1)==-20&&mm.ub(1)==100,'Cell-free merge: bounds of a reversed isoenzyme were not united.');
+codes=completeECTokens(mm.circuitResolvedEC(1));
+assert(all(ismember(["1.1.1.1";"1.1.1.2"],codes))&&mm.circuitSourceBiGG(1)=="E1m" ...
+    &&mm.circuitMergedSourceBiGG(1)=="E1m"&&mm.circuitMergedRxnIDs(1)=="E1c;E1m;E1rev", ...
+    'Cell-free merge: EC numbers or source IDs of isoenzymes were not pooled.');
+assert(cellFreeSeedMatch(["X";"E1m"],"",mm,1)==2&&isempty(cellFreeSeedMatch("X","",mm,1)), ...
+    'Cell-free merge: EC seed lookup does not try merged source IDs.');
+assert(contains(string(mm.grRules{1}),"g1")&&contains(string(mm.grRules{1}),"g3") ...
+    &&contains(string(mm.grRules{1})," or "),'Cell-free merge: gene rules were not joined by OR.');
+assert(A.CellFreeAction(4)=="removed_intra_cell_transport_no_net_chemistry" ...
+    &&A.CellFreeAction(5)=="removed_intra_cell_transport_currency_only" ...
+    &&A.CellFreeAction(11)=="removed_intra_cell_transport_no_net_chemistry" ...
+    &&A.RepresentativeID(3)=="E1c"&&A.OrientationVsRepresentative(3)==-1, ...
+    'Cell-free merge: audit actions are wrong.');
+assert(info.removedNoNetChemistry==3&&info.removedCurrencyOnly==1&&info.duplicatesMerged==4, ...
+    'Cell-free merge: summary counts are wrong.');
+% A merged pool must still expose the import and the merged core step.
+[O,T]=buildPools(mm,bb,cc,cu,RR,PP,kk,cfg);
+assert(height(T)==1&&T.InsideMetaboliteID=="M_AUXOSCa_u"&&any(O.rxn==1), ...
+    'Cell-free merge: import or core admission failed on the merged model.');
+end
+
+function [E,status,count] = applyEmbeddediMM904EC(E,status,model,base)
+% Counter/neuron/Block 0 EC evidence: the iMM904 authors' own annotation
+% (PROTEIN_CLASS), transferred only on an exact iMM904 reaction ID (after
+% removing the AUXOS/PROTS wrapper, including the IDs of isoenzyme copies
+% merged in cell-free mode) AND a matching net chemistry. Fills only empty
+% rows, so model fields, supplied files and verified seeds keep priority.
+T=embeddediMM904ECTable();count=0;n=numel(model.rxns);
+keys=iMM904ReactionKey(T.SourceReactionID);
+map=containers.Map(cellstr(keys),num2cell((1:height(T))'));
+ids=string(model.rxns(:));alt=strings(n,1);
+if isfield(model,'circuitMergedRxnIDs')&&numel(model.circuitMergedRxnIDs)==n
+    alt=string(model.circuitMergedRxnIDs(:));
+end
+names=lower(regexprep(string(base(:)),'[^A-Za-z0-9]+','_'));
+names=regexprep(names,'^_+|_+$','');
+for j=reshape(find(E.codes==""),1,[])
+    candidates=[ids(j);split(alt(j),";")];candidates=candidates(candidates~="");
+    candidates=iMM904ReactionKey(regexprep(regexprep(candidates,'^R_',''),'^(AUXOS|PROTS)',''));
+    row=0;mismatch=false;
+    for q=1:numel(candidates)
+        if ~isKey(map,char(candidates(q))),continue;end
+        k=map(char(candidates(q)));
+        if iMM904SignatureMatches(model.S(:,j),names,T.ChemicalSignature(k)),row=k;break;end
+        mismatch=true;
+    end
+    if row==0
+        if mismatch,status(j)="embedded_iMM904_ID_matched_chemistry_mismatch_EC_withheld";end
+        continue;
+    end
+    E.codes(j)=T.EC(row);E.source(j)="embedded_iMM904_PROTEIN_CLASS_2009";
+    E.reference(j)="iMM904 SBML reaction notes PROTEIN_CLASS for "+T.SourceReactionID(row)+ ...
+        " (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)";
+    status(j)="embedded_iMM904_ID_and_chemistry_matched";count=count+1;
+end
+end
+
+function key = iMM904ReactionKey(x)
+key=regexprep(string(x),'[^A-Za-z0-9]+','_');
+key=regexprep(key,'^_+|_+$','');
+end
+
+function ok = iMM904SignatureMatches(net,names,signature)
+% Same chemistry up to one uniform scale/orientation. Organelle tags in the
+% table are ignored, so merged (cell-free) species still match.
+ok=false;parts=find(abs(net)>1e-10);
+if isempty(parts),return;end
+[actualNames,~,g]=unique(names(parts));actual=accumarray(g(:),full(net(parts)));
+terms=split(string(signature),";");expectedNames=strings(numel(terms),1);coefficient=zeros(numel(terms),1);
+for k=1:numel(terms)
+    pair=split(terms(k),":");if numel(pair)~=2,return;end
+    expectedNames(k)=regexprep(pair(1),'@[a-z]$','');coefficient(k)=str2double(pair(2));
+end
+[uniqueExpected,~,h]=unique(expectedNames);expected=accumarray(h(:),coefficient);
+keepA=abs(actual)>1e-10;keepE=abs(expected)>1e-10;
+actualNames=actualNames(keepA);actual=actual(keepA);
+uniqueExpected=uniqueExpected(keepE);expected=expected(keepE);
+if isempty(actual)||numel(actualNames)~=numel(uniqueExpected)||~all(ismember(actualNames,uniqueExpected)),return;end
+[~,loc]=ismember(actualNames,uniqueExpected);ratio=actual./expected(loc);
+ok=all(isfinite(ratio))&&abs(ratio(1))>1e-12&&max(abs(ratio-ratio(1)))<1e-8;
+end
+
+function selfTestEmbeddediMM904EC()
+% A wrapped and a merged iMM904 ID resolve; wrong chemistry is withheld.
+m=struct('mets',{{'AUXOSCg6p[u]';'AUXOSCf6p[u]';'AUXOSCfdp[u]';'AUXOSCpyr[u]';'AUXOSCala_L[u]'; ...
+    'AUXOSCakg[u]';'AUXOSCglu_L[u]'}},'rxns',{{'AUXOSPGI';'AUXOSPFK';'AUXOSALT_merged'}}, ...
+    'S',sparse([-1 0 0;1 -1 0;0 1 0;0 0 1;0 0 -1;0 0 -1;0 0 1]),'lb',[-10;0;-10],'ub',[10;10;10]);
+m=normalizeModel(m);m.circuitMergedRxnIDs=["AUXOSPGI";"AUXOSPFK";"AUXOSALT_merged;AUXOSALATA_Lm;AUXOSALATA_L"];
+E=struct('codes',strings(3,1),'source',strings(3,1),'reference',strings(3,1));
+[E,status,count]=applyEmbeddediMM904EC(E,repmat("unresolved",3,1),m, ...
+    ["g6p";"f6p";"fdp";"pyr";"ala_L";"akg";"glu_L"]);
+assert(count==2&&E.codes(1)=="5.3.1.9"&&E.codes(3)=="2.6.1.2"&&E.codes(2)=="" ...
+    &&status(2)=="embedded_iMM904_ID_matched_chemistry_mismatch_EC_withheld", ...
+    'Embedded iMM904 EC transfer or its chemistry guard failed.');
+end
+
+function T = embeddediMM904ECTable()
+% EC numbers exactly as annotated by the iMM904 authors (reaction notes field
+% PROTEIN_CLASS; Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37), read from
+% sbml/iMM904.xml in github.com/opencobra/m_model_collection on 2026-11-13.
+% Row format: iMM904 reaction ID | EC | net stoichiometry as
+% metabolite@organelle:coefficient. These are 2009 annotations: some EC
+% entries have since been transferred, so check them before a BRENDA query.
+raw=[
+"13BGH|3.2.1.58|13bdglcn@c:-1;h2o@c:-1;glc_d@c:1"
+"13BGHe|3.2.1.58|13bdglcn@e:-1;h2o@e:-1;glc_d@e:1"
+"13GS|2.4.1.34|udpg@c:-1;13bdglcn@c:1;h@c:1;udp@c:1"
+"2DOXG6PP|3.1.3.68|2doxg6p@c:-1;h2o@c:-1;2dglc@c:1;pi@c:1"
+"2HBO|1.1.1.27|2hb@c:-1;nad@c:-1;2obut@c:1;h@c:1;nadh@c:1"
+"34HPPOR|1.13.11.27|34hpp@c:-1;o2@c:-1;co2@c:1;hgentis@c:1"
+"3DSPHR|1.1.1.102|3dsphgn@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;sphgn@c:1"
+"3HAO|1.13.11.6|3hanthrn@c:-1;o2@c:-1;cmusa@c:1;h@c:1"
+"3IPM3MT|2.1.1.145|3c2hmp@c:-1;amet@c:-1;3ipmmest@c:1;ahcys@c:1"
+"4HGLSDm|1.5.1.12|4hglusa@m:-1;h2o@m:-1;nad@m:-1;e4hglu@m:1;h@m:2;nadh@m:1"
+"AABTN|3.5.1.63|4aabutn@c:-1;h2o@c:-1;4abut@c:1;ac@c:1"
+"AASAD1|1.2.1.31|l2aadp@c:-1;atp@c:-1;h@c:-1;nadph@c:-1;l2aadp6sa@c:1;amp@c:1;nadp@c:1;ppi@c:1"
+"AASAD2|1.2.1.31|l2aadp@c:-1;atp@c:-1;h@c:-1;nadh@c:-1;l2aadp6sa@c:1;amp@c:1;nad@c:1;ppi@c:1"
+"AATA|2.6.1.39|2oxoadp@c:-1;glu_l@c:-1;l2aadp@c:1;akg@c:1"
+"ABTA|2.6.1.19|4abut@c:-1;akg@c:-1;glu_l@c:1;sucsal@c:1"
+"ABUTDm|1.2.1.19|4abutn@m:-1;h2o@m:-1;nad@m:-1;4abut@m:1;h@m:2;nadh@m:1"
+"ACACT1|2.3.1.9|accoa@c:-2;aacoa@c:1;coa@c:1"
+"ACACT1m|2.3.1.9|accoa@m:-2;aacoa@m:1;coa@m:1"
+"ACACT4p|2.3.1.16|3odcoa@x:-1;coa@x:-1;accoa@x:1;occoa@x:1"
+"ACACT5p|2.3.1.16|3oddcoa@x:-1;coa@x:-1;accoa@x:1;dcacoa@x:1"
+"ACACT6p|2.3.1.16|3otdcoa@x:-1;coa@x:-1;accoa@x:1;ddcacoa@x:1"
+"ACACT7p|2.3.1.16|3ohdcoa@x:-1;coa@x:-1;accoa@x:1;tdcoa@x:1"
+"ACACT8p|2.3.1.16|3ohodcoa@x:-1;coa@x:-1;accoa@x:1;pmtcoa@x:1"
+"ACACT9p|2.3.1.16|3ohxccoa@x:-1;coa@x:-1;accoa@x:1;ttccoa@x:1"
+"ACCOACr|6.4.1.2|accoa@c:-1;atp@c:-1;hco3@c:-1;adp@c:1;h@c:1;malcoa@c:1;pi@c:1"
+"ACCOACrm|6.4.1.2|accoa@m:-1;atp@m:-1;hco3@m:-1;adp@m:1;h@m:1;malcoa@m:1;pi@m:1"
+"ACGAM6PS|2.3.1.4|accoa@c:-1;gam6p@c:-1;acgam6p@c:1;coa@c:1;h@c:1"
+"ACGAMPM|5.4.2.3|acgam6p@c:-1;acgam1p@c:1"
+"ACGKm|2.7.2.8|acglu@m:-1;atp@m:-1;acg5p@m:1;adp@m:1"
+"ACGSm|2.3.1.1|accoa@m:-1;glu_l@m:-1;acglu@m:1;coa@m:1;h@m:1"
+"ACHBSm|4.1.3.18|2obut@m:-1;h@m:-1;pyr@m:-1;2ahbut@m:1;co2@m:1"
+"ACLSm|4.1.3.18|h@m:-1;pyr@m:-2;alac_s@m:1;co2@m:1"
+"ACOAHim|3.1.2.1|accoa@m:-1;h2o@m:-1;ac@m:1;coa@m:1;h@m:1"
+"ACOAO4p|1.3.3.6|dcacoa@x:-1;o2@x:-1;dc2coa@x:1;h2o2@x:1"
+"ACOAO5p|1.3.3.6|ddcacoa@x:-1;o2@x:-1;dd2coa@x:1;h2o2@x:1"
+"ACOAO6p|1.3.3.6|o2@x:-1;tdcoa@x:-1;h2o2@x:1;td2coa@x:1"
+"ACOAO7p|1.3.3.6|o2@x:-1;pmtcoa@x:-1;h2o2@x:1;hdd2coa@x:1"
+"ACOAO8p|1.3.3.6|o2@x:-1;stcoa@x:-1;h2o2@x:1;od2coa@x:1"
+"ACOAO9p|1.3.3.6|hexccoa@x:-1;o2@x:-1;h2o2@x:1;hxc2coa@x:1"
+"ACOATA|2.3.1.38|acp@c:-1;accoa@c:-1;acacp@c:1;coa@c:1"
+"ACOATAm|2.3.1.41|acp@m:-1;accoa@m:-1;acacp@m:1;coa@m:1"
+"ACON3MT|2.1.1.145|acon_t@c:-1;amet@c:-1;acon5m@c:1;ahcys@c:1"
+"ACONT|4.2.1.3|cit@c:-1;icit@c:1"
+"ACONT3m|4.2.1.3|2mcit@m:-1;micit@m:1"
+"ACONTm|4.2.1.3|cit@m:-1;icit@m:1"
+"ACOTAim|2.6.1.11|acg5sa@m:-1;glu_l@m:-1;acorn@m:1;akg@m:1"
+"ACP1e|3.1.3.2|fmn@e:-1;h2o@e:-1;pi@e:1;ribflv@e:1"
+"ACS|6.2.1.1|ac@c:-1;atp@c:-1;coa@c:-1;accoa@c:1;amp@c:1;ppi@c:1"
+"ACSm|6.2.1.1|ac@m:-1;atp@m:-1;coa@m:-1;accoa@m:1;amp@m:1;ppi@m:1"
+"ACSp|6.2.1.1|ac@x:-1;atp@x:-1;coa@x:-1;accoa@x:1;amp@x:1;ppi@x:1"
+"ADA|3.5.4.4|adn@c:-1;h@c:-1;h2o@c:-1;ins@c:1;nh4@c:1"
+"ADD|3.5.4.2|ade@c:-1;h@c:-1;h2o@c:-1;hxan@c:1;nh4@c:1"
+"ADK1|2.7.4.3|amp@c:-1;atp@c:-1;adp@c:2"
+"ADK1m|2.7.4.3|amp@m:-1;atp@m:-1;adp@m:2"
+"ADK4m|2.7.4.3|amp@m:-1;itp@m:-1;adp@m:1;idp@m:1"
+"ADMDC|4.1.1.50|amet@c:-1;h@c:-1;ametam@c:1;co2@c:1"
+"ADNCYC|4.6.1.1|atp@c:-1;camp@c:1;ppi@c:1"
+"ADNK1|2.7.1.20|adn@c:-1;atp@c:-1;adp@c:1;amp@c:1;h@c:1"
+"ADNUC|3.2.2.8|adn@c:-1;h2o@c:-1;ade@c:1;rib_d@c:1"
+"ADPT|2.4.2.7|ade@c:-1;prpp@c:-1;amp@c:1;ppi@c:1"
+"ADSK|2.7.1.25|aps@c:-1;atp@c:-1;adp@c:1;h@c:1;paps@c:1"
+"ADSL1r|4.3.2.2|dcamp@c:-1;amp@c:1;fum@c:1"
+"ADSL2r|4.3.2.2|25aics@c:-1;aicar@c:1;fum@c:1"
+"ADSS|6.3.4.4|asp_l@c:-1;gtp@c:-1;imp@c:-1;dcamp@c:1;gdp@c:1;h@c:2;pi@c:1"
+"AGAT_SC|2.3.1.51|1ag3p_sc@c:-0.01;dcacoa@c:-0.02;ddcacoa@c:-0.06;hdcoa@c:-0.17;ocdycacoa@c:-0.09;odecoa@c:-0.24;pmtcoa@c:-0.27;stcoa@c:-0.05;tdcoa@c:-0.1;coa@c:1;pa_sc@c:0.01"
+"AGPRim|1.2.1.38|acg5p@m:-1;h@m:-1;nadph@m:-1;acg5sa@m:1;nadp@m:1;pi@m:1"
+"AGTi|2.6.1.44|ala_l@c:-1;glx@c:-1;gly@c:1;pyr@c:1"
+"AHCi|3.3.1.1|ahcys@c:-1;h2o@c:-1;adn@c:1;hcys_l@c:1"
+"AHSERL|4.2.99.10|achms@c:-1;ch4s@c:-1;ac@c:1;h@c:1;met_l@c:1"
+"AHSERL2|4.2.99.8|achms@c:-1;h2s@c:-1;ac@c:1;h@c:1;hcys_l@c:1"
+"AICART|2.1.2.3|10fthf@c:-1;aicar@c:-1;fprica@c:1;thf@c:1"
+"AIRCr|4.1.1.21|air@c:-1;co2@c:-1;5aizc@c:1;h@c:1"
+"AKGDam|1.2.4.2|akg@m:-1;h@m:-1;lpam@m:-1;co2@m:1;sdhlam@m:1"
+"AKGDbm|2.3.1.61|coa@m:-1;sdhlam@m:-1;dhlam@m:1;succoa@m:1"
+"AKP1|3.1.3.1|ahdt@c:-1;h2o@c:-3;dhnpt@c:1;h@c:2;pi@c:3"
+"ALASm|2.3.1.37|gly@m:-1;h@m:-1;succoa@m:-1;5aop@m:1;co2@m:1;coa@m:1"
+"ALATA_L|2.6.1.2|akg@c:-1;ala_l@c:-1;glu_l@c:1;pyr@c:1"
+"ALATA_Lm|2.6.1.2|akg@m:-1;ala_l@m:-1;glu_l@m:1;pyr@m:1"
+"ALATRS|6.1.1.7|ala_l@c:-1;atp@c:-1;trnaala@c:-1;alatrna@c:1;amp@c:1;ppi@c:1"
+"ALCD2if|1.1.1.1|etoh@c:-1;nad@c:-1;acald@c:1;h@c:1;nadh@c:1"
+"ALCD2ir|1.1.1.1|acald@c:-1;h@c:-1;nadh@c:-1;etoh@c:1;nad@c:1"
+"ALCD2irm|1.1.1.1|acald@m:-1;h@m:-1;nadh@m:-1;etoh@m:1;nad@m:1"
+"ALCD2x|1.1.1.1|etoh@c:-1;nad@c:-1;acald@c:1;h@c:1;nadh@c:1"
+"ALDD19x|1.2.1.39|h2o@c:-1;nad@c:-1;pacald@c:-1;h@c:2;nadh@c:1;pac@c:1"
+"ALDD22x|1.2.1.39|aproa@c:-1;h2o@c:-1;nad@c:-1;ala_b@c:1;h@c:2;nadh@c:1"
+"ALDD2xm|1.2.1.3|acald@m:-1;h2o@m:-1;nad@m:-1;ac@m:1;h@m:2;nadh@m:1"
+"ALDD2y|1.2.1.4|acald@c:-1;h2o@c:-1;nadp@c:-1;ac@c:1;h@c:2;nadph@c:1"
+"ALDD2ym|1.2.1.4|acald@m:-1;h2o@m:-1;nadp@m:-1;ac@m:1;h@m:2;nadph@m:1"
+"ALLTAHr|3.5.3.4|alltt@c:-1;h2o@c:-1;urdglyc@c:1;urea@c:1"
+"ALLTNr|3.5.2.5|alltn@c:-1;h2o@c:-1;alltt@c:1;h@c:1"
+"ALPHNH|3.5.1.54|allphn@c:-1;h@c:-3;h2o@c:-1;co2@c:2;nh4@c:2"
+"AMAOTr|2.6.1.62|8aonn@c:-1;amet@c:-1;amob@c:1;dann@c:1"
+"AMID|3.5.1.4|4gudbd@c:-1;h2o@c:-1;4gudbutn@c:1;nh4@c:1"
+"AMID2|3.5.1.4|h2o@c:-1;pad@c:-1;nh4@c:1;pac@c:1"
+"AMID3|3.5.1.4|h2o@c:-1;iad@c:-1;ind3ac@c:1;nh4@c:1"
+"AMPN|3.2.2.4|amp@c:-1;h2o@c:-1;ade@c:1;r5p@c:1"
+"ANPRT|2.4.2.18|anth@c:-1;prpp@c:-1;ppi@c:1;pran@c:1"
+"ANS|4.1.3.27|chor@c:-1;gln_l@c:-1;anth@c:1;glu_l@c:1;h@c:1;pyr@c:1"
+"AP4AHr|3.6.1.41|ap4a@c:-1;h2o@c:-1;adp@c:2;h@c:2"
+"APRTO2|1.4.3.4|aprut@c:-1;h2o@c:-1;o2@c:-1;h2o2@c:1;n4abutn@c:1;nh4@c:1"
+"ARAB1D2|1.1.1.117|arab_d@c:-1;nadp@c:-1;dara14lac@c:1;h@c:1;nadph@c:1"
+"ARABR|1.1.1.21|arab_l@c:-1;h@c:-1;nadph@c:-1;abt@c:1;nadp@c:1"
+"ARGN|3.5.3.1|arg_l@c:-1;h2o@c:-1;orn@c:1;urea@c:1"
+"ARGSL|4.3.2.1|argsuc@c:-1;arg_l@c:1;fum@c:1"
+"ARGSSr|6.3.4.5|asp_l@c:-1;atp@c:-1;citr_l@c:-1;amp@c:1;argsuc@c:1;h@c:1;ppi@c:1"
+"ARGTRS|6.1.1.19|arg_l@c:-1;atp@c:-1;trnaarg@c:-1;amp@c:1;argtrna@c:1;ppi@c:1"
+"ARGTRSm|6.1.1.19|arg_l@m:-1;atp@m:-1;trnaarg@m:-1;amp@m:1;argtrna@m:1;ppi@m:1"
+"ASADi|1.2.1.11|4pasp@c:-1;h@c:-1;nadph@c:-1;aspsa@c:1;nadp@c:1;pi@c:1"
+"ASNN|3.5.1.1|asn_l@c:-1;h2o@c:-1;asp_l@c:1;nh4@c:1"
+"ASNNe|3.5.1.1|asn_l@e:-1;h2o@e:-1;asp_l@e:1;nh4@e:1"
+"ASNS1|6.3.5.4|asp_l@c:-1;atp@c:-1;gln_l@c:-1;h2o@c:-1;amp@c:1;asn_l@c:1;glu_l@c:1;h@c:1;ppi@c:1"
+"ASNTRS|6.1.1.22|asn_l@c:-1;atp@c:-1;trnaasn@c:-1;amp@c:1;asntrna@c:1;ppi@c:1"
+"ASNTRSm|6.1.1.22|asn_l@m:-1;atp@m:-1;trnaasn@m:-1;amp@m:1;asntrna@m:1;ppi@m:1"
+"ASPCT|2.1.3.2|asp_l@c:-1;cbp@c:-1;cbasp@c:1;h@c:1;pi@c:1"
+"ASPKi|2.7.2.4|asp_l@c:-1;atp@c:-1;4pasp@c:1;adp@c:1"
+"ASPTA|2.6.1.1|akg@c:-1;asp_l@c:-1;glu_l@c:1;oaa@c:1"
+"ASPTAm|2.6.1.1|akg@m:-1;asp_l@m:-1;glu_l@m:1;oaa@m:1"
+"ASPTAp|2.6.1.1|akg@x:-1;asp_l@x:-1;glu_l@x:1;oaa@x:1"
+"ASPTRS|6.1.1.12|asp_l@c:-1;atp@c:-1;trnaasp@c:-1;amp@c:1;asptrna@c:1;ppi@c:1"
+"ASPTRSm|6.1.1.12|asp_l@m:-1;atp@m:-1;trnaasp@m:-1;amp@m:1;asptrna@m:1;ppi@m:1"
+"ATPATF1|2.7.7.53|adp@c:-1;atp@c:-1;h@c:-1;ap4a@c:1;pi@c:1"
+"ATPATF2|2.7.7.53|adp@c:-1;gtp@c:-1;h@c:-1;ap4g@c:1;pi@c:1"
+"ATPATF3|2.7.7.53|gdp@c:-1;gtp@c:-1;h@c:-1;gp4g@c:1;pi@c:1"
+"ATPH1|3.6.1.5|atp@c:-1;h2o@c:-2;amp@c:1;h@c:2;pi@c:2"
+"ATPPRT|2.4.2.17|atp@c:-1;prpp@c:-1;ppi@c:1;prbatp@c:1"
+"ATPS|3.6.3.6|atp@c:-1;h2o@c:-1;adp@c:1;pi@c:1;h@e:1"
+"ATPS3m|3.6.3.14|h@c:-3;adp@m:-1;pi@m:-1;atp@m:1;h@m:2;h2o@m:1"
+"ATPS3v|3.6.3.14|h@c:-3;adp@v:-1;pi@v:-1;atp@v:1;h@v:2;h2o@v:1"
+"BACCL|6.3.4.15|atp@c:-1;btn@c:-1;h@c:-1;btamp@c:1;ppi@c:1"
+"BPNT|3.1.3.7|h2o@c:-1;pap@c:-1;amp@c:1;pi@c:1"
+"BTDD_RR|1.1.1.4|btd_rr@c:-1;nad@c:-1;actn_r@c:1;h@c:1;nadh@c:1"
+"BTSr|2.8.1.6|dtbt@c:-1;s@c:-1;btn@c:1;h@c:2"
+"C3STDH1|5.3.3.1|4mzym_int1@c:-1;nad@c:-1;4mzym_int2@c:1;co2@c:1;h@c:1;nadh@c:1"
+"C3STDH2|5.3.3.1|nad@c:-1;zym_int1@c:-1;co2@c:1;h@c:1;nadh@c:1;zym_int2@c:1"
+"CAT|1.11.1.6|h2o2@c:-2;h2o@c:2;o2@c:1"
+"CATp|1.11.1.6|h2o2@x:-2;h2o@x:2;o2@x:1"
+"CBPS|6.3.5.5|atp@c:-2;gln_l@c:-1;h2o@c:-1;hco3@c:-1;adp@c:2;cbp@c:1;glu_l@c:1;h@c:2;pi@c:1"
+"CDPDGPm_SC|2.7.8.8|cdpdag_sc@m:-0.01;glyc3p@m:-1;cmp@m:1;h@m:1;pgp_sc@m:0.01"
+"CHLPCTD|2.7.7.15|cholp@c:-1;ctp@c:-1;h@c:-1;cdpchol@c:1;ppi@c:1"
+"CHLSTI|5.3.3.5|amet@c:-1;o2@c:-1;zymst@c:-1;ahcys@c:1;ergtetrol@c:1;h@c:1;h2o@c:2"
+"CHOLK|2.7.1.32|atp@c:-1;chol@c:-1;adp@c:1;cholp@c:1;h@c:1"
+"CHORM|5.4.99.5|chor@c:-1;pphn@c:1"
+"CHORS|4.2.3.5|3psme@c:-1;chor@c:1;pi@c:1"
+"CHTNDA|3.5.1.41|chitin@c:-1;h2o@c:-1;ac@c:1;chitos@c:1;h@c:1"
+"CHTNS|2.4.1.16|udpacgal@c:-1;chitin@c:1;h@c:1;udp@c:1"
+"CLPNSm_SC|2.7.8.5|cdpdag_sc@m:-0.01;pg_sc@m:-0.01;clpn_sc@m:0.01;cmp@m:1;h@m:1"
+"CMPN|3.2.2.10|cmp@c:-1;h2o@c:-1;csn@c:1;r5p@c:1"
+"CPPPGO|1.3.3.3|cpppg3@c:-1;h@c:-2;o2@c:-1;co2@c:2;h2o@c:2;pppg9@c:1"
+"CSNATm|2.3.1.7|acrn@m:-1;coa@m:-1;accoa@m:1;crn@m:1"
+"CSNATp|2.3.1.7|accoa@x:-1;crn@x:-1;acrn@x:1;coa@x:1"
+"CSNATr|2.3.1.7|accoa@c:-1;crn@c:-1;acrn@c:1;coa@c:1"
+"CSND|3.5.4.1|csn@c:-1;h@c:-1;h2o@c:-1;nh4@c:1;ura@c:1"
+"CTPS1|6.3.4.2|atp@c:-1;nh4@c:-1;utp@c:-1;adp@c:1;ctp@c:1;h@c:2;pi@c:1"
+"CTPS2|6.3.4.2|atp@c:-1;gln_l@c:-1;h2o@c:-1;utp@c:-1;adp@c:1;ctp@c:1;glu_l@c:1;h@c:2;pi@c:1"
+"CYOOm|1.9.3.1|focytc@m:-4;h@m:-6;o2@m:-1;h@c:6;ficytc@m:4;h2o@m:2"
+"CYOR_u6m|1.10.2.2|ficytc@m:-2;h@m:-1.5;q6h2@m:-1;h@c:1.5;focytc@m:2;q6@m:1"
+"CYSTGL|4.4.1.1|cyst_l@c:-1;h2o@c:-1;2obut@c:1;cys_l@c:1;nh4@c:1"
+"CYSTL|4.4.1.8|cyst_l@c:-1;h2o@c:-1;hcys_l@c:1;nh4@c:1;pyr@c:1"
+"CYSTLp|4.4.1.8|cyst_l@x:-1;h2o@x:-1;hcys_l@x:1;nh4@x:1;pyr@x:1"
+"CYSTRS|6.1.1.16|atp@c:-1;cys_l@c:-1;trnacys@c:-1;amp@c:1;cystrna@c:1;ppi@c:1"
+"CYSTS|4.2.1.22|hcys_l@c:-1;ser_l@c:-1;cyst_l@c:1;h2o@c:1"
+"CYTD|3.5.4.5|cytd@c:-1;h@c:-1;h2o@c:-1;nh4@c:1;uri@c:1"
+"CYTK1|2.7.4.14|atp@c:-1;cmp@c:-1;adp@c:1;cdp@c:1"
+"CYTK2|2.7.4.14|atp@c:-1;dcmp@c:-1;adp@c:1;dcdp@c:1"
+"DADK|2.7.4.11|atp@c:-1;damp@c:-1;adp@c:1;dadp@c:1"
+"DAGCPT_SC|2.7.8.2|12dgr_sc@c:-0.01;cdpchol@c:-1;cmp@c:1;h@c:1;pc_sc@c:0.01"
+"DAGPYP_SC|3.1.3.4|h2o@c:-1;pa_sc@c:-0.01;12dgr_sc@c:0.01;pi@c:1"
+"DASYN_SC|2.7.7.41|ctp@c:-1;h@c:-1;pa_sc@c:-0.01;cdpdag_sc@c:0.01;ppi@c:1"
+"DASYNm_SC|2.7.7.41|ctp@m:-1;h@m:-1;pa_sc@m:-0.01;cdpdag_sc@m:0.01;ppi@m:1"
+"DBTSr|6.3.3.3|atp@c:-1;co2@c:-1;dann@c:-1;adp@c:1;dtbt@c:1;h@c:3;pi@c:1"
+"DCMPDA|3.5.4.12|dcmp@c:-1;h@c:-1;h2o@c:-1;dump@c:1;nh4@c:1"
+"DCTPD|3.5.4.13|dctp@c:-1;h@c:-1;h2o@c:-1;dutp@c:1;nh4@c:1"
+"DCYTD|3.5.4.14|dcyt@c:-1;h@c:-1;h2o@c:-1;duri@c:1;nh4@c:1"
+"DDPA|4.1.2.15|e4p@c:-1;h2o@c:-1;pep@c:-1;2dda7p@c:1;pi@c:1"
+"DDPAm|4.1.2.15|e4p@m:-1;h2o@m:-1;pep@m:-1;2dda7p@m:1;pi@m:1"
+"DESAT14|1.14.19.1|h@c:-1;nadph@c:-1;o2@c:-1;tdcoa@c:-1;h2o@c:2;nadp@c:1;tdecoa@c:1"
+"DESAT16|1.14.19.1|h@c:-1;nadph@c:-1;o2@c:-1;pmtcoa@c:-1;h2o@c:2;hdcoa@c:1;nadp@c:1"
+"DESAT18|1.14.19.1|h@c:-1;nadph@c:-1;o2@c:-1;stcoa@c:-1;h2o@c:2;nadp@c:1;odecoa@c:1"
+"DESAT18_2|1.14.19.1|h@c:-1;nadph@c:-1;o2@c:-1;odecoa@c:-1;h2o@c:2;nadp@c:1;ocdycacoa@c:1"
+"DGK1|2.7.4.8|atp@c:-1;dgmp@c:-1;adp@c:1;dgdp@c:1"
+"DHAD1m|4.2.1.9|23dhmb@m:-1;3mob@m:1;h2o@m:1"
+"DHAK|2.7.1.29|atp@c:-1;dha@c:-1;adp@c:1;dhap@c:1;h@c:1"
+"DHFRi|1.5.1.3|dhf@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;thf@c:1"
+"DHFRim|1.5.1.3|dhf@m:-1;h@m:-1;nadph@m:-1;nadp@m:1;thf@m:1"
+"DHFS|6.3.2.12|atp@c:-1;dhpt@c:-1;glu_l@c:-1;adp@c:1;dhf@c:1;h@c:1;pi@c:1"
+"DHNPAm|4.1.2.25|dhnpt@m:-1;2ahhmp@m:1;gcald@m:1;h@m:1"
+"DHORD4i|1.3.3.1|dhor_s@c:-1;q6@m:-1;orot@c:1;q6h2@m:1"
+"DHORDi|1.3.3.1|dhor_s@c:-1;o2@c:-1;h2o2@c:1;orot@c:1"
+"DHORTS|3.5.2.3|dhor_s@c:-1;h2o@c:-1;cbasp@c:1;h@c:1"
+"DHPSm|2.5.1.15|2ahhmp@m:-1;4abz@m:-1;dhpt@m:1;h2o@m:1"
+"DHQS|4.2.3.4|2dda7p@c:-1;3dhq@c:1;pi@c:1"
+"DHQTi|4.2.1.10|3dhq@c:-1;3dhsk@c:1;h2o@c:1"
+"DIAT|2.6.1.29|accoa@c:-1;sprm@c:-1;n1sprm@c:1;coa@c:1;h@c:1"
+"DIPS|2.1.1.98|amet@c:-1;caphis@c:-1;ahcys@c:1;cmaphis@c:1;h@c:1"
+"DMATT|2.5.1.1|dmpp@c:-1;ipdp@c:-1;grdp@c:1;ppi@c:1"
+"DOLK|2.7.1.108|ctp@c:-1;dolichol@c:-1;cdp@c:1;dolp@c:1;h@c:1"
+"DOLPMMer|2.4.1.109|dolmanp@r:-1;dolp@r:1;h@r:1;mannan@r:1"
+"DOLPMTcer|2.4.1.83|dolp@c:-1;gdpmann@c:-1;gdp@c:1;dolmanp@r:1"
+"DPCOAK|2.7.1.24|atp@c:-1;dpcoa@c:-1;adp@c:1;coa@c:1;h@c:1"
+"DPCOAKm|2.7.1.24|atp@m:-1;dpcoa@m:-1;adp@m:1;coa@m:1;h@m:1"
+"DPMVD|4.1.1.33|5dpmev@c:-1;atp@c:-1;adp@c:1;co2@c:1;ipdp@c:1;pi@c:1"
+"DPR|1.1.1.169|2dhp@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;pant_r@c:1"
+"DPRm|1.1.1.169|2dhp@m:-1;h@m:-1;nadph@m:-1;nadp@m:1;pant_r@m:1"
+"DRBK|2.7.1.15|atp@c:-1;drib@c:-1;2dr5p@c:1;adp@c:1;h@c:1"
+"DTMPK|2.7.4.9|atp@c:-1;dtmp@c:-1;adp@c:1;dtdp@c:1"
+"DUTPDP|3.6.1.23|dutp@c:-1;h2o@c:-1;dump@c:1;h@c:1;ppi@c:1"
+"DXHPScm|1.5.99.6|h2o@c:-1;spmd@c:-1;q6@m:-1;13dampp@c:1;4abutn@c:1;q6h2@m:1"
+"D_LACDcm|1.1.2.4|lac_d@c:-1;ficytc@m:-2;pyr@c:1;focytc@m:2"
+"D_LACDm|1.1.2.4|ficytc@m:-2;lac_d@m:-1;focytc@m:2;pyr@m:1"
+"ECOAH11p|4.2.1.17|h2o@x:-1;hxc2coa@x:-1;3hxccoa@x:1"
+"ECOAH4p|4.2.1.17|3hdcoa@x:-1;dc2coa@x:1;h2o@x:1"
+"ECOAH5p|4.2.1.17|3hddcoa@x:-1;dd2coa@x:1;h2o@x:1"
+"ECOAH6p|4.2.1.17|3htdcoa@x:-1;h2o@x:1;td2coa@x:1"
+"ECOAH7p|4.2.1.17|3hhdcoa@x:-1;h2o@x:1;hdd2coa@x:1"
+"ECOAH8p|4.2.1.17|3hodcoa@x:-1;h2o@x:1;od2coa@x:1"
+"EHGLAT|2.6.1.1|akg@c:-1;e4hglu@c:-1;4h2oglt@c:1;glu_l@c:1"
+"EHGLATm|2.6.1.1|akg@m:-1;e4hglu@m:-1;4h2oglt@m:1;glu_l@m:1"
+"EHGLATp|2.6.1.1|akg@x:-1;e4hglu@x:-1;4h2oglt@x:1;glu_l@x:1"
+"ENO|4.2.1.11|2pg@c:-1;h2o@c:1;pep@c:1"
+"EPMGH|3.2.1.22|epm@c:-1;h2o@c:-1;gal@c:1;man@c:1"
+"ETHAK|2.7.1.82|atp@c:-1;etha@c:-1;adp@c:1;ethamp@c:1;h@c:1"
+"ETHAPT_SC|2.7.8.1|12dgr_sc@c:-0.01;cdpea@c:-1;cmp@c:1;h@c:1;pe_sc@c:0.01"
+"FA120ACPH|3.1.2.14|ddcaacp@c:-1;h2o@c:-1;acp@c:1;ddca@c:1;h@c:1"
+"FA140ACPH|3.1.2.14|h2o@c:-1;myrsacp@c:-1;acp@c:1;h@c:1;ttdca@c:1"
+"FA141ACPH|3.1.2.14|h2o@c:-1;tdeacp@c:-1;acp@c:1;h@c:1;ttdcea@c:1"
+"FA160ACPH|3.1.2.14|h2o@c:-1;palmacp@c:-1;acp@c:1;h@c:1;hdca@c:1"
+"FA161ACPH|3.1.2.14|h2o@c:-1;hdeacp@c:-1;acp@c:1;h@c:1;hdcea@c:1"
+"FA180ACPH|3.1.2.14|h2o@c:-1;ocdcaacp@c:-1;acp@c:1;h@c:1;ocdca@c:1"
+"FA181ACPH|3.1.2.14|h2o@c:-1;octeacp@c:-1;acp@c:1;h@c:1;ocdcea@c:1"
+"FA182ACPH|3.1.2.14|h2o@c:-1;ocdcyaacp@c:-1;acp@c:1;h@c:1;ocdcya@c:1"
+"FACOAL100p|6.2.1.3|atp@x:-1;coa@x:-1;dca@x:-1;amp@x:1;dcacoa@x:1;ppi@x:1"
+"FACOAL120p|6.2.1.3|atp@x:-1;coa@x:-1;ddca@x:-1;amp@x:1;ddcacoa@x:1;ppi@x:1"
+"FACOAL140|6.2.1.3|atp@c:-1;coa@c:-1;ttdca@c:-1;amp@c:1;ppi@c:1;tdcoa@c:1"
+"FACOAL140p|6.2.1.3|atp@x:-1;coa@x:-1;ttdca@x:-1;amp@x:1;ppi@x:1;tdcoa@x:1"
+"FACOAL141|6.2.1.3|atp@c:-1;coa@c:-1;ttdcea@c:-1;amp@c:1;ppi@c:1;tdecoa@c:1"
+"FACOAL141p|6.2.1.3|atp@x:-1;coa@x:-1;ttdcea@x:-1;amp@x:1;ppi@x:1;tdecoa@x:1"
+"FACOAL160|6.2.1.3|atp@c:-1;coa@c:-1;hdca@c:-1;amp@c:1;pmtcoa@c:1;ppi@c:1"
+"FACOAL160p|6.2.1.3|atp@x:-1;coa@x:-1;hdca@x:-1;amp@x:1;pmtcoa@x:1;ppi@x:1"
+"FACOAL161|6.2.1.3|atp@c:-1;coa@c:-1;hdcea@c:-1;amp@c:1;hdcoa@c:1;ppi@c:1"
+"FACOAL161p|6.2.1.3|atp@x:-1;coa@x:-1;hdcea@x:-1;amp@x:1;hdcoa@x:1;ppi@x:1"
+"FACOAL180|6.2.1.3|atp@c:-1;coa@c:-1;ocdca@c:-1;amp@c:1;ppi@c:1;stcoa@c:1"
+"FACOAL181|6.2.1.3|atp@c:-1;coa@c:-1;ocdcea@c:-1;amp@c:1;odecoa@c:1;ppi@c:1"
+"FACOAL182|6.2.1.3|atp@c:-1;coa@c:-1;ocdcya@c:-1;amp@c:1;ocdycacoa@c:1;ppi@c:1"
+"FACOAL240p|6.2.1.3|atp@x:-1;coa@x:-1;ttc@x:-1;amp@x:1;ppi@x:1;ttccoa@x:1"
+"FACOAL260p|6.2.1.3|atp@x:-1;coa@x:-1;hexc@x:-1;amp@x:1;hexccoa@x:1;ppi@x:1"
+"FACOAL80p|6.2.1.2|atp@x:-1;coa@x:-1;octa@x:-1;amp@x:1;occoa@x:1;ppi@x:1"
+"FALDH|1.2.1.1|fald@c:-1;gthrd@c:-1;nad@c:-1;sfglutth@c:1;h@c:1;nadh@c:1"
+"FAS100|2.3.1.85|h@c:-3;malcoa@c:-1;nadph@c:-2;octa@c:-1;co2@c:1;coa@c:1;dca@c:1;h2o@c:1;nadp@c:2"
+"FAS100COA|2.3.1.86|h@c:-3;malcoa@c:-1;nadph@c:-2;occoa@c:-1;co2@c:1;coa@c:1;dcacoa@c:1;h2o@c:1;nadp@c:2"
+"FAS120|2.3.1.85|dca@c:-1;h@c:-3;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;ddca@c:1;h2o@c:1;nadp@c:2"
+"FAS120COA|2.3.1.86|dcacoa@c:-1;h@c:-3;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;ddcacoa@c:1;h2o@c:1;nadp@c:2"
+"FAS140|2.3.1.85|ddca@c:-1;h@c:-3;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;ttdca@c:1"
+"FAS140COA|2.3.1.86|ddcacoa@c:-1;h@c:-3;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;tdcoa@c:1"
+"FAS141|2.3.1.85|ddca@c:-1;h@c:-4;malcoa@c:-1;nadph@c:-3;o2@c:-1;co2@c:1;coa@c:1;h2o@c:3;nadp@c:3;ttdcea@c:1"
+"FAS160|2.3.1.85|h@c:-3;malcoa@c:-1;nadph@c:-2;ttdca@c:-1;co2@c:1;coa@c:1;h2o@c:1;hdca@c:1;nadp@c:2"
+"FAS160COA|2.3.1.86|h@c:-3;malcoa@c:-1;nadph@c:-2;tdcoa@c:-1;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;pmtcoa@c:1"
+"FAS161|2.3.1.85|h@c:-4;malcoa@c:-1;nadph@c:-3;o2@c:-1;ttdca@c:-1;co2@c:1;coa@c:1;h2o@c:3;hdcea@c:1;nadp@c:3"
+"FAS180|2.3.1.85|h@c:-3;hdca@c:-1;malcoa@c:-1;nadph@c:-2;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;ocdca@c:1"
+"FAS180COA|2.3.1.86|h@c:-3;malcoa@c:-1;nadph@c:-2;pmtcoa@c:-1;co2@c:1;coa@c:1;h2o@c:1;nadp@c:2;stcoa@c:1"
+"FAS181|2.3.1.85|h@c:-4;hdca@c:-1;malcoa@c:-1;nadph@c:-3;o2@c:-1;co2@c:1;coa@c:1;h2o@c:3;nadp@c:3;ocdcea@c:1"
+"FAS240_L|2.3.1.85|h@c:-9;malcoa@c:-3;nadph@c:-6;ocdca@c:-1;co2@c:3;coa@c:3;h2o@c:3;nadp@c:6;ttc@c:1"
+"FAS260|2.3.1.85|h@c:-3;malcoa@c:-1;nadph@c:-2;ttc@c:-1;co2@c:1;coa@c:1;h2o@c:1;hexc@c:1;nadp@c:2"
+"FAS80COA_L|2.3.1.86|accoa@c:-1;h@c:-9;malcoa@c:-3;nadph@c:-6;co2@c:3;coa@c:3;h2o@c:3;nadp@c:6;occoa@c:1"
+"FAS80_L|2.3.1.85|accoa@c:-1;h@c:-8;malcoa@c:-3;nadph@c:-6;co2@c:3;coa@c:4;h2o@c:2;nadp@c:6;octa@c:1"
+"FBA|4.1.2.13|fdp@c:-1;dhap@c:1;g3p@c:1"
+"FBA2|4.1.2.13|f1p@c:-1;dhap@c:1;glyald@c:1"
+"FBA3|4.1.2.13|s17bp@c:-1;dhap@c:1;e4p@c:1"
+"FBP|3.1.3.11|fdp@c:-1;h2o@c:-1;f6p@c:1;pi@c:1"
+"FBP26|3.1.3.46|f26bp@c:-1;h2o@c:-1;f6p@c:1;pi@c:1"
+"FCLTm|4.99.1.1|fe2@m:-1;ppp9@m:-1;h@m:2;pheme@m:1"
+"FDH|1.2.1.2|for@c:-1;nad@c:-1;co2@c:1;nadh@c:1"
+"FDNG|1.2.2.1|for@c:-1;h@c:-1;q6@m:-1;co2@c:1;q6h2@m:1"
+"FKYNH|3.5.1.9|lfmkynr@c:-1;h2o@c:-1;lkynr@c:1;for@c:1;h@c:1"
+"FMETTRSm|2.1.2.9|10fthf@m:-1;mettrna@m:-1;fmettrna@m:1;h@m:1;thf@m:1"
+"FMNAT|2.7.7.2|atp@c:-1;fmn@c:-1;h@c:-1;fad@c:1;ppi@c:1"
+"FMNATm|2.7.7.2|atp@m:-1;fmn@m:-1;h@m:-1;fad@m:1;ppi@m:1"
+"FOLD3m|2.5.1.15|2ahhmd@m:-1;4abz@m:-1;dhpt@m:1;ppi@m:1"
+"FRDcm|1.3.99.1|fum@c:-1;fadh2@m:-1;succ@c:1;fad@m:1"
+"FRDm|1.3.99.1|fadh2@m:-1;fum@m:-1;fad@m:1;succ@m:1"
+"FRTT|2.5.1.29|frdp@c:-1;ipdp@c:-1;ggdp@c:1;ppi@c:1"
+"FRUK|2.7.1.56|atp@c:-1;f1p@c:-1;adp@c:1;fdp@c:1;h@c:1"
+"FTHFCL|6.3.3.2|5fthf@c:-1;atp@c:-1;adp@c:1;methf@c:1;pi@c:1"
+"FTHFCLm|6.3.3.2|5fthf@m:-1;atp@m:-1;adp@m:1;methf@m:1;pi@m:1"
+"FTHFLi|6.3.4.3|atp@c:-1;for@c:-1;thf@c:-1;10fthf@c:1;adp@c:1;pi@c:1"
+"FTHFLmi|6.3.4.3|atp@m:-1;for@m:-1;thf@m:-1;10fthf@m:1;adp@m:1;pi@m:1"
+"FUM|4.2.1.2|fum@c:-1;h2o@c:-1;mal_l@c:1"
+"FUMAC|3.7.1.2|4fumacac@c:-1;h2o@c:-1;acac@c:1;fum@c:1;h@c:1"
+"FUMm|4.2.1.2|fum@m:-1;h2o@m:-1;mal_l@m:1"
+"G12MT1g|2.4.1.131|gdpmann@g:-1;m2macchitppdol@g:-1;gdp@g:1;h@g:1;m3macchitppdol@g:1"
+"G12MT2g|2.4.1.131|gdpmann@g:-1;m3macchitppdol@g:-1;gdp@g:1;h@g:1;m4macchitppdol@g:1"
+"G13MTg|2.4.1.132|gdpmann@g:-1;macchitppdol@g:-1;gdp@g:1;h@g:1;m1macchitppdol@g:1"
+"G3PD1ir|1.1.1.8|dhap@c:-1;h@c:-1;nadh@c:-1;glyc3p@c:1;nad@c:1"
+"G3PD1irm|1.1.1.8|dhap@m:-1;h@m:-1;nadh@m:-1;glyc3p@m:1;nad@m:1"
+"G3PDm|1.1.99.5|fad@m:-1;glyc3p@m:-1;dhap@m:1;fadh2@m:1"
+"G5SD|1.2.1.41|glu5p@c:-1;h@c:-1;nadph@c:-1;glu5sa@c:1;nadp@c:1;pi@c:1"
+"G5SD2|1.2.1.41|glu5p@c:-1;h@c:-1;nadh@c:-1;glu5sa@c:1;nad@c:1;pi@c:1"
+"G6PDA|3.5.99.6|gam6p@c:-1;h2o@c:-1;f6p@c:1;nh4@c:1"
+"G6PDH2|1.1.1.49|g6p@c:-1;nadp@c:-1;6pgl@c:1;h@c:1;nadph@c:1"
+"G6PI|5.3.1.9|g6p@c:-1;g6p_b@c:1"
+"G6PI3|5.3.1.9|g6p_b@c:-1;f6p@c:1"
+"GALIGH|3.2.1.22|1dgali@c:-1;h2o@c:-1;gal@c:1;inost@c:1"
+"GALK|2.7.1.6|atp@c:-1;gal@c:-1;adp@c:1;gal1p@c:1;h@c:1"
+"GALS3|3.2.1.22|h2o@c:-1;melib@c:-1;gal@c:1;glc_d@c:1"
+"GALT|2.7.7.10|gal1p@c:-1;h@c:-1;utp@c:-1;ppi@c:1;udpgal@c:1"
+"GALU|2.7.7.9|g1p@c:-1;h@c:-1;utp@c:-1;ppi@c:1;udpg@c:1"
+"GAPD|1.2.1.12|g3p@c:-1;nad@c:-1;pi@c:-1;13dpg@c:1;h@c:1;nadh@c:1"
+"GARFTi|2.1.2.2|10fthf@c:-1;gar@c:-1;fgam@c:1;h@c:1;thf@c:1"
+"GBEZ|2.4.1.18|14glun@c:-1;glycogen@c:1;h2o@c:1"
+"GCC2am|1.4.4.2|gly@m:-1;h@m:-1;lpam@m:-1;alpam@m:1;co2@m:1"
+"GCC2bim|2.1.2.10|alpam@m:-1;thf@m:-1;dhlam@m:1;mlthf@m:1;nh4@m:1"
+"GCC2cm|1.8.1.4|dhlam@m:-1;nad@m:-1;h@m:1;lpam@m:1;nadh@m:1"
+"GCCam|1.4.4.2|gly@m:-1;h@m:-1;lpro@m:-1;alpro@m:1;co2@m:1"
+"GCCbim|2.1.2.10|alpro@m:-1;thf@m:-1;dhlpro@m:1;mlthf@m:1;nh4@m:1"
+"GCCcm|1.8.1.4|dhlpro@m:-1;nad@m:-1;h@m:1;lpro@m:1;nadh@m:1"
+"GDPMANNtg|2.4.1.83|gdpmann@c:-1;gmp@g:-1;gmp@c:1;gdpmann@g:1"
+"GF6PTA|2.6.1.16|f6p@c:-1;gln_l@c:-1;gam6p@c:1;glu_l@c:1"
+"GGLGH|3.2.1.22|ggl@c:-1;h2o@c:-1;gal@c:1;glyc@c:1"
+"GHMT2r|2.1.2.1|ser_l@c:-1;thf@c:-1;gly@c:1;h2o@c:1;mlthf@c:1"
+"GHMT2rm|2.1.2.1|ser_l@m:-1;thf@m:-1;gly@m:1;h2o@m:1;mlthf@m:1"
+"GK1|2.7.4.8|atp@c:-1;gmp@c:-1;adp@c:1;gdp@c:1"
+"GK2|2.7.4.8|datp@c:-1;gmp@c:-1;dadp@c:1;gdp@c:1"
+"GLCGSD|3.2.1.3|glycogen@c:-1;h2o@c:-1;glc_d@c:1"
+"GLCGSDv|3.2.1.3|glycogen@v:-1;h2o@v:-1;glc_d@v:1"
+"GLCP|2.4.1.1|glycogen@c:-1;pi@c:-1;g1p@c:1"
+"GLCS2|2.4.1.11|udpg@c:-1;glycogen@c:1;h@c:1;udp@c:1"
+"GLNS|6.3.1.2|atp@c:-1;glu_l@c:-1;nh4@c:-1;adp@c:1;gln_l@c:1;h@c:1;pi@c:1"
+"GLNTRS|6.1.1.18|atp@c:-1;gln_l@c:-1;trnagln@c:-1;amp@c:1;glntrna@c:1;ppi@c:1"
+"GLPT|2.3.1.97|glp@c:-1;tdcoa@c:-1;coa@c:1;tglp@c:1"
+"GLU5K|2.7.2.11|atp@c:-1;glu_l@c:-1;adp@c:1;glu5p@c:1"
+"GLUCYS|6.3.2.2|atp@c:-1;cys_l@c:-1;glu_l@c:-1;adp@c:1;glucys@c:1;h@c:1;pi@c:1"
+"GLUDC|4.1.1.15|glu_l@c:-1;h@c:-1;4abut@c:1;co2@c:1"
+"GLUDxi|1.4.1.2|glu_l@c:-1;h2o@c:-1;nad@c:-1;akg@c:1;h@c:1;nadh@c:1;nh4@c:1"
+"GLUDyi|1.4.1.4|akg@c:-1;h@c:-1;nadph@c:-1;nh4@c:-1;glu_l@c:1;h2o@c:1;nadp@c:1"
+"GLUK|2.7.1.2|atp@c:-1;glc_d@c:-1;adp@c:1;g6p_b@c:1;h@c:1"
+"GLUN|3.5.1.2|gln_l@c:-1;h2o@c:-1;glu_l@c:1;nh4@c:1"
+"GLUPRT|2.4.2.14|gln_l@c:-1;h2o@c:-1;prpp@c:-1;glu_l@c:1;ppi@c:1;pram@c:1"
+"GLUSx|1.4.1.14|akg@c:-1;gln_l@c:-1;h@c:-1;nadh@c:-1;glu_l@c:2;nad@c:1"
+"GLUTRS|6.1.1.17|atp@c:-1;glu_l@c:-1;trnaglu@c:-1;amp@c:1;glutrna@c:1;ppi@c:1"
+"GLUTRSm|6.1.1.17|atp@m:-1;glu_l@m:-1;trnaglu@m:-1;amp@m:1;glutrna@m:1;ppi@m:1"
+"GLYATi|2.3.1.29|2aobut@c:-1;coa@c:-1;accoa@c:1;gly@c:1"
+"GLYCDy|1.1.1.6|glyc@c:-1;nadp@c:-1;dha@c:1;h@c:1;nadph@c:1"
+"GLYCLm|2.1.2.10|gly@m:-1;nad@m:-1;thf@m:-1;co2@m:1;mlthf@m:1;nadh@m:1;nh4@m:1"
+"GLYGS|2.4.1.11|h2o@c:-1;udpg@c:-1;14glun@c:1;h@c:1;udp@c:1"
+"GLYK|2.7.1.30|atp@c:-1;glyc@c:-1;adp@c:1;glyc3p@c:1;h@c:1"
+"GLYOX|3.1.2.6|h2o@c:-1;lgt_s@c:-1;gthrd@c:1;h@c:1;lac_d@c:1"
+"GLYOXm|3.1.2.6|h2o@m:-1;lgt_s@m:-1;gthrd@m:1;h@m:1;lac_d@m:1"
+"GLYTRS|6.1.1.14|atp@c:-1;gly@c:-1;trnagly@c:-1;amp@c:1;glytrna@c:1;ppi@c:1"
+"GMPS2|6.3.5.2|atp@c:-1;gln_l@c:-1;h2o@c:-1;xmp@c:-1;amp@c:1;glu_l@c:1;gmp@c:1;h@c:2;ppi@c:1"
+"GND|1.1.1.44|6pgc@c:-1;nadp@c:-1;co2@c:1;nadph@c:1;ru5p_d@c:1"
+"GPDDA1|3.1.4.46|g3pc@c:-1;h2o@c:-1;chol@c:1;glyc3p@c:1;h@c:1"
+"GRTT|2.5.1.10|grdp@c:-1;ipdp@c:-1;frdp@c:1;ppi@c:1"
+"GTHO|1.8.1.7|gthox@c:-1;h@c:-1;nadph@c:-1;gthrd@c:2;nadp@c:1"
+"GTHOm|1.8.1.7|gthox@m:-1;h@m:-1;nadph@m:-1;gthrd@m:2;nadp@m:1"
+"GTHP|1.11.1.9|gthrd@c:-2;h2o2@c:-1;gthox@c:1;h2o@c:2"
+"GTHPm|1.11.1.9|gthrd@m:-2;h2o2@m:-1;gthox@m:1;h2o@m:2"
+"GTHS|6.3.2.3|atp@c:-1;glucys@c:-1;gly@c:-1;adp@c:1;gthrd@c:1;h@c:1;pi@c:1"
+"GTMLT|2.3.2.2|ala_l@c:-1;gthrd@c:-1;cgly@c:1;gluala@c:1"
+"GTPCI|3.5.4.16|gtp@c:-1;h2o@c:-1;ahdt@c:1;for@c:1;h@c:1"
+"GTPCII|3.5.4.25|gtp@c:-1;h2o@c:-3;25dhpp@c:1;for@c:1;h@c:2;ppi@c:1"
+"GTPH1|3.6.1.5|gtp@c:-1;h2o@c:-2;gmp@c:1;h@c:2;pi@c:2"
+"GUAD|3.5.4.3|gua@c:-1;h@c:-1;h2o@c:-1;nh4@c:1;xan@c:1"
+"GUAPRT|2.4.2.8|gua@c:-1;prpp@c:-1;gmp@c:1;ppi@c:1"
+"HACD10p|1.1.1.35|3hxccoa@x:-1;nad@x:-1;3ohxccoa@x:1;h@x:1;nadh@x:1"
+"HACD4p|1.1.1.35|3odcoa@x:-1;h@x:-1;nadh@x:-1;3hdcoa@x:1;nad@x:1"
+"HACD5p|1.1.1.35|3oddcoa@x:-1;h@x:-1;nadh@x:-1;3hddcoa@x:1;nad@x:1"
+"HACD6p|1.1.1.35|3otdcoa@x:-1;h@x:-1;nadh@x:-1;3htdcoa@x:1;nad@x:1"
+"HACD7p|1.1.1.35|3ohdcoa@x:-1;h@x:-1;nadh@x:-1;3hhdcoa@x:1;nad@x:1"
+"HACD8p|1.1.1.35|3ohodcoa@x:-1;h@x:-1;nadh@x:-1;3hodcoa@x:1;nad@x:1"
+"HACNHm|4.2.1.36|b124tc@m:-1;h2o@m:-1;hicit@m:1"
+"HCITSm|4.1.3.21|accoa@m:-1;akg@m:-1;h2o@m:-1;coa@m:1;h@m:1;hcit@m:1"
+"HCITSn|4.1.3.21|accoa@n:-1;akg@n:-1;h2o@n:-1;coa@n:1;h@n:1;hcit@n:1"
+"HCO3E|4.2.1.1|co2@c:-1;h2o@c:-1;h@c:1;hco3@c:1"
+"HCYSMT|2.1.1.10|amet@c:-1;hcys_l@c:-1;ahcys@c:1;h@c:1;met_l@c:1"
+"HETZK|2.7.1.50|4mhetz@c:-1;atp@c:-1;4mpetz@c:1;adp@c:1;h@c:1"
+"HEX1|2.7.1.1|atp@c:-1;glc_d@c:-1;adp@c:1;g6p@c:1;h@c:1"
+"HEX4|2.7.1.7|atp@c:-1;man@c:-1;adp@c:1;h@c:1;man6p@c:1"
+"HEX7|2.7.1.1|atp@c:-1;fru@c:-1;adp@c:1;f6p@c:1;h@c:1"
+"HGNTOR|1.13.11.5|hgentis@c:-1;o2@c:-1;4mlacac@c:1;h@c:1"
+"HICITDm|1.1.1.155|hicit@m:-1;nad@m:-1;h@m:1;nadh@m:1;oxag@m:1"
+"HISTD|1.1.1.23|h2o@c:-1;histd@c:-1;nad@c:-2;h@c:3;his_l@c:1;nadh@c:2"
+"HISTP|3.1.3.15|h2o@c:-1;hisp@c:-1;histd@c:1;pi@c:1"
+"HISTRS|6.1.1.21|atp@c:-1;his_l@c:-1;trnahis@c:-1;amp@c:1;histrna@c:1;ppi@c:1"
+"HISTRSm|6.1.1.21|atp@m:-1;his_l@m:-1;trnahis@m:-1;amp@m:1;histrna@m:1;ppi@m:1"
+"HKYNH|3.7.1.3|h2o@c:-1;hlkynr@c:-1;3hanthrn@c:1;ala_l@c:1"
+"HMBS|4.3.1.8|h2o@c:-1;ppbng@c:-4;hmbil@c:1;nh4@c:4"
+"HMGCOAR|1.1.1.34|coa@c:-1;mev_r@c:-1;nadp@c:-2;h@c:2;hmgcoa@c:1;nadph@c:2"
+"HMGCOAS|4.1.3.5|coa@c:-1;h@c:-1;hmgcoa@c:-1;aacoa@c:1;accoa@c:1;h2o@c:1"
+"HMGCOASm|4.1.3.5|coa@m:-1;h@m:-1;hmgcoa@m:-1;aacoa@m:1;accoa@m:1;h2o@m:1"
+"HMPK1|2.7.1.49|4ahmmp@c:-1;atp@c:-1;4ampm@c:1;adp@c:1;h@c:1"
+"HPPKm|2.7.6.3|2ahhmp@m:-1;atp@m:-1;2ahhmd@m:1;amp@m:1;h@m:1"
+"HPROa|1.5.1.2|1p3h5c@c:-1;h@c:-2;nadh@c:-1;4hpro_lt@c:1;nad@c:1"
+"HPROb|1.5.1.2|1p3h5c@c:-1;h@c:-2;nadph@c:-1;4hpro_lt@c:1;nadp@c:1"
+"HPROxm|1.5.1.12|4hpro_lt@m:-1;nad@m:-1;1p3h5c@m:1;h@m:2;nadh@m:1"
+"HPROym|1.5.1.12|4hpro_lt@m:-1;nadp@m:-1;1p3h5c@m:1;h@m:2;nadph@m:1"
+"HSDxi|1.1.1.3|aspsa@c:-1;h@c:-1;nadh@c:-1;hom_l@c:1;nad@c:1"
+"HSDyi|1.1.1.3|aspsa@c:-1;h@c:-1;nadph@c:-1;hom_l@c:1;nadp@c:1"
+"HSERTA|2.3.1.31|accoa@c:-1;hom_l@c:-1;achms@c:1;coa@c:1"
+"HSK|2.7.1.39|atp@c:-1;hom_l@c:-1;adp@c:1;h@c:1;phom@c:1"
+"HSTPT|2.6.1.9|glu_l@c:-1;imacp@c:-1;akg@c:1;hisp@c:1"
+"HXPRT|2.4.2.8|hxan@c:-1;prpp@c:-1;imp@c:1;ppi@c:1"
+"ICDHxm|1.1.1.41|icit@m:-1;nad@m:-1;akg@m:1;co2@m:1;nadh@m:1"
+"ICDHy|1.1.1.42|icit@c:-1;nadp@c:-1;akg@c:1;co2@c:1;nadph@c:1"
+"ICDHym|1.1.1.42|icit@m:-1;nadp@m:-1;akg@m:1;co2@m:1;nadph@m:1"
+"ICDHyp|1.1.1.42|icit@x:-1;nadp@x:-1;akg@x:1;co2@x:1;nadph@x:1"
+"ICL|4.1.3.1|icit@c:-1;glx@c:1;succ@c:1"
+"IGPDH|4.2.1.19|eig3p@c:-1;h2o@c:1;imacp@c:1"
+"IGPS|4.1.1.48|2cpr5p@c:-1;h@c:-1;3ig3p@c:1;co2@c:1;h2o@c:1"
+"ILETA|2.6.1.42|akg@c:-1;ile_l@c:-1;3mop@c:1;glu_l@c:1"
+"ILETAm|2.6.1.42|akg@m:-1;ile_l@m:-1;3mop@m:1;glu_l@m:1"
+"ILETRS|6.1.1.5|atp@c:-1;ile_l@c:-1;trnaile@c:-1;amp@c:1;iletrna@c:1;ppi@c:1"
+"ILETRSm|6.1.1.5|atp@m:-1;ile_l@m:-1;trnaile@m:-1;amp@m:1;iletrna@m:1;ppi@m:1"
+"IMPC|3.5.4.10|h2o@c:-1;imp@c:-1;fprica@c:1"
+"IMPD|1.1.1.205|h2o@c:-1;imp@c:-1;nad@c:-1;h@c:1;nadh@c:1;xmp@c:1"
+"INDPYRD|4.1.1.74|h@c:-1;indpyr@c:-1;co2@c:1;id3acald@c:1"
+"INSK|2.7.1.73|atp@c:-1;ins@c:-1;adp@c:1;h@c:1;imp@c:1"
+"IPDDI|5.3.3.2|ipdp@c:-1;dmpp@c:1"
+"IPMD|1.1.1.85|3c2hmp@c:-1;nad@c:-1;3c4mop@c:1;h@c:1;nadh@c:1"
+"IPPMIa|4.2.1.33|3c2hmp@c:-1;2ippm@c:1;h2o@c:1"
+"IPPMIb|4.2.1.33|2ippm@c:-1;h2o@c:-1;3c3hmp@c:1"
+"IPPS|4.1.3.12|3mob@c:-1;accoa@c:-1;h2o@c:-1;3c3hmp@c:1;coa@c:1;h@c:1"
+"IPPSm|4.1.3.12|3mob@m:-1;accoa@m:-1;h2o@m:-1;3c3hmp@m:1;coa@m:1;h@m:1"
+"ITCOALm|6.2.1.5|atp@m:-1;coa@m:-1;itacon@m:-1;adp@m:1;itaccoa@m:1;pi@m:1"
+"KARA1im|1.1.1.86|alac_s@m:-1;h@m:-1;nadph@m:-1;23dhmb@m:1;nadp@m:1"
+"KARA2im|1.1.1.86|2ahbut@m:-1;h@m:-1;nadph@m:-1;23dhmp@m:1;nadp@m:1"
+"KYN|3.7.1.3|lkynr@c:-1;h2o@c:-1;ala_l@c:1;anth@c:1;h@c:1"
+"KYN3OX|1.14.13.9|lkynr@c:-1;h@c:-1;nadph@c:-1;o2@c:-1;h2o@c:1;hlkynr@c:1;nadp@c:1"
+"LALDO3|1.1.1.21|h@c:-1;mthgxl@c:-1;nadph@c:-1;lald_l@c:1;nadp@c:1"
+"LCADi|1.2.1.21|h2o@c:-1;lald_l@c:-1;nad@c:-1;h@c:2;lac_l@c:1;nadh@c:1"
+"LEUTA|2.6.1.6|akg@c:-1;leu_l@c:-1;4mop@c:1;glu_l@c:1"
+"LEUTAm|2.6.1.6|akg@m:-1;leu_l@m:-1;4mop@m:1;glu_l@m:1"
+"LEUTRS|6.1.1.4|atp@c:-1;leu_l@c:-1;trnaleu@c:-1;amp@c:1;leutrna@c:1;ppi@c:1"
+"LEUTRSm|6.1.1.4|atp@m:-1;leu_l@m:-1;trnaleu@m:-1;amp@m:1;leutrna@m:1;ppi@m:1"
+"LGTHL|4.4.1.5|gthrd@c:-1;mthgxl@c:-1;lgt_s@c:1"
+"LNS14DM|1.14.14.1|h@c:-2;lanost@c:-1;nadph@c:-3;o2@c:-3;44mctr@c:1;for@c:1;h2o@c:4;nadp@c:3"
+"LNS14DMx|1.14.14.1|h@c:-2;lanost@c:-1;nadh@c:-3;o2@c:-3;44mctr@c:1;for@c:1;h2o@c:4;nad@c:3"
+"LNSTLS|5.4.99.7|ssq23epx@c:-1;lanost@c:1"
+"LPCAT_SC|2.3.1.23|1agpc_sc@c:-0.01;dcacoa@c:-0.02;ddcacoa@c:-0.06;hdcoa@c:-0.17;ocdycacoa@c:-0.09;odecoa@c:-0.24;pmtcoa@c:-0.27;stcoa@c:-0.05;tdcoa@c:-0.1;coa@c:1;pc_sc@c:0.01"
+"LYSTRS|6.1.1.6|atp@c:-1;lys_l@c:-1;trnalys@c:-1;amp@c:1;lystrna@c:1;ppi@c:1"
+"LYSTRSm|6.1.1.6|atp@m:-1;lys_l@m:-1;trnalys@m:-1;amp@m:1;lystrna@m:1;ppi@m:1"
+"L_LACD2cm|1.1.2.3|lac_l@c:-1;ficytc@m:-2;pyr@c:1;focytc@m:2"
+"MACACI|5.2.1.2|4mlacac@c:-1;4fumacac@c:1"
+"MALS|4.1.3.2|accoa@c:-1;glx@c:-1;h2o@c:-1;coa@c:1;h@c:1;mal_l@c:1"
+"MALSp|4.1.3.2|accoa@x:-1;glx@x:-1;h2o@x:-1;coa@x:1;h@x:1;mal_l@x:1"
+"MALT|3.2.1.20|h2o@c:-1;malt@c:-1;glc_d@c:2"
+"MAN1PT|2.7.7.13|gtp@c:-1;h@c:-1;man1p@c:-1;gdpmann@c:1;ppi@c:1"
+"MAN6PI|5.3.1.8|man6p@c:-1;f6p@c:1"
+"MCITDm|4.2.1.79|hcit@m:-1;b124tc@m:1;h2o@m:1"
+"MCITL2m|4.1.3.30|micit@m:-1;pyr@m:1;succ@m:1"
+"MCITSm|4.1.3.31|h2o@m:-1;oaa@m:-1;ppcoa@m:-1;2mcit@m:1;coa@m:1;h@m:1"
+"MCOATA|2.3.1.39|acp@c:-1;malcoa@c:-1;coa@c:1;malacp@c:1"
+"MCOATAm|2.3.1.39|acp@m:-1;malcoa@m:-1;coa@m:1;malacp@m:1"
+"MDH|1.1.1.37|mal_l@c:-1;nad@c:-1;h@c:1;nadh@c:1;oaa@c:1"
+"MDHm|1.1.1.37|mal_l@m:-1;nad@m:-1;h@m:1;nadh@m:1;oaa@m:1"
+"MDHp|1.1.1.37|mal_l@x:-1;nad@x:-1;h@x:1;nadh@x:1;oaa@x:1"
+"ME1m|1.1.1.38|mal_l@m:-1;nad@m:-1;co2@m:1;nadh@m:1;pyr@m:1"
+"ME2m|1.1.1.40|mal_l@m:-1;nadp@m:-1;co2@m:1;nadph@m:1;pyr@m:1"
+"MELTGH|3.2.1.22|h2o@c:-1;melt@c:-1;gal@c:1;sbt_d@c:1"
+"METAT|2.5.1.6|atp@c:-1;h2o@c:-1;met_l@c:-1;amet@c:1;pi@c:1;ppi@c:1"
+"METS|2.1.1.13|5mthf@c:-1;hcys_l@c:-1;h@c:1;met_l@c:1;thf@c:1"
+"METTRS|6.1.1.10|atp@c:-1;met_l@c:-1;trnamet@c:-1;amp@c:1;mettrna@c:1;ppi@c:1"
+"METTRSm|6.1.1.10|atp@m:-1;met_l@m:-1;trnamet@m:-1;amp@m:1;mettrna@m:1;ppi@m:1"
+"MEVK1|2.7.1.36|atp@c:-1;mev_r@c:-1;5pmev@c:1;adp@c:1;h@c:1"
+"MEVK2|2.7.1.36|ctp@c:-1;mev_r@c:-1;5pmev@c:1;cdp@c:1;h@c:1"
+"MEVK3|2.7.1.36|gtp@c:-1;mev_r@c:-1;5pmev@c:1;gdp@c:1;h@c:1"
+"MEVK4|2.7.1.36|mev_r@c:-1;utp@c:-1;5pmev@c:1;h@c:1;udp@c:1"
+"MFAPS_SC|2.1.1.16|amet@c:-1;ptdmeeta_sc@c:-0.01;ahcys@c:1;h@c:1;ptd2meeta_sc@c:0.01"
+"MGSA|4.2.3.3|dhap@c:-1;mthgxl@c:1;pi@c:1"
+"MHPGLUT|2.1.1.14|hcys_l@c:-1;mhpglu@c:-1;hpglu@c:1;met_l@c:1"
+"MI1456PKn|2.7.1.151|atp@n:-1;mi1456p@n:-1;adp@n:1;h@n:1;mi13456p@n:1"
+"MI145P6Kn|2.7.1.151|atp@n:-1;mi145p@n:-1;adp@n:1;h@n:1;mi1456p@n:1"
+"MI145PKn|2.7.1.127|atp@n:-1;mi145p@n:-1;adp@n:1;h@n:1;mi1345p@n:1"
+"MI1PP|3.1.3.25|h2o@c:-1;mi1p_d@c:-1;inost@c:1;pi@c:1"
+"MI1PS|5.5.1.4|g6p@c:-1;mi1p_d@c:1"
+"MOHMT|2.1.2.11|3mob@c:-1;h2o@c:-1;mlthf@c:-1;2dhp@c:1;thf@c:1"
+"MTAP|2.4.2.28|5mta@c:-1;pi@c:-1;5mdr1p@c:1;ade@c:1"
+"MTHFC|3.5.4.9|h2o@c:-1;methf@c:-1;10fthf@c:1;h@c:1"
+"MTHFCm|3.5.4.9|h2o@m:-1;methf@m:-1;10fthf@m:1;h@m:1"
+"MTHFD|1.5.1.5|mlthf@c:-1;nadp@c:-1;methf@c:1;nadph@c:1"
+"MTHFD2i|1.5.1.5|mlthf@c:-1;nad@c:-1;methf@c:1;nadh@c:1"
+"MTHFDm|1.5.1.5|mlthf@m:-1;nadp@m:-1;methf@m:1;nadph@m:1"
+"MTHFR3|1.5.1.20|h@c:-2;mlthf@c:-1;nadph@c:-1;5mthf@c:1;nadp@c:1"
+"MTRI|5.3.1.23|5mdr1p@c:-1;5mdru1p@c:1"
+"NABTNO|1.2.1.3|h2o@c:-1;n4abutn@c:-1;nad@c:-1;4aabutn@c:1;h@c:2;nadh@c:1"
+"NADDPp|3.6.1.22|h2o@x:-1;nad@x:-1;amp@x:1;h@x:2;nmn@x:1"
+"NADH2_u6cm|1.6.99.3|h@c:-1;nadh@c:-1;q6@m:-1;nad@c:1;q6h2@m:1"
+"NADH2_u6m|1.6.99.3|h@m:-1;nadh@m:-1;q6@m:-1;nad@m:1;q6h2@m:1"
+"NADK|2.7.1.23|atp@c:-1;nad@c:-1;adp@c:1;h@c:1;nadp@c:1"
+"NADKm|2.7.1.23|atp@m:-1;nad@m:-1;adp@m:1;h@m:1;nadp@m:1"
+"NADN|3.2.2.5|h2o@c:-1;nad@c:-1;adprib@c:1;h@c:1;ncam@c:1"
+"NADNm|3.2.2.5|h2o@m:-1;nad@m:-1;adprib@m:1;h@m:1;ncam@m:1"
+"NADS1|6.3.1.5|atp@c:-1;dnad@c:-1;nh4@c:-1;amp@c:1;h@c:1;nad@c:1;ppi@c:1"
+"NADS1n|6.3.1.5|atp@n:-1;dnad@n:-1;nh4@n:-1;amp@n:1;h@n:1;nad@n:1;ppi@n:1"
+"NAPRT|2.4.2.11|h@c:-1;nac@c:-1;prpp@c:-1;nicrnt@c:1;ppi@c:1"
+"NAPRTm|2.4.2.11|h@m:-1;nac@m:-1;prpp@m:-1;nicrnt@m:1;ppi@m:1"
+"NDP1|3.6.1.6|adp@c:-1;h2o@c:-1;amp@c:1;h@c:1;pi@c:1"
+"NDP3|3.6.1.6|gdp@c:-1;h2o@c:-1;gmp@c:1;h@c:1;pi@c:1"
+"NDP3g|3.6.1.6|gdp@g:-1;h2o@g:-1;gmp@g:1;h@g:1;pi@g:1"
+"NDP4|3.6.1.6|dgdp@c:-1;h2o@c:-1;dgmp@c:1;h@c:1;pi@c:1"
+"NDP7|3.6.1.6|h2o@c:-1;udp@c:-1;h@c:1;pi@c:1;ump@c:1"
+"NDPK1|2.7.4.6|atp@c:-1;gdp@c:-1;adp@c:1;gtp@c:1"
+"NDPK2|2.7.4.6|atp@c:-1;udp@c:-1;adp@c:1;utp@c:1"
+"NDPK3|2.7.4.6|atp@c:-1;cdp@c:-1;adp@c:1;ctp@c:1"
+"NDPK4|2.7.4.6|atp@c:-1;dtdp@c:-1;adp@c:1;dttp@c:1"
+"NDPK5|2.7.4.6|atp@c:-1;dgdp@c:-1;adp@c:1;dgtp@c:1"
+"NDPK6|2.7.4.6|atp@c:-1;dudp@c:-1;adp@c:1;dutp@c:1"
+"NDPK7|2.7.4.6|atp@c:-1;dcdp@c:-1;adp@c:1;dctp@c:1"
+"NDPK8|2.7.4.6|atp@c:-1;dadp@c:-1;adp@c:1;datp@c:1"
+"NDPK9|2.7.4.6|atp@c:-1;idp@c:-1;adp@c:1;itp@c:1"
+"NMNAT|2.7.7.1|atp@c:-1;h@c:-1;nmn@c:-1;nad@c:1;ppi@c:1"
+"NMNATm|2.7.7.1|atp@m:-1;h@m:-1;nmn@m:-1;nad@m:1;ppi@m:1"
+"NNAMr|3.5.1.19|h2o@c:-1;ncam@c:-1;nac@c:1;nh4@c:1"
+"NNAMrm|3.5.1.19|h2o@m:-1;ncam@m:-1;nac@m:1;nh4@m:1"
+"NNAT|2.7.7.18|atp@c:-1;h@c:-1;nicrnt@c:-1;dnad@c:1;ppi@c:1"
+"NNATm|2.7.7.18|atp@m:-1;h@m:-1;nicrnt@m:-1;dnad@m:1;ppi@m:1"
+"NNDPR|2.4.2.19|h@c:-2;prpp@c:-1;quln@c:-1;co2@c:1;nicrnt@c:1;ppi@c:1"
+"NNDPRm|2.4.2.19|h@m:-2;prpp@m:-1;quln@m:-1;co2@m:1;nicrnt@m:1;ppi@m:1"
+"NNMT|2.1.1.1|amet@c:-1;ncam@c:-1;1mncam@c:1;ahcys@c:1"
+"NTD1|3.1.3.5|dump@c:-1;h2o@c:-1;duri@c:1;pi@c:1"
+"NTD10|3.1.3.5|h2o@c:-1;xmp@c:-1;pi@c:1;xtsn@c:1"
+"NTD11|3.1.3.5|h2o@c:-1;imp@c:-1;ins@c:1;pi@c:1"
+"NTD2|3.1.3.5|h2o@c:-1;ump@c:-1;pi@c:1;uri@c:1"
+"NTD3|3.1.3.5|dcmp@c:-1;h2o@c:-1;dcyt@c:1;pi@c:1"
+"NTD4|3.1.3.5|cmp@c:-1;h2o@c:-1;cytd@c:1;pi@c:1"
+"NTD5|3.1.3.5|dtmp@c:-1;h2o@c:-1;pi@c:1;thymd@c:1"
+"NTD6|3.1.3.5|damp@c:-1;h2o@c:-1;dad_2@c:1;pi@c:1"
+"NTD7|3.1.3.5|amp@c:-1;h2o@c:-1;adn@c:1;pi@c:1"
+"NTD8|3.1.3.5|dgmp@c:-1;h2o@c:-1;dgsn@c:1;pi@c:1"
+"NTD9|3.1.3.5|gmp@c:-1;h2o@c:-1;gsn@c:1;pi@c:1"
+"NTP3|3.6.1.15|gtp@c:-1;h2o@c:-1;gdp@c:1;h@c:1;pi@c:1"
+"NTP4|3.6.1.15|dgtp@c:-1;h2o@c:-1;dgdp@c:1;h@c:1;pi@c:1"
+"NTRLASE|3.5.5.1|h2o@c:-2;ind3acnl@c:-1;ind3ac@c:1;nh4@c:1"
+"NTRLASE2|3.5.5.1|aprop@c:-1;h2o@c:-2;ala_l@c:1;nh4@c:1"
+"NTRLASE3|3.5.5.1|acybut@c:-1;h2o@c:-2;glu_l@c:1;nh4@c:1"
+"OBDHm|1.2.7.2|2obut@m:-1;coa@m:-1;nad@m:-1;co2@m:1;nadh@m:1;ppcoa@m:1"
+"OCBTi|2.1.3.3|cbp@c:-1;orn@c:-1;citr_l@c:1;h@c:1;pi@c:1"
+"OHACT1|2.3.1.84|accoa@c:-1;etoh@c:-1;aces@c:1;coa@c:1"
+"OHACT2|2.3.1.84|accoa@c:-1;iamoh@c:-1;coa@c:1;iamac@c:1"
+"OHACT3|2.3.1.84|2mbtoh@c:-1;accoa@c:-1;2mbac@c:1;coa@c:1"
+"OHACT4|2.3.1.84|accoa@c:-1;ibutoh@c:-1;coa@c:1;ibutac@c:1"
+"OHACT5|2.3.1.84|2phetoh@c:-1;accoa@c:-1;coa@c:1;pheac@c:1"
+"OHPBAT|2.6.1.52|glu_l@c:-1;ohpb@c:-1;akg@c:1;phthr@c:1"
+"OMPDC|4.1.1.23|h@c:-1;orot5p@c:-1;co2@c:1;ump@c:1"
+"ORNDC|4.1.1.17|h@c:-1;orn@c:-1;co2@c:1;ptrc@c:1"
+"ORNTA|2.6.1.13|akg@c:-1;orn@c:-1;glu_l@c:1;glu5sa@c:1"
+"ORNTACim|2.3.1.35|acorn@m:-1;glu_l@m:-1;acglu@m:1;orn@m:1"
+"ORPT|2.4.2.10|orot5p@c:-1;ppi@c:-1;orot@c:1;prpp@c:1"
+"P5CDm|1.5.1.12|1pyr5c@m:-1;h2o@m:-2;nad@m:-1;glu_l@m:1;h@m:1;nadh@m:1"
+"P5CR|1.5.1.2|1pyr5c@c:-1;h@c:-2;nadph@c:-1;nadp@c:1;pro_l@c:1"
+"PANTS|6.3.2.1|ala_b@c:-1;atp@c:-1;pant_r@c:-1;amp@c:1;h@c:1;pnto_r@c:1;ppi@c:1"
+"PAPSR|1.8.4.8|paps@c:-1;trdrd@c:-1;h@c:2;pap@c:1;so3@c:1;trdox@c:1"
+"PC|6.4.1.1|atp@c:-1;hco3@c:-1;pyr@c:-1;adp@c:1;h@c:1;oaa@c:1;pi@c:1"
+"PCDAGAT|2.3.1.43|12dgr_sc@c:-1;pc_sc@c:-1;1agpc_sc@c:1;triglyc_sc@c:1"
+"PDE1|3.1.4.17|camp@c:-1;h2o@c:-1;amp@c:1;h@c:1"
+"PDE2|3.1.4.17|35cdamp@c:-1;h2o@c:-1;damp@c:1;h@c:1"
+"PDE3|3.1.4.17|35cimp@c:-1;h2o@c:-1;h@c:1;imp@c:1"
+"PDE4|3.1.4.17|35cgmp@c:-1;h2o@c:-1;gmp@c:1;h@c:1"
+"PDE5|3.1.4.17|35ccmp@c:-1;h2o@c:-1;cmp@c:1;h@c:1"
+"PDHcm|1.8.1.4|dhlam@m:-1;nad@m:-1;h@m:1;lpam@m:1;nadh@m:1"
+"PDHm|1.2.4.1|coa@m:-1;nad@m:-1;pyr@m:-1;accoa@m:1;co2@m:1;nadh@m:1"
+"PDX5PO|1.4.3.5|o2@c:-1;pdx5p@c:-1;h2o2@c:1;pydx5p@c:1"
+"PEPAT|2.3.1.88|accoa@c:-1;pepd@c:-1;apep@c:1;coa@c:1;h@c:1"
+"PETHCT|2.7.7.14|ctp@c:-1;ethamp@c:-1;h@c:-1;cdpea@c:1;ppi@c:1"
+"PETOHM_SC|2.1.1.17|amet@c:-1;pe_sc@c:-0.01;ahcys@c:1;h@c:1;ptdmeeta_sc@c:0.01"
+"PFK|2.7.1.11|atp@c:-1;f6p@c:-1;adp@c:1;fdp@c:1;h@c:1"
+"PFK26|2.7.1.105|atp@c:-1;f6p@c:-1;adp@c:1;f26bp@c:1;h@c:1"
+"PFK_2|2.7.1.11|atp@c:-1;tag6p_d@c:-1;adp@c:1;h@c:1;tagdp_d@c:1"
+"PFK_3|2.7.1.11|atp@c:-1;s7p@c:-1;adp@c:1;h@c:1;s17bp@c:1"
+"PGAMT|5.4.2.10|gam1p@c:-1;gam6p@c:1"
+"PGCD|1.1.1.95|3pg@c:-1;nad@c:-1;3php@c:1;h@c:1;nadh@c:1"
+"PGI|5.3.1.9|g6p@c:-1;f6p@c:1"
+"PGK|2.7.2.3|3pg@c:-1;atp@c:-1;13dpg@c:1;adp@c:1"
+"PGL|3.1.1.31|6pgl@c:-1;h2o@c:-1;6pgc@c:1;h@c:1"
+"PGM|5.4.2.1|2pg@c:-1;3pg@c:1"
+"PGMT|5.4.2.2|g1p@c:-1;g6p@c:1"
+"PGPPAm_SC|3.1.3.27|h2o@m:-1;pgp_sc@m:-0.01;pg_sc@m:0.01;pi@m:1"
+"PHCDm|1.5.1.12|1p3h5c@m:-1;h2o@m:-2;nad@m:-1;e4hglu@m:1;h@m:1;nadh@m:1"
+"PHETA1|2.6.1.58|akg@c:-1;phe_l@c:-1;glu_l@c:1;phpyr@c:1"
+"PHETRS|6.1.1.20|atp@c:-1;phe_l@c:-1;trnaphe@c:-1;amp@c:1;phetrna@c:1;ppi@c:1"
+"PHETRSm|6.1.1.20|atp@m:-1;phe_l@m:-1;trnaphe@m:-1;amp@m:1;phetrna@m:1;ppi@m:1"
+"PI45BPP_SC|3.1.4.11|h2o@c:-1;ptd145bp_sc@c:-0.01;12dgr_sc@c:0.01;h@c:1;mi145p@c:1"
+"PI4P5K_SC|2.7.1.68|atp@c:-1;ptd4ino_sc@c:-0.01;adp@c:1;h@c:1;ptd145bp_sc@c:0.01"
+"PIN3K_SC|2.7.1.137|atp@c:-1;ptd1ino_sc@c:-0.01;adp@c:1;h@c:1;ptd3ino_sc@c:0.01"
+"PIN4K_SC|2.7.1.67|atp@c:-1;ptd1ino_sc@c:-0.01;adp@c:1;h@c:1;ptd4ino_sc@c:0.01"
+"PIN4Kn_SC|2.7.1.67|atp@n:-1;ptd1ino_sc@n:-0.01;adp@n:1;h@n:1;ptd4ino_sc@n:0.01"
+"PINOS_SC|2.7.8.11|cdpdag_sc@c:-0.01;inost@c:-1;cmp@c:1;h@c:1;ptd1ino_sc@c:0.01"
+"PMANM|5.4.2.8|man1p@c:-1;man6p@c:1"
+"PMETM_SC|2.1.1.16|amet@c:-1;ptd2meeta_sc@c:-0.01;ahcys@c:1;h@c:1;pc_sc@c:0.01"
+"PMEVK|2.7.4.2|5pmev@c:-1;atp@c:-1;5dpmev@c:1;adp@c:1"
+"PMI12346PH|3.6.1.52|h2o@c:-1;ppmi12346p@c:-1;h@c:1;minohp@c:1;pi@c:1"
+"PMPK|2.7.4.7|4ampm@c:-1;atp@c:-1;2mahmp@c:1;adp@c:1"
+"PNP|2.4.2.1|pi@c:-1;rnam@c:-1;h@c:1;ncam@c:1;r1p@c:1"
+"PNTK|2.7.1.33|atp@c:-1;pnto_r@c:-1;4ppan@c:1;adp@c:1;h@c:1"
+"POLYAO|1.5.3.11|n1aspmd@c:-1;h2o@c:-1;o2@c:-1;aproa@c:1;aprut@c:1;h2o2@c:1"
+"POLYAO2|1.5.3.11|n1sprm@c:-1;h2o@c:-1;o2@c:-1;n1aspmd@c:1;aproa@c:1;h2o2@c:1"
+"POLYAO3|1.5.3.11|h2o@c:-1;o2@c:-1;sprm@c:-1;aproa@c:1;h2o2@c:1;spmd@c:1"
+"PPA|3.6.1.1|h2o@c:-1;ppi@c:-1;h@c:1;pi@c:2"
+"PPAm|3.6.1.1|h2o@m:-1;ppi@m:-1;h@m:1;pi@m:2"
+"PPBNGS|4.2.1.24|5aop@c:-2;h@c:1;h2o@c:2;ppbng@c:1"
+"PPCDC|4.1.1.36|4ppcys@c:-1;h@c:-1;co2@c:1;pan4p@c:1"
+"PPCK|4.1.1.49|atp@c:-1;oaa@c:-1;adp@c:1;co2@c:1;pep@c:1"
+"PPM|5.4.2.7|r1p@c:-1;r5p@c:1"
+"PPNCL2|6.3.2.5|4ppan@c:-1;ctp@c:-1;cys_l@c:-1;4ppcys@c:1;cmp@c:1;h@c:1;ppi@c:1"
+"PPND|1.3.1.12|nad@c:-1;pphn@c:-1;34hpp@c:1;co2@c:1;nadh@c:1"
+"PPND2|1.3.1.13|nadp@c:-1;pphn@c:-1;34hpp@c:1;co2@c:1;nadph@c:1"
+"PPNDH|4.2.1.51|h@c:-1;pphn@c:-1;co2@c:1;h2o@c:1;phpyr@c:1"
+"PPPGOm|1.3.3.4|o2@m:-3;pppg9@m:-2;h2o@m:6;ppp9@m:2"
+"PPTTm|2.5.1.33|ipdp@m:-1;pendp@m:-1;hexdp@m:1;ppi@m:1"
+"PRAGSr|6.3.4.13|atp@c:-1;gly@c:-1;pram@c:-1;adp@c:1;gar@c:1;h@c:1;pi@c:1"
+"PRAIS|6.3.3.1|atp@c:-1;fpram@c:-1;adp@c:1;air@c:1;h@c:2;pi@c:1"
+"PRAIi|5.3.1.24|pran@c:-1;2cpr5p@c:1"
+"PRAMPC|3.5.4.19|h2o@c:-1;prbamp@c:-1;prfp@c:1"
+"PRASCS|6.3.2.6|5aizc@c:-1;asp_l@c:-1;atp@c:-1;25aics@c:1;adp@c:1;h@c:1;pi@c:1"
+"PRATPP|3.6.1.31|h2o@c:-1;prbatp@c:-1;h@c:1;ppi@c:1;prbamp@c:1"
+"PRFGS|6.3.5.3|atp@c:-1;fgam@c:-1;gln_l@c:-1;h2o@c:-1;adp@c:1;fpram@c:1;glu_l@c:1;h@c:1;pi@c:1"
+"PRMICIi|5.3.1.16|prfp@c:-1;prlp@c:1"
+"PROTRS|6.1.1.15|atp@c:-1;pro_l@c:-1;trnapro@c:-1;amp@c:1;ppi@c:1;protrna@c:1"
+"PRPPS|2.7.6.1|atp@c:-1;r5p@c:-1;amp@c:1;h@c:1;prpp@c:1"
+"PSCVTi|2.5.1.19|pep@c:-1;skm5p@c:-1;3psme@c:1;pi@c:1"
+"PSERDg_SC|4.1.1.65|h@g:-1;ps_sc@g:-0.01;co2@g:1;pe_sc@g:0.01"
+"PSERDm_SC|4.1.1.65|h@m:-1;ps_sc@m:-0.01;co2@m:1;pe_sc@m:0.01"
+"PSERDv_SC|4.1.1.65|h@v:-1;ps_sc@v:-0.01;co2@v:1;pe_sc@v:0.01"
+"PSERS_SC|2.7.8.8|cdpdag_sc@c:-0.01;ser_l@c:-1;cmp@c:1;h@c:1;ps_sc@c:0.01"
+"PSERSm_SC|2.7.8.8|cdpdag_sc@m:-0.01;ser_l@m:-1;cmp@m:1;h@m:1;ps_sc@m:0.01"
+"PSERT|2.6.1.52|3php@c:-1;glu_l@c:-1;akg@c:1;pser_l@c:1"
+"PSP_L|3.1.3.3|h2o@c:-1;pser_l@c:-1;pi@c:1;ser_l@c:1"
+"PTPATi|2.7.7.3|atp@c:-1;h@c:-1;pan4p@c:-1;dpcoa@c:1;ppi@c:1"
+"PTPATim|2.7.7.3|atp@m:-1;h@m:-1;pan4p@m:-1;dpcoa@m:1;ppi@m:1"
+"PUNP1|2.4.2.1|adn@c:-1;pi@c:-1;ade@c:1;r1p@c:1"
+"PUNP1m|2.4.2.1|adn@m:-1;pi@m:-1;ade@m:1;r1p@m:1"
+"PUNP2|2.4.2.1|dad_2@c:-1;pi@c:-1;2dr1p@c:1;ade@c:1"
+"PUNP3|2.4.2.1|gsn@c:-1;pi@c:-1;gua@c:1;r1p@c:1"
+"PUNP3m|2.4.2.1|gsn@m:-1;pi@m:-1;gua@m:1;r1p@m:1"
+"PUNP4|2.4.2.1|dgsn@c:-1;pi@c:-1;2dr1p@c:1;gua@c:1"
+"PUNP5|2.4.2.1|ins@c:-1;pi@c:-1;hxan@c:1;r1p@c:1"
+"PUNP6|2.4.2.1|din@c:-1;pi@c:-1;2dr1p@c:1;hxan@c:1"
+"PUNP7|2.4.2.1|pi@c:-1;xtsn@c:-1;r1p@c:1;xan@c:1"
+"PYAM5PO|1.4.3.5|h2o@c:-1;o2@c:-1;pyam5p@c:-1;h2o2@c:1;nh4@c:1;pydx5p@c:1"
+"PYDAMK|2.7.1.35|atp@c:-1;pydam@c:-1;adp@c:1;h@c:1;pyam5p@c:1"
+"PYDXK|2.7.1.35|atp@c:-1;pydx@c:-1;adp@c:1;h@c:1;pydx5p@c:1"
+"PYDXNK|2.7.1.35|atp@c:-1;pydxn@c:-1;adp@c:1;h@c:1;pdx5p@c:1"
+"PYDXNO|1.4.3.5|o2@c:-1;pydxn@c:-1;h2o2@c:1;pydx@c:1"
+"PYDXO|1.4.3.5|h2o@c:-2;nh4@c:-1;o2@c:-0.5;pydx@c:-1;h2o2@c:2;pydam@c:1"
+"PYK|2.7.1.40|adp@c:-1;h@c:-1;pep@c:-1;atp@c:1;pyr@c:1"
+"PYNP2r|2.4.2.2|pi@c:-1;uri@c:-1;r1p@c:1;ura@c:1"
+"PYR5CDm|1.5.1.12|glu5sa@m:-1;h2o@m:-1;nadp@m:-1;glu_l@m:1;h@m:2;nadph@m:1"
+"PYRDC|4.1.1.1|h@c:-1;pyr@c:-1;acald@c:1;co2@c:1"
+"PYRDC2|4.1.1.1|acald@c:-1;h@c:-1;pyr@c:-1;actn_r@c:1;co2@c:1"
+"RAFGH|3.2.1.22|h2o@c:-1;raffin@c:-1;gal@c:1;sucr@c:1"
+"RBFK|2.7.1.26|atp@c:-1;ribflv@c:-1;adp@c:1;fmn@c:1;h@c:1"
+"RBFKm|2.7.1.26|atp@m:-1;ribflv@m:-1;adp@m:1;fmn@m:1;h@m:1"
+"RBFSa|2.5.1.9|4r5au@c:-1;db4p@c:-1;dmlz@c:1;h2o@c:2;pi@c:1"
+"RBFSb|2.5.1.9|dmlz@c:-2;4r5au@c:1;ribflv@c:1"
+"RBK|2.7.1.15|atp@c:-1;rib_d@c:-1;adp@c:1;h@c:1;r5p@c:1"
+"RNDR1|1.17.4.1|adp@c:-1;trdrd@c:-1;dadp@c:1;h2o@c:1;trdox@c:1"
+"RNDR1n|1.17.4.1|adp@n:-1;trdrd@n:-1;dadp@n:1;h2o@n:1;trdox@n:1"
+"RNDR2|1.17.4.1|gdp@c:-1;trdrd@c:-1;dgdp@c:1;h2o@c:1;trdox@c:1"
+"RNDR2n|1.17.4.1|gdp@n:-1;trdrd@n:-1;dgdp@n:1;h2o@n:1;trdox@n:1"
+"RNDR3|1.17.4.1|cdp@c:-1;trdrd@c:-1;dcdp@c:1;h2o@c:1;trdox@c:1"
+"RNDR3n|1.17.4.1|cdp@n:-1;trdrd@n:-1;dcdp@n:1;h2o@n:1;trdox@n:1"
+"RNDR4|1.17.4.1|trdrd@c:-1;udp@c:-1;dudp@c:1;h2o@c:1;trdox@c:1"
+"RNDR4n|1.17.4.1|trdrd@n:-1;udp@n:-1;dudp@n:1;h2o@n:1;trdox@n:1"
+"RNMK|2.7.1.22|atp@c:-1;rnam@c:-1;adp@c:1;h@c:1;nmn@c:1"
+"RNTR1|1.17.4.2|atp@c:-1;trdrd@c:-1;datp@c:1;h2o@c:1;trdox@c:1"
+"RNTR2|1.17.4.2|gtp@c:-1;trdrd@c:-1;dgtp@c:1;h2o@c:1;trdox@c:1"
+"RNTR3|1.17.4.2|ctp@c:-1;trdrd@c:-1;dctp@c:1;h2o@c:1;trdox@c:1"
+"RNTR4|1.17.4.2|trdrd@c:-1;utp@c:-1;dutp@c:1;h2o@c:1;trdox@c:1"
+"RPE|5.1.3.1|ru5p_d@c:-1;xu5p_d@c:1"
+"RPI|5.3.1.6|r5p@c:-1;ru5p_d@c:1"
+"SACCD1|1.5.1.10|l2aadp6sa@c:-1;glu_l@c:-1;h@c:-1;nadph@c:-1;h2o@c:1;nadp@c:1;saccrp_l@c:1"
+"SACCD2|1.5.1.7|h2o@c:-1;nad@c:-1;saccrp_l@c:-1;akg@c:1;h@c:1;lys_l@c:1;nadh@c:1"
+"SADT|2.7.7.4|atp@c:-1;h@c:-1;so4@c:-1;aps@c:1;ppi@c:1"
+"SAM24MT|2.1.1.41|amet@c:-1;zymst@c:-1;ahcys@c:1;fecost@c:1;h@c:1"
+"SBTD_D2|1.1.1.14|nad@c:-1;sbt_d@c:-1;fru@c:1;h@c:1;nadh@c:1"
+"SBTD_L|1.1.1.14|nad@c:-1;sbt_l@c:-1;h@c:1;nadh@c:1;srb_l@c:1"
+"SBTR|1.1.1.21|glc_d@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;sbt_d@c:1"
+"SERATi|2.3.1.30|accoa@c:-1;ser_l@c:-1;acser@c:1;coa@c:1"
+"SERD_L|4.3.1.17|ser_l@c:-1;nh4@c:1;pyr@c:1"
+"SERPT|2.3.1.50|h@c:-1;pmtcoa@c:-1;ser_l@c:-1;3dsphgn@c:1;co2@c:1;coa@c:1"
+"SERTRS|6.1.1.11|atp@c:-1;ser_l@c:-1;trnaser@c:-1;amp@c:1;ppi@c:1;sertrna@c:1"
+"SFGTH|3.1.2.12|sfglutth@c:-1;h2o@c:-1;for@c:1;gthrd@c:1;h@c:1"
+"SHK3D|1.1.1.25|3dhsk@c:-1;h@c:-1;nadph@c:-1;nadp@c:1;skm@c:1"
+"SHKK|2.7.1.71|atp@c:-1;skm@c:-1;adp@c:1;h@c:1;skm5p@c:1"
+"SHSL1|4.2.99.9|cys_l@c:-1;suchms@c:-1;cyst_l@c:1;h@c:1;succ@c:1"
+"SHSL4r|4.2.99.9|h2o@c:-1;suchms@c:-1;2obut@c:1;h@c:1;nh4@c:1;succ@c:1"
+"SLFAT|2.7.7.5|adp@c:-1;h@c:-1;so4@c:-1;aps@c:1;pi@c:1"
+"SPMDAT1|2.3.1.57|accoa@c:-1;spmd@c:-1;n1aspmd@c:1;coa@c:1;h@c:1"
+"SPMS|2.5.1.16|ametam@c:-1;ptrc@c:-1;5mta@c:1;h@c:1;spmd@c:1"
+"SPRMS|2.5.1.22|ametam@c:-1;spmd@c:-1;5mta@c:1;h@c:1;sprm@c:1"
+"SQLEr|1.14.99.7|h@r:-1;nadph@r:-1;o2@r:-1;sql@r:-1;ssq23epx@r:1;h2o@r:1;nadp@r:1"
+"SQLErx|1.14.99.7|h@r:-1;nadh@r:-1;o2@r:-1;sql@r:-1;ssq23epx@r:1;h2o@r:1;nad@r:1"
+"SQLS|2.5.1.21|frdp@c:-2;h@c:-1;nadph@c:-1;nadp@c:1;ppi@c:2;sql@c:1"
+"SSALy|1.2.1.16|h2o@c:-1;nadp@c:-1;sucsal@c:-1;h@c:2;nadph@c:1;succ@c:1"
+"SUCD1m|1.3.99.1|fad@m:-1;succ@m:-1;fadh2@m:1;fum@m:1"
+"SUCD2_u6m|1.3.5.1|q6@m:-1;succ@m:-1;fum@m:1;q6h2@m:1"
+"SUCD3_u6m|1.3.5.1|fadh2@m:-1;q6@m:-1;fad@m:1;q6h2@m:1"
+"SUCOASm|6.2.1.5|atp@m:-1;coa@m:-1;succ@m:-1;adp@m:1;pi@m:1;succoa@m:1"
+"SUCRe|3.2.1.26|h2o@e:-1;sucr@e:-1;fru@e:1;glc_d@e:1"
+"SULR|1.8.2.2|h2o@c:-3;h2s@c:-1;nadp@c:-3;h@c:5;nadph@c:3;so3@c:1"
+"TALA|2.2.1.2|g3p@c:-1;s7p@c:-1;e4p@c:1;f6p@c:1"
+"TAUDO|1.14.11.17|akg@c:-1;o2@c:-1;taur@c:-1;aacald@c:1;co2@c:1;h@c:1;so3@c:1;succ@c:1"
+"THFATm|2.1.2.10|h2o@m:-1;methf@m:-1;5fthf@m:1;h@m:1"
+"THFGLUS|6.3.2.17|atp@c:-1;glu_l@c:-1;thf@c:-1;adp@c:1;h@c:1;pi@c:1;thfglu@c:1"
+"THMDPe|3.1.3.2|h2o@e:-2;thmpp@e:-1;h@e:1;pi@e:2;thm@e:1"
+"THMPe|3.1.3.2|h2o@e:-1;thmmp@e:-1;pi@e:1;thm@e:1"
+"THRA2i|4.1.2.5|athr_l@c:-1;acald@c:1;gly@c:1"
+"THRAi|4.1.2.5|thr_l@c:-1;acald@c:1;gly@c:1"
+"THRD_L|4.3.1.19|thr_l@c:-1;2obut@c:1;nh4@c:1"
+"THRD_Lm|4.3.1.19|thr_l@m:-1;2obut@m:1;nh4@m:1"
+"THRS|4.2.3.1|h2o@c:-1;phom@c:-1;pi@c:1;thr_l@c:1"
+"THRTRS|6.1.1.3|atp@c:-1;thr_l@c:-1;trnathr@c:-1;amp@c:1;ppi@c:1;thrtrna@c:1"
+"THRTRSm|6.1.1.3|atp@m:-1;thr_l@m:-1;trnathr@m:-1;amp@m:1;ppi@m:1;thrtrna@m:1"
+"TKT1|2.2.1.1|r5p@c:-1;xu5p_d@c:-1;g3p@c:1;s7p@c:1"
+"TKT2|2.2.1.1|e4p@c:-1;xu5p_d@c:-1;f6p@c:1;g3p@c:1"
+"TMDK1|2.7.1.21|atp@c:-1;thymd@c:-1;adp@c:1;dtmp@c:1;h@c:1"
+"TMDPK|2.7.6.2|atp@c:-1;thm@c:-1;amp@c:1;h@c:1;thmpp@c:1"
+"TMDPP|2.4.2.4|pi@c:-1;thymd@c:-1;2dr1p@c:1;thym@c:1"
+"TMDPPK|2.7.4.15|atp@c:-1;thmpp@c:-1;adp@c:1;thmtp@c:1"
+"TMDS|2.1.1.45|dump@c:-1;mlthf@c:-1;dhf@c:1;dtmp@c:1"
+"TMN|3.5.99.2|h2o@c:-1;thm@c:-1;4ahmmp@c:1;4mhetz@c:1;h@c:1"
+"TMPKr|2.7.4.16|atp@c:-1;thmmp@c:-1;adp@c:1;thmpp@c:1"
+"TMPPP|2.5.1.3|2mahmp@c:-1;4mpetz@c:-1;h@c:-1;ppi@c:1;thmmp@c:1"
+"TPI|5.3.1.1|dhap@c:-1;g3p@c:1"
+"TRDR|1.8.1.9|h@c:-1;nadph@c:-1;trdox@c:-1;nadp@c:1;trdrd@c:1"
+"TRDRm|1.8.1.9|h@m:-1;nadph@m:-1;trdox@m:-1;nadp@m:1;trdrd@m:1"
+"TRE6PP|3.1.3.12|h2o@c:-1;tre6p@c:-1;pi@c:1;tre@c:1"
+"TRE6PS|2.4.1.15|g6p@c:-1;udpg@c:-1;h@c:1;tre6p@c:1;udp@c:1"
+"TREH|3.2.1.28|h2o@c:-1;tre@c:-1;glc_d@c:2"
+"TREHv|3.2.1.28|h2o@v:-1;tre@v:-1;glc_d@v:2"
+"TRPO2|1.13.11.11|o2@c:-1;trp_l@c:-1;lfmkynr@c:1"
+"TRPS1|4.2.1.20|3ig3p@c:-1;ser_l@c:-1;g3p@c:1;h2o@c:1;trp_l@c:1"
+"TRPTRS|6.1.1.2|atp@c:-1;trnatrp@c:-1;trp_l@c:-1;amp@c:1;ppi@c:1;trptrna@c:1"
+"TRPTRSm|6.1.1.2|atp@m:-1;trnatrp@m:-1;trp_l@m:-1;amp@m:1;ppi@m:1;trptrna@m:1"
+"TYRNFT|2.1.2.3|10fthf@c:-1;tyr_l@c:-1;nfortyr@c:1;h@c:1;thf@c:1"
+"TYRTAi|2.6.1.5|34hpp@c:-1;glu_l@c:-1;akg@c:1;tyr_l@c:1"
+"TYRTAim|2.6.1.5|34hpp@m:-1;glu_l@m:-1;akg@m:1;tyr_l@m:1"
+"TYRTAip|2.6.1.5|34hpp@x:-1;glu_l@x:-1;akg@x:1;tyr_l@x:1"
+"TYRTRS|6.1.1.1|atp@c:-1;trnatyr@c:-1;tyr_l@c:-1;amp@c:1;ppi@c:1;tyrtrna@c:1"
+"TYRTRSm|6.1.1.1|atp@m:-1;trnatyr@m:-1;tyr_l@m:-1;amp@m:1;ppi@m:1;tyrtrna@m:1"
+"UDPACGLP|2.7.7.23|acgam1p@c:-1;h@c:-1;utp@c:-1;ppi@c:1;udpacgal@c:1"
+"UDPG4E|5.1.3.2|udpg@c:-1;udpgal@c:1"
+"UGLT|2.7.7.12|gal1p@c:-1;udpg@c:-1;g1p@c:1;udpgal@c:1"
+"UGLYCHr|3.5.3.19|h@c:-2;h2o@c:-1;urdglyc@c:-1;co2@c:1;glx@c:1;nh4@c:2"
+"UMPK|2.7.4.14|atp@c:-1;ump@c:-1;adp@c:1;udp@c:1"
+"UPP3MT|2.1.1.107|amet@c:-2;uppg3@c:-1;ahcys@c:2;dscl@c:1;h@c:1"
+"UPP3S|4.2.1.75|hmbil@c:-1;h2o@c:1;uppg3@c:1"
+"UPPDC1|4.1.1.37|h@c:-4;uppg3@c:-1;co2@c:4;cpppg3@c:1"
+"UPPRT|2.4.2.9|prpp@c:-1;ura@c:-1;ppi@c:1;ump@c:1"
+"UREASE|6.3.4.6|atp@c:-1;hco3@c:-1;urea@c:-1;adp@c:1;allphn@c:1;h@c:1;pi@c:1"
+"URIK1|2.7.1.48|atp@c:-1;uri@c:-1;adp@c:1;h@c:1;ump@c:1"
+"URIK2|2.7.1.48|gtp@c:-1;uri@c:-1;gdp@c:1;h@c:1;ump@c:1"
+"UTPH1|3.6.1.5|h2o@c:-2;utp@c:-1;h@c:2;pi@c:2;ump@c:1"
+"VALTA|2.6.1.42|akg@c:-1;val_l@c:-1;3mob@c:1;glu_l@c:1"
+"VALTAim|2.6.1.42|akg@m:-1;val_l@m:-1;3mob@m:1;glu_l@m:1"
+"VALTRS|6.1.1.9|atp@c:-1;trnaval@c:-1;val_l@c:-1;amp@c:1;ppi@c:1;valtrna@c:1"
+"VALTRSm|6.1.1.9|atp@m:-1;trnaval@m:-1;val_l@m:-1;amp@m:1;ppi@m:1;valtrna@m:1"
+"XPPT|2.4.2.22|prpp@c:-1;xan@c:-1;ppi@c:1;xmp@c:1"
+"XYLK|2.7.1.17|atp@c:-1;xylu_d@c:-1;adp@c:1;h@c:1;xu5p_d@c:1"
+"XYLR|1.1.1.21|h@c:-1;nadph@c:-1;xyl_d@c:-1;nadp@c:1;xylt@c:1"
+"XYLTD_D|1.1.1.9|nad@c:-1;xylt@c:-1;h@c:1;nadh@c:1;xylu_d@c:1"
+"YUMPS|4.2.1.70|r5p@c:-1;ura@c:-1;h2o@c:1;psd5p@c:1"
+];
+cells=split(raw,"|");
+T=table(cells(:,1),cells(:,2),cells(:,3), ...
+    'VariableNames',{'SourceReactionID','EC','ChemicalSignature'});
+end
+
+function step2Progress(path,msg,restart)
+% Console plus a small text file that survives a closed MATLAB session.
+fprintf('%s\n',msg);
+mode='a';if restart,mode='w';end
+fid=fopen(path,mode);if fid<0,return;end
+fprintf(fid,'%s\n',msg);fclose(fid);
+end
+
+function [rx,parts,control] = step2PrefixWithoutCounter(ctx,w)
+% Branch module + canceller support of parent w, without its counter.
+b=find(ctx.M.ModuleID==ctx.Y.ModuleID(w),1);c=find(ctx.C.ConnectedID==ctx.Y.ConnectedID(w),1);
+[rx,parts]=counterCancellerSupport(c,ctx.C,ctx.D,ctx.cores,ctx.O,ctx.T,ctx.L,ctx.Q,ctx.R,ctx.P);
+fast=ctx.rails(ctx.M.FastRailIndex(b));slow=ctx.rails(ctx.M.SlowRailIndex(b));
+control=[fast.rx slow.rx];rx=[rx control];parts=union(parts,union(fast.parts,slow.parts));
+end
+
+function [result,alternatives,audit,how] = step2SharedBlock0(target,rx,parts,control, ...
+    baseRx,baseParts,baseControl,ctx,G,cfg,requireEC,shared)
+% Adding a counter only forbids more reactions/species and adds controlled
+% ECs, so every Block 0 valid for the full parent is also valid without
+% the counter. Search once without the counter, then keep the alternatives
+% that also pass with it. Re-search the full parent only when the shared
+% search found alternatives but the counter rules out all of them.
+if ~cfg.step2ShareBlock0Search
+    [result,alternatives,audit]=findStep2Block0(target,rx,parts,control,ctx,G,cfg,requireEC);
+    how="full";return;
+end
+key=sprintf('%d,',[double(requireEC) target sort(baseRx) 0 sort(baseControl)]);
+how="reused";
+if isKey(shared,key)
+    base=shared(key);
+else
+    [r,a,au]=findStep2Block0(target,baseRx,baseParts,baseControl,ctx,G,cfg,requireEC);
+    base=struct('result',r,'alternatives',a,'audit',au);shared(key)=base;how="shared_new";
+end
+if ~base.result.found
+    % Nothing without the counter means nothing with it (within the same
+    % budgets; a budget-limited shared search is reported as such).
+    result=base.result;alternatives=base.alternatives;audit=base.audit;return;
+end
+keep=false(1,numel(base.alternatives));
+for k=1:numel(base.alternatives)
+    ors=base.alternatives(k).o;ok=~any(ismember(ctx.O.rxn(ors),rx));
+    for o=reshape(ors,1,[])
+        if ~ok,break;end
+        ok=isempty(step2Overlap(G.parts{o},parts,target,ctx.currency));
+    end
+    if ok&&requireEC,[~,ok]=step2AssignEC([control ctx.O.rxn(ors)],ctx,cfg);end
+    keep(k)=ok;
+end
+if any(keep)
+    alternatives=base.alternatives(keep);result=alternatives(1);audit=base.audit;return;
+end
+[result,alternatives,audit]=findStep2Block0(target,rx,parts,control,ctx,G,cfg,requireEC);
+how="full_rerun";
+end
+
+function stats = step2CountShared(stats,how)
+switch how
+    case "shared_new",stats.sharedBlock0Searches=stats.sharedBlock0Searches+1;
+    case "reused",stats.sharedBlock0Reused=stats.sharedBlock0Reused+1;
+    case "full_rerun",stats.block0FullReruns=stats.block0FullReruns+1;
+end
 end
 
 function s = joinText(values,delimiter)
