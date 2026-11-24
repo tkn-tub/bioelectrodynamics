@@ -11,6 +11,25 @@ function [Values, Km, Kcat, Reactions] = brendaKineticsTable(txtFile, xlsxFile, 
 %   'PrimarySubstrate' struct, e.g. struct('r_I','L-glutamate')
 %   'SubstrateAliases' N-by-2 string/cell array: model name, BRENDA name
 %   'PreferredEC'      struct, e.g. struct('r_adapter_1','3.1.4.17')
+%                      chooses among the codes the motif file ALREADY carries.
+%   'ECOverrides'      struct, e.g. struct('r_Fr_2','2.7.1.32')
+%                      SUPPLIES an EC where the model annotates none, or
+%                      REPLACES a wrong one. Key by role label (r_Fr_2) --
+%                      a model ID beginning with a digit (1331TAALThr) is not
+%                      a legal MATLAB field name, so role labels are the
+%                      reliable key. Overridden rows are marked in Notes and
+%                      carry the "EC SUPPLIED BY CALLER" evidence tier.
+%   'ResolveECOnline'  true: before any BRENDA query, look every reaction ID
+%                      up in BiGG (universal reactions) to FILL a blank EC and
+%                      to CROSS-CHECK the annotated ones. A blank is filled and
+%                      tagged "EC RESOLVED FROM BiGG"; an annotated code that
+%                      disagrees with BiGG is KEPT and tagged "EC CONFLICTS
+%                      WITH BiGG", never silently replaced -- only ECOverrides
+%                      replaces. Set false for a fully offline run.
+%   'BiGGCacheFile'    '' -> bigg_ec_cache.mat beside the output workbook. One
+%                      lookup per reaction ID, ever; delete the file to refresh.
+%   'BiGGTimeout'      20 s per lookup. A failed lookup degrades to "no EC
+%                      resolved" and never aborts the run.
 %   'UseReferenceValues' true: apply the documented 2026-10-12 selections for
 %                        these 23 reaction IDs/equations. False restores
 %                        strict live-record matching without surrogates.
@@ -75,12 +94,14 @@ function [Values, Km, Kcat, Reactions] = brendaKineticsTable(txtFile, xlsxFile, 
 % Requires MATLAB with Python/zeep for live queries; offline mode needs neither.
 % SOAP reference: https://www.brenda-enzymes.org/soap.php
 
-if nargin < 1 || isempty(txtFile), txtFile = 'Block_7_Selected_Motifs.txt'; end
-if nargin < 2 || isempty(xlsxFile), xlsxFile = 'kinetics_BRENDA_updated.xlsx'; end
+if nargin < 1 || isempty(txtFile), txtFile = 'Selected_Full_Chain_1.txt'; end
+if nargin < 2 || isempty(xlsxFile), xlsxFile = 'kinetics_BRENDA.xlsx'; end
 % Accept the requested positional credentials AND the existing option syntax.
 email = ''; password = ''; positionalCredentials = false;
 optionNames = {'Organism','CredentialsFile','QueryBRENDA', ...
-    'PrimarySubstrate','SubstrateAliases','PreferredEC','UseReferenceValues'};
+    'PrimarySubstrate','SubstrateAliases','PreferredEC','UseReferenceValues', ...
+    'ECOverrides','ResolveECOnline','BiGGCacheFile','BiGGTimeout', ...
+    'UseDefaultECOverrides','FlatFileFallback','BiGGIDPrefix','Candidate'};
 options = varargin;
 isTextScalar = @(v)(ischar(v)&&(isrow(v)||isempty(v))) || ...
     (isstring(v)&&isscalar(v)&&~ismissing(v));
@@ -102,6 +123,30 @@ addParameter(p,'CredentialsFile','credentials.txt',@(v)ischar(v)||isstring(v));
 addParameter(p,'QueryBRENDA',true,@(v)islogical(v)&&isscalar(v));
 addParameter(p,'PrimarySubstrate',struct(),@isstruct);
 addParameter(p,'PreferredEC',struct(),@isstruct);
+% ECOverrides: struct mapping a role label or model reaction ID to one EC code
+% (or a string array of codes) to use when the model annotates none, or when
+% the annotated one is wrong. Every overridden row is marked in Notes and in
+% the Evidence tier so a supplied code is never mistaken for a model-derived one.
+addParameter(p,'ECOverrides',struct(),@isstruct);
+% ResolveECOnline: look a blank EC up in BiGG before querying BRENDA, and
+% cross-check the annotated ones. Set false for a fully offline run.
+addParameter(p,'ResolveECOnline',true,@(v)islogical(v)&&isscalar(v));
+% UseDefaultECOverrides: apply the shipped defaultECOverrides() table, so the
+% codes already established by hand do not have to be retyped on every rerun.
+addParameter(p,'UseDefaultECOverrides',true,@(v)islogical(v)&&isscalar(v));
+% FlatFileFallback: when the local BRENDA flat file has NO record of a given
+% parameter for an EC, query that one pool online instead of reporting an
+% absence. The flat file is a subset for some ECs.
+addParameter(p,'FlatFileFallback',true,@(v)islogical(v)&&isscalar(v));
+addParameter(p,'BiGGCacheFile','',@(v)ischar(v)||isstring(v));
+addParameter(p,'BiGGTimeout',20,@(v)isnumeric(v)&&isscalar(v)&&v>0);
+% BiGGIDPrefix: a prefix the report adds to every model reaction ID (the
+% yeast cell-free merge uses 'AUXOS'). Stripped on a retry when the ID as
+% printed is not found in BiGG.
+addParameter(p,'BiGGIDPrefix','',@(v)ischar(v)||isstring(v));
+% Candidate: build the workbook for ONE candidate of the report instead of
+% all of them. [] (default) keeps every candidate.
+addParameter(p,'Candidate',[],@(v)isempty(v)||(isnumeric(v)&&isscalar(v)&&v>0));
 addParameter(p,'UseReferenceValues',true,@(v)islogical(v)&&isscalar(v));
 addParameter(p,'SubstrateAliases',strings(0,2),@(v)isstring(v)||iscell(v));
 addParameter(p,'OrganismFallback',true,@(v)islogical(v)&&isscalar(v));
@@ -114,6 +159,23 @@ addParameter(p,'SurrogateSubstrate',struct(),@isstruct);
 addParameter(p,'ECReplacements',strings(0,2),@(v)isstring(v)||iscell(v));
 addParameter(p,'KcatSource','SAxMW', ...
     @(v)any(strcmpi(char(v),{'SAxMW','BRENDA','BRENDA else SAxMW'})));
+% When set, kinetics are read from a local BRENDA flat file (brenda_2026_1.txt)
+% instead of the SOAP service, and missing/placeholder ECs in the TXT are
+% resolved offline by matching the reaction name against the file's RN/SY names.
+addParameter(p,'BrendaFlatFile','',@(v)ischar(v)||isstring(v));
+% Resolve EC-less reactions (transporters) by enzyme name against the local
+% file. OFF by default: it needs a separate full scan and transporters rarely
+% match a BRENDA enzyme name. Turn on only if you need those few ECs filled.
+addParameter(p,'ResolveMissingEC',false,@(v)islogical(v)&&isscalar(v));
+% When a reaction has several non-currency reactants and no (m_*) tag to say
+% which is "the" substrate, pick the one BRENDA samples most for this EC rather
+% than leaving K_M blank. Clearly flagged; override per reaction with
+% PrimarySubstrate. Set false for the strict (withhold-if-ambiguous) behaviour.
+addParameter(p,'AutoPrimarySubstrate',true,@(v)islogical(v)&&isscalar(v));
+% Persist the per-EC local index to a .mat file so later runs skip re-scanning.
+% Empty -> default to <BrendaFlatFile>.ec_index.mat. It grows with every EC you
+% ever query and is rebuilt automatically if the flat file changes.
+addParameter(p,'IndexCacheFile','',@(v)ischar(v)||isstring(v));
 parse(p,options{:}); opt = p.Results;
 clear options
 aliases = string(opt.SubstrateAliases);
@@ -126,15 +188,126 @@ defaults = defaultAliases();
 keep = ~ismember(normalize(defaults(:,1)),normalize(aliases(:,1)));
 aliases = [aliases; defaults(keep,:)];
 assert(~strcmp(char(txtFile),char(xlsxFile)),'Input and output must differ.');
+% The workbook is written exactly where xlsxFile says: a bare file name
+% lands in the current folder, a path is used as given. Only the absolute
+% path is reported, so the file is never hard to find.
+xlsxFile = char(xlsxFile);
+if isempty(fileparts(xlsxFile)), xlsxFile = fullfile(pwd,xlsxFile); end
+fprintf('Workbook will be written to: %s\n',xlsxFile);
 Reactions = parseMotifs(fileread(txtFile));
 assert(~isempty(Reactions),'No reaction records found in the TXT file.');
-fprintf('Parsed %d reaction occurrences across %d motif(s).\n', ...
+fprintf('Parsed %d reaction occurrences across %d motif(s)/candidate(s).\n', ...
     height(Reactions),numel(unique(Reactions.Motif)));
-
-% Validate credentials before touching the output workbook.
-if opt.QueryBRENDA && ~positionalCredentials
-    [email,password] = readCredentials(opt.CredentialsFile);
+% ---- Optionally keep a single candidate ---------------------------------
+% Filtering HERE, before EC completion and before any BRENDA query, means a
+% single-candidate workbook costs one tenth of the lookups rather than
+% querying all ten and discarding nine.
+fprintf('  candidates detected: %s\n',strjoin(string(unique(Reactions.Motif)'),', '));
+fprintf('  stages detected    : %s\n', ...
+    strjoin(unique(Reactions.Stage(strlength(Reactions.Stage)>0),'stable')',', '));
+% A report that names several CANDIDATE sections but parses as one candidate
+% means the header was not recognised. Say so loudly: silently returning all
+% of them under a 'Candidate' filter looks like the filter being ignored.
+nDeclared = numel(regexp(fileread(txtFile),'\nCANDIDATE\s+\d+','match'));
+if nDeclared > numel(unique(Reactions.Motif))
+    warning('brendaKineticsTable:CandidateHeaders', ...
+        ['The report declares %d CANDIDATE sections but only %d were parsed. ' ...
+         'Stage and candidate labels will be wrong and a Candidate filter ' ...
+         'cannot work. The header format has changed.'], ...
+        nDeclared,numel(unique(Reactions.Motif)));
 end
+if ~isempty(opt.Candidate)
+    want = opt.Candidate;
+    avail = unique(Reactions.Motif)';
+    assert(ismember(want,avail), ...
+        'Candidate %d is not in this report; it contains: %s.', ...
+        want,strjoin(string(avail),', '));
+    before = height(Reactions);
+    Reactions = Reactions(Reactions.Motif==want,:);
+    assert(~(nDeclared>1 && height(Reactions)==before), ...
+        ['Filtering to candidate %d kept all %d rows, so the candidates were ' ...
+         'never separated. Refusing to write a workbook labelled as one ' ...
+         'candidate while it holds all of them.'],want,before);
+    fprintf('Keeping candidate %d only: %d reaction(s) (of %d).\n', ...
+        want,height(Reactions),before);
+end
+
+% ---- Complete the EC annotation BEFORE anything is queried ---------------
+% A GEM's rxnECNumbers field is routinely blank or wrong, and the EC is the
+% only key BRENDA can be asked by, so a blank here costs the whole row. Fill
+% it from BiGG (the authority for these reaction IDs) and from the caller's
+% overrides, write the result back into Reactions.EC, and carry the
+% provenance in Reactions.ECSource / Reactions.ECNote. Everything downstream
+% -- the unique-EC list, the flat-file index, the per-row selection -- then
+% works unchanged on a completed annotation.
+Reactions = fillMissingECs(Reactions,opt,xlsxFile);
+
+% The BRENDA SOAP service is unreliable (zeep.exceptions.Fault). If the caller
+% did not pass a flat file, try to locate brenda_2026_1.txt on the MATLAB path
+% and use it as the OFFLINE kinetics source, so the table is populated without
+% any web query. Pass 'QueryBRENDA',false and 'BrendaFlatFile','' to force the
+% old offline-template behaviour instead.
+if isempty(char(opt.BrendaFlatFile))
+    autoFlat = builtin('which','brenda_2026_1.txt');
+
+    if ~isempty(autoFlat)
+        opt.BrendaFlatFile = autoFlat;
+        fprintf(['No BrendaFlatFile given; using the local BRENDA flat file on ' ...
+                 'the path:\n  %s\n(SOAP is bypassed.)\n'], autoFlat);
+    else
+        fprintf(['No BrendaFlatFile given and brenda_2026_1.txt is not on the ' ...
+                 'path.\nFalling back to the BRENDA SOAP service, which is often ' ...
+                 'down. If every query fails, put brenda_2026_1.txt under ''code'' ' ...
+                 'or pass it explicitly as the 5th/''BrendaFlatFile'' argument.\n']);
+    end
+end
+
+% Optionally fill EC-less reactions (transporters) by enzyme name. OFF by
+% default (needs its own scan; see ResolveMissingEC).
+useFlat = ~isempty(char(opt.BrendaFlatFile));
+if useFlat
+    assert(exist(char(opt.BrendaFlatFile),'file')==2, ...
+        'BrendaFlatFile not found: %s',char(opt.BrendaFlatFile));
+    if opt.ResolveMissingEC
+        miss = strings(0,1);
+        for i=1:height(Reactions)
+            hasEC = ~isempty(regexp(char(Reactions.EC(i)), ...
+                '(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','once'));
+            if ~hasEC && strlength(Reactions.Name(i))>0, miss(end+1,1)=Reactions.Name(i); end %#ok<AGROW>
+        end
+        if ~isempty(miss)
+            name2ec = resolveECsFromFlat(unique(miss), opt.BrendaFlatFile);
+            for i=1:height(Reactions)
+                hasEC = ~isempty(regexp(char(Reactions.EC(i)), ...
+                    '(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','once'));
+                k = char(normName(Reactions.Name(i)));
+                if ~hasEC && isKey(name2ec,k)
+                    Reactions.EC(i) = string(name2ec(k));
+                    fprintf('  Resolved EC for %s (%s) -> %s via local BRENDA.\n', ...
+                        char(Reactions.ID(i)),char(Reactions.Name(i)),char(Reactions.EC(i)));
+                end
+            end
+        end
+    end
+end
+
+% Validate credentials before touching the output workbook. Not needed when
+% the local flat file is the kinetics source (fully offline).
+if opt.QueryBRENDA && ~useFlat && ~positionalCredentials
+    [email,password] = readCredentials(opt.CredentialsFile);
+elseif opt.QueryBRENDA && useFlat && ~positionalCredentials && opt.FlatFileFallback
+    % Flat-file mode is normally offline, but the gap fallback needs
+    % credentials. Missing ones are NOT an error here: the run continues
+    % offline and only loses the ability to fill a gap the flat file has.
+    try
+        [email,password] = readCredentials(opt.CredentialsFile);
+    catch
+        email=''; password='';
+        fprintf(['No BRENDA credentials found: gaps in the local flat file ' ...
+                 'cannot be filled online this run.\n']);
+    end
+end
+if ~exist('email','var'), email=''; password=''; end
 Km = emptyRecords('Km','mM'); Kcat = emptyRecords('kcat','1/s');
 SArec = emptyRecords('SA','umol/min/mg'); MWrec = emptyRecords('MW','Da');
 ecs = strings(0,1);
@@ -143,6 +316,19 @@ for i=1:height(Reactions)
         '(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','match'))']; %#ok<AGROW>
 end
 ecs = unique(ecs,'stable');
+nSentinel = 0;   % BRENDA "value not reported" placeholders discarded
+% Build the local index ONCE, for ONLY the ECs this chain uses (not all of
+% BRENDA). The scan stops as soon as every requested EC has been read.
+flatDB = containers.Map('KeyType','char','ValueType','any');
+if useFlat
+    cacheFile = char(opt.IndexCacheFile);
+    if isempty(cacheFile)
+        [xdir,~,~] = fileparts(char(xlsxFile));   % next to the output workbook
+        if isempty(xdir), xdir = pwd; end
+        cacheFile = fullfile(xdir,'brenda_ec_index.mat');
+    end
+    flatDB = loadBrendaFlat(opt.BrendaFlatFile, ecs, cacheFile);
+end
 status = cell(numel(ecs)+1,8);
 status(1,:) = {'EC in motif file','EC actually queried','EC resolution', ...
     'Organism requested','Km query','kcat query','SA query','MW query'};
@@ -156,7 +342,33 @@ for j=1:numel(ecs)
     ec = char(ecs(j)); queried = ec; verdict = ''; trail = ''; liveName = '';
     before = 0; after = 0;
     fprintf('EC %d/%d: %s\n',j,numel(ecs),ec);
-    if opt.QueryBRENDA
+    if useFlat
+        % Offline kinetics: read every pool straight from the local BRENDA
+        % flat file. No organism relaxation / transferred-EC recovery here;
+        % release 2026.1 is already the current numbering.
+        [a,sa] = fetchFromFlat(ec,'Km',flatDB);
+        [b,sb] = fetchFromFlat(ec,'kcat',flatDB);
+        [c,sc] = fetchFromFlat(ec,'SA',flatDB);
+        [d,sd] = fetchFromFlat(ec,'MW',flatDB);
+        % A thin local section is not the same as "BRENDA has nothing". The
+        % flat file ships a subset for some ECs (2.3.1.14 has 2 records in it
+        % and no K_M at all), so an EMPTY pool is retried online rather than
+        % reported as an absence. Only the pools that came back empty are
+        % retried; the ones the flat file answered are left alone.
+        if opt.FlatFileFallback && opt.QueryBRENDA && ~isempty(char(email))
+            [a,sa]=flatGap(a,sa,ec,opt,email,password,'Km');
+            [b,sb]=flatGap(b,sb,ec,opt,email,password,'kcat');
+            [c,sc]=flatGap(c,sc,ec,opt,email,password,'SA');
+            [d,sd]=flatGap(d,sd,ec,opt,email,password,'MW');
+        end
+        before = height(a)+height(b)+height(c)+height(d);
+        if before>0, verdict = 'local BRENDA flat file (release 2026.1)';
+        else, verdict = 'no records in local BRENDA flat file'; end
+        [a,na]=dropSentinels(a,'Km',ec);   [b,nb]=dropSentinels(b,'kcat',ec);
+        [c,nc]=dropSentinels(c,'SA',ec);   [d,nd]=dropSentinels(d,'MW',ec);
+        nSentinel=nSentinel+na+nb+nc+nd;
+        Km=[Km;a]; Kcat=[Kcat;b]; SArec=[SArec;c]; MWrec=[MWrec;d]; %#ok<AGROW>
+    elseif opt.QueryBRENDA
         % Query each parameter independently: one failure must not discard
         % the others. Many EC codes have no record at all for the requested
         % organism (EC 6.3.2.12 has no human entry: humans lack the enzyme),
@@ -203,6 +415,9 @@ for j=1:numel(ecs)
         else
             verdict = 'current entry (BRENDA returned records)';
         end
+        [a,na]=dropSentinels(a,'Km',ec);   [b,nb]=dropSentinels(b,'kcat',ec);
+        [c,nc]=dropSentinels(c,'SA',ec);   [d,nd]=dropSentinels(d,'MW',ec);
+        nSentinel=nSentinel+na+nb+nc+nd;
         Km=[Km;a]; Kcat=[Kcat;b]; SArec=[SArec;c]; MWrec=[MWrec;d]; %#ok<AGROW>
     else
         sa = 'Not queried (offline mode; see Reference choices)';
@@ -263,11 +478,29 @@ for i=1:height(Reactions)
         primarySource = "first of "+string(sum(tags~=""))+" tagged reactants";
     elseif all(tags=="")
         % Do not let water/protons or cofactors obscure the carrier.
-        remaining=~ismember(substrateKey(substrates),currencyKeys());
+        % TWO tiers, because one flat list silently empties a row whose every
+        % reactant happens to be a cofactor somewhere else. r0051 prints
+        % "Adenosine Monophosphate + Diphosphate": AMP is a currency species in
+        % most reactions but is THE substrate here, and excluding both left
+        % nothing to query even though BRENDA has ~90 K_M records for the EC.
+        % So: drop the inorganic/trivial species first and only fall back to
+        % dropping organic cofactors if that still leaves a choice.
+        [trivial,cofactor]=currencyKeys();
+        keys=substrateKey(substrates);
+        remaining=~ismember(keys,[trivial cofactor]);
         if sum(remaining)==1
             primary=substrates(remaining); primarySource="only non-currency reactant";
+        else
+            notTrivial=~ismember(keys,trivial);
+            if sum(notTrivial)==1
+                primary=substrates(notTrivial);
+                primarySource="only non-inorganic reactant (an organic cofactor is the substrate here)";
+            end
         end
     end
+    % Reactions.EC was completed by fillMissingECs() before any BRENDA query,
+    % so this is already the code set to select on. Provenance for a code that
+    % did not come from the model lives in Reactions.ECSource / ECNote.
     codes=string(regexp(char(R.EC),'(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','match'));
     % Translate every annotated code into the code BRENDA was queried under.
     % The motif file keeps the model's annotation; the records are filed under
@@ -283,6 +516,26 @@ for i=1:height(Reactions)
                     "ExPASy transfers it to EC "+lc+", and BRENDA holds the data only " + ...
                     "under the new number. All constants below were queried as EC "+lc+". ";
             end
+        end
+    end
+    % No tagged/singular substrate, but several non-currency reactants exist:
+    % pick the one BRENDA samples most for this EC instead of leaving K_M blank.
+    if primary=="" && opt.AutoPrimarySubstrate && ~isempty(liveCodes)
+        cand = substrates(~ismember(substrateKey(substrates),currencyKeys()));
+        bestN=0; bestSub="";
+        for cix=1:numel(cand)
+            n=0;
+            for e=liveCodes(:)'
+                recs=selectRecords(Km,e,cand(cix),string(opt.Organism), ...
+                    opt.RelaxedSubstrateMatch,opt.OrganismFallback);
+                n=n+sum(isfinite(recs.value));
+            end
+            if n>bestN, bestN=n; bestSub=cand(cix); end
+        end
+        if strlength(bestSub)>0
+            primary=bestSub;
+            primarySource="auto-picked (most BRENDA K_M records of " + ...
+                string(numel(cand))+" substrates; n="+string(bestN)+")";
         end
     end
     tiers=strings(0,1);
@@ -483,9 +736,21 @@ for i=1:height(Reactions)
         note=note+"Printed reverse deacylase reaction needs separate feasibility review. ";
     end
     if numel(codes)>1, note=note+"Multiple model EC annotations retained without correction. "; end
-    values(row,1:4)={sprintf('Motif %d / Block %d',R.Motif,R.Block), ...
+    % First column names WHICH candidate and WHICH stage the row belongs to.
+    % "Motif n / Block n" was wrong twice over on the candidate report: every
+    % row said Motif 1 because the candidates were not being separated, and
+    % every row said Block 0 because only the literal "BLOCK 0" heading set a
+    % block. Fall back to the old wording only for layouts with no stages.
+    if strlength(R.Stage)>0
+        pairLabel=sprintf('Candidate %d / %s',R.Motif,char(R.Stage));
+    elseif isfinite(R.Block)
+        pairLabel=sprintf('Motif %d / Block %d',R.Motif,R.Block);
+    else
+        pairLabel=sprintf('Motif %d',R.Motif);
+    end
+    values(row,1:4)={pairLabel, ...
         char(R.Reaction),char(R.Name),char(R.EC)};
-    if isfinite(chosenKm), values{row,5}=chosenKm; end
+    if isfinite(chosenKm) && chosenKm>0, values{row,5}=chosenKm; end
     % Specific activity and molecular weight give k_cat = SA*MW/60 whenever a
     % direct turnover number is missing. BRENDA reports both per EC, so this
     % recovers rows the turnover query alone leaves blank.
@@ -500,7 +765,11 @@ for i=1:height(Reactions)
         note=note+sprintf('BRENDA turnover number %.4g 1/s was found but NOT used (KcatSource = SAxMW). ',chosenKcat);
         chosenKcat=NaN;
     end
-    saValue=NaN; mwValue=NaN; ecSAMW=chosenEC;
+    % SA and MW are their OWN columns. Report the EC medians whenever BRENDA has
+    % them, independent of how k_cat was obtained -- filling them only as a
+    % k_cat fallback left them blank for every reaction whose k_cat came from a
+    % measured turnover number (that is why 6.3.5.1 etc. showed blank SA/MW).
+    saValue=NaN; mwValue=NaN; saOrg=""; mwOrg=""; saN=0; mwN=0; ecSAMW=chosenEC;
     if ecSAMW==""
         if preferredEC~=""
             ecSAMW=preferredEC;
@@ -512,28 +781,34 @@ for i=1:height(Reactions)
             if most>0, ecSAMW=liveCodes(which); end
         end
     end
-    if (isempty(ref) || useSAxMW) && ~isfinite(chosenKcat) && ecSAMW~=""
+    if ecSAMW~=""
         [saValue,saOrg,saN]=medianFor(SArec,ecSAMW,string(opt.Organism),opt.OrganismFallback);
         [mwValue,mwOrg,mwN]=medianFor(MWrec,ecSAMW,string(opt.Organism),opt.OrganismFallback);
-        if isfinite(saValue) && isfinite(mwValue)
-            note=note+sprintf(['k_cat ESTIMATED as SA*MW/60 from %g umol/min/mg (n=%d; %s) and ' ...
-                '%g Da (n=%d; %s), medians for EC %s. '], ...
-                saValue,saN,saOrg,mwValue,mwN,mwOrg,ecSAMW);
-            note=note+mwSubunitHint(MWrec,ecSAMW);
-            tiers(end+1,1)="k_cat ESTIMATED as SA*MW/60 (EC "+ecSAMW+")";
-            if organismUsed=="", organismUsed="SA: "+saOrg+"; MW: "+mwOrg; end
-        end
+        if isfinite(saValue), note=note+sprintf('SA median %g umol/min/mg (n=%d; %s) for EC %s. ',saValue,saN,saOrg,ecSAMW); end
+        if isfinite(mwValue), note=note+sprintf('MW median %g Da (n=%d; %s) for EC %s. ',mwValue,mwN,mwOrg,ecSAMW); note=note+mwSubunitHint(MWrec,ecSAMW); end
+    end
+    % k_cat from SA*MW only when no measured turnover number was available.
+    estimateKcat = ~isfinite(chosenKcat) && isfinite(saValue) && isfinite(mwValue);
+    if estimateKcat
+        note=note+sprintf('k_cat ESTIMATED as SA*MW/60 for EC %s. ',ecSAMW);
+        tiers(end+1,1)="k_cat ESTIMATED as SA*MW/60 (EC "+ecSAMW+")";
+        if organismUsed=="", organismUsed="SA: "+saOrg+"; MW: "+mwOrg; end
     end
     if ~isempty(ref) && ~isempty(ref.sa) && ~useSAxMW
         values{row,6}=ref.sa; values{row,7}=ref.mw;
         values{row,8}=sprintf('=F%d*G%d/60',row,row);
-    elseif isfinite(chosenKcat), values{row,8}=chosenKcat;
-    elseif isfinite(saValue) && isfinite(mwValue)
-        values{row,6}=saValue; values{row,7}=mwValue/1000;   % mg/umol
-        values{row,8}=sprintf('=F%d*G%d/60',row,row);
     else
-        % Retain template conversion for optional manual SA/MW entry only.
-        values{row,8}=sprintf('=IF(AND(ISNUMBER(F%d),ISNUMBER(G%d)),F%d*G%d/60,"")',row,row,row,row);
+        if isfinite(saValue) && saValue>0, values{row,6}=saValue; end  % umol/min/mg
+        if isfinite(mwValue) && mwValue>0, values{row,7}=mwValue/1000; end % Da -> mg/umol
+        if isfinite(chosenKcat) && chosenKcat>0
+            values{row,8}=chosenKcat;                            % measured turnover number
+        elseif estimateKcat
+            % Guarded even here: a discarded -999 leaves F blank, and a bare
+            % =F*G/60 would then silently evaluate to 0 rather than empty.
+            values{row,8}=sprintf('=IF(AND(ISNUMBER(F%d),ISNUMBER(G%d)),F%d*G%d/60,"")',row,row,row,row);
+        else
+            values{row,8}=sprintf('=IF(AND(ISNUMBER(F%d),ISNUMBER(G%d)),F%d*G%d/60,"")',row,row,row,row);
+        end
     end
     values{row,9}=0; % User supplies enzyme concentration, as in original workbook.
     values{row,10}=sprintf(['=IF(AND(ISNUMBER(H%d),ISNUMBER(I%d),ISNUMBER(E%d)),' ...
@@ -541,7 +816,22 @@ for i=1:height(Reactions)
     if ~isempty(ref), tiers(end+1,1)="REFERENCE SNAPSHOT (2026-10-12), not a live query"; end
     if ~opt.QueryBRENDA, tiers(end+1,1)="offline: nothing queried"; end
     if isempty(tiers), tiers="no value"; end
-    values{row,14}=char(transferNote+note);
+    % The override provenance leads the note: a reader must see that the EC was
+    % supplied, not annotated, before reading any number derived from it.
+    if strlength(R.ECNote)>0
+        values{row,14}=char(R.ECNote+" "+transferNote+note);
+        switch R.ECSource
+            case "caller", tiers(end+1,1)="EC SUPPLIED BY CALLER";          %#ok<AGROW>
+            case "BiGG",   tiers(end+1,1)="EC RESOLVED FROM BiGG";          %#ok<AGROW>
+            case "shipped default"
+                tiers(end+1,1)="EC FROM SHIPPED DEFAULT TABLE";             %#ok<AGROW>
+            case "model (conflicts with BiGG)"
+                tiers(end+1,1)="EC CONFLICTS WITH BiGG";                    %#ok<AGROW>
+            otherwise,     tiers(end+1,1)="no EC anywhere";                 %#ok<AGROW>
+        end
+    else
+        values{row,14}=char(transferNote+note);
+    end
     % Provenance of the numbers in E..H, so a reader can filter the workbook
     % instead of parsing the Notes prose.
     values{row,15}=char(chosenEC);
@@ -551,8 +841,11 @@ for i=1:height(Reactions)
     values{row,17}=char(substrateUsed);
     values{row,18}=char(organismUsed);
     values{row,19}=char(strjoin(unique(tiers,'stable'),' | '));
+    saRow = cell(1,12);
+    if isfinite(saValue), saRow(1:6)={saValue,saN,saValue,saValue,saValue,['local BRENDA median; ' char(saOrg)]}; end
+    if isfinite(mwValue), saRow(7:12)={mwValue,mwN,mwValue,mwValue,mwValue,['local BRENDA median; ' char(mwOrg)]}; end
     saMW(end+1,:) = [{char(R.Reaction),char(R.ID),char(R.EC),char(chosenEC)}, ...
-        cell(1,12),{'SA/MW not queried; direct measured kcat used when available.'}]; %#ok<AGROW>
+        saRow,{'SA/MW are per-enzyme EC medians (not per-substrate).'}]; %#ok<AGROW>
     if ~isempty(ref)
         saMW{end,17}=['Reference choice: ' ref.kcat.kind '; see Reference choices.'];
         if ~isempty(ref.sa)
@@ -567,7 +860,12 @@ end
 % kcat[E]/Km as first-order losses would require co-substrate assumptions.
 % October 2026 nomenclature: each delay pool is produced by its feed
 % reaction and consumed by its delay reaction (m_F by r_Ff then r_Fd, etc.).
-pairs={'r_Ff','r_Fd';'r_Sf','r_Sd';'r_Ff_2','r_Fd_2';'r_Sf_2','r_Sd_2'};
+% The IFFL (Selected_Full_Chain) naming differs: per stage k the fast-arm pool
+% m_Fd_k is produced by r_Fd_k and cleared by r_Fr_k, and the slow-arm pool
+% m_Sf_k is produced by r_Sf_k and consumed by r_Sd_k. Both naming schemes are
+% listed; a pair whose two reactions are not both present is simply skipped.
+pairs={'r_Ff','r_Fd';'r_Sf','r_Sd';'r_Ff_2','r_Fd_2';'r_Sf_2','r_Sd_2'; ...
+       'r_Fd_1','r_Fr_1';'r_Sf_1','r_Sd_1';'r_Fd_2','r_Fr_2'};
 for motif=unique(Reactions.Motif)'
     for j=1:size(pairs,1)
         a=find(Reactions.Motif==motif & Reactions.Reaction==string(pairs{j,1}));
@@ -594,6 +892,10 @@ haveKcat=cellfun(isNum,values(2:end,8));
 fprintf('\nCoverage: K_M %d/%d, k_cat %d/%d, both %d/%d.\n', ...
     sum(haveKm),numel(haveKm),sum(haveKcat),numel(haveKcat), ...
     sum(haveKm&haveKcat),numel(haveKm));
+if nSentinel>0
+    fprintf(['Discarded %d BRENDA placeholder record(s) (-999 / non-positive) ' ...
+             'across all pools before any median was taken.\n'],nSentinel);
+end
 gaps=find(~(haveKm&haveKcat));
 for g=gaps(:)'
     missing="K_M and k_cat";
@@ -639,57 +941,293 @@ fprintf('Workbook written: %s\n',char(xlsxFile));
 end
 
 function T=parseMotifs(txt)
+% Parse a selected-motif TXT into one row per reaction occurrence. Handles
+% BOTH layouts the pipeline produces:
+%   (old) Block_7 style       -- role line "  r_Ff (fast feed ...)" followed by
+%                                GPR/EC/Eqn/Names/IDs/Direction fields, MOTIF
+%                                headers, Metabolite path / Reaction path lines.
+%   (new) Selected_Full_Chain -- "BLOCK 0..4" headers, role lines that are
+%                                either labelled ("  r_Fd_1", "  r_I (...)") or
+%                                branch words ("fast branch" / "slow branch" /
+%                                "..."), and ID/Name/EC/Bounds/IDs/Names fields.
+%   (new) Selected_D1_Counter -- repeated "CANDIDATE n" sections, BLOCK
+%                                headers, and reaction equations labeled
+%                                "Equation:" instead of "Names:". For this
+%                                layout, logical blocks are assigned by role:
+%                                cAMP path 0, differentiator 1, counter 2,
+%                                neuron 1 = 3, neuron 2 = 4.
+% Branch words carry no reaction name, so a canonical r_Ff/r_Fd/r_Sf/r_Sd label
+% is synthesized, suffixed _<block> for the second differentiator (block>=2).
+%
+% 2026-10-22 FIX -- why this function used to return nothing:
+%   1. Field lines were matched with one alternation,
+%          '^\s*(ID|Name|GPR|EC|...|Names|IDs)\s*:\s*(.*)$'
+%      whose correctness depends on the engine backtracking OUT of the "ID"
+%      alternative into "IDs", and out of "Name" into "Names". "ID" and "Name"
+%      are proper prefixes of "IDs" and "Names", and "IDs"/"Names" are listed
+%      LAST. When that backtracking does not happen the equation lines never
+%      match, no reaction is ever completed, and the only symptom is the bare
+%      "No reaction records found in the TXT file." Keys are now split on the
+%      line's FIRST colon and compared with strcmp: no alternation, no order
+%      dependence, and a new field name can be added without re-reasoning
+%      about prefixes.
+%   2. Role lines were detected anywhere in the file. The preamble tables
+%      (SIGNAL METABOLITES, REACTION ROLES, REGULATORY EDGES, POLARITY AND
+%      TIMESCALES) and the AUDIT footer are full of r_* tokens, which armed
+%      phantom labels and could mislabel the first real reaction of block 1.
+%      Only the text BETWEEN the first BLOCK/MOTIF header and AUDIT (or
+%      ASSUMPTIONS AND INTERFACES) is parsed now.
+%   3. Failure is reported with counts (headers / role lines / ID lines /
+%      equations) instead of an empty table, so the next format drift names
+%      itself instead of surfacing as "no records".
+%
 % An empty struct without fields cannot receive a populated struct through
 % indexed assignment in MATLAB. Initialize the array with the full schema.
+% Reactions are delimited by their "ID :" line, NOT by the role line, so a
+% multi-step branch whose continuation steps are printed with a BLANK role
+% line is captured step by step, and the degrader/anchor keeps its own ID
+% instead of being overwritten by the step that follows it.
 template=struct('Motif',NaN,'Block',NaN,'Reaction',"",'Role',"", ...
     'ID',"",'Name',"",'GPR',"",'EC',"",'Compartment',"", ...
     'Direction',NaN,'FormulaEquation',"",'NamesEquation',"",'IDsEquation',"", ...
-    'PathSubstrate',"");
+    'PathSubstrate',"",'ECAnnotationSource',"",'ECAnnotationRef',"", ...
+    'Stage',"",'StageTitle',"",'StageIndex',NaN);
 records=repmat(template,0,1);
-lines=regexp(txt,'\r\n|\n|\r','split'); motif=1; block=NaN;
+lines=regexp(txt,'\r\n|\n|\r','split');
 % Metabolite path / Reaction path lines name the species each adapter step
 % consumes, which carries no (m_*) tag in the printed equation.
 metPath=containers.Map('KeyType','double','ValueType','any');
 rxnPath=containers.Map('KeyType','double','ValueType','any');
+motif=1; block=NaN; inBody=false; candidateLayout=false;
+stage=""; stageTitle=""; stageIdx=NaN; nStage=0;   % section within a candidate
 current=struct();
+pendLabel=""; pendRole=""; pendUsed=true;       % role line awaiting its ID line
+lastBase=""; contIdx=0;                           % blank-role continuation labelling
+arm=""; armIdx=struct('fast',0,'slow',0);         % branch bookkeeping (new format)
+nHeader=0; nRole=0; nID=0; nEqn=0;                % diagnostics for the failure path
+% Exact field keys. Order is irrelevant: the key is compared, not scanned for.
+% The yeast Step_2_Results report labels the code "Resolved EC:" and states
+% where that code came from on the two lines after it. "EC" alone therefore
+% matched nothing in that layout, every record came out with a blank EC, and
+% since the EC is the only key BRENDA can be queried by, all 228 rows were
+% reported as "no EC anywhere" even though 206 of them state a code.
+% These three keys MUST be dispatched explicitly in the switch below: they
+% contain spaces, so the `otherwise` branch (current.(key)=...) would be an
+% invalid field-name reference and would throw.
+fieldKeys={'ID','Name','GPR','EC','Resolved EC','EC annotation source', ...
+    'EC annotation reference','Compartment(s)','Direction','Bounds', ...
+    'Eqn','Equation','Names','IDs'};
 for i=1:numel(lines)
-    line=lines{i};
-    m=regexp(line,'^\s*MOTIF\s+(\d+)\s*$','tokens','once');
-    b=regexp(line,'^\s*BLOCK\s+(\d+)\s*:','tokens','once');
-    r=regexp(line,'^\s+(r_[A-Za-z0-9_]+)\s+\((.*)\)\s*$','tokens','once');
-    if ~isempty(m)||~isempty(b)||~isempty(r)||strcmp(strtrim(line),'ASSUMPTIONS AND INTERFACES')
-        if ~isempty(fieldnames(current)), records(end+1)=current; current=struct(); end %#ok<AGROW>
+    st=strtrim(lines{i});
+    if isempty(st), continue; end
+    if all(st=='-') || all(st=='#') || all(st=='='), continue; end   % rule lines
+    % --- section headers: flush the open reaction and reset the state ----
+    mo=regexp(st,'^(?:MOTIF|Selection)\s+(\d+)','tokens','once');
+    % The header carries a verdict after the number ("CANDIDATE 1 | PARTIAL
+    % PARENT, NOT A COMPLETE CIRCUIT"), so anchoring to end-of-line matched
+    % nothing: all 10 candidates collapsed into Motif 1. That also silently
+    % killed the G/tau columns, because pairing requires exactly ONE r_Ff and
+    % one r_Fd per motif and found ten of each.
+    % Detected WITHOUT a regex. Two different regexes for this header have now
+    % silently matched nothing in MATLAB while matching correctly elsewhere,
+    % and the failure is invisible: candidateLayout stays false, every stage
+    % collapses into whichever heading came first, every row keeps Motif 1,
+    % and a 'Candidate',1 filter then matches all 228 rows instead of 22.
+    % startsWith + a digit scan has no anchoring, word-boundary or escaping
+    % behaviour to get wrong.
+    candidate={};
+    if startsWith(st,'CANDIDATE')
+        rest=strtrim(extractAfter(st,numel('CANDIDATE')));
+        num=regexp(rest,'^\d+','match','once');
+        if ~isempty(num), candidate={num}; end
     end
-    if ~isempty(m), motif=str2double(m{1}); block=NaN; end
-    if ~isempty(b), block=str2double(b{1}); end
-    pm=regexp(line,'^\s*Metabolite path\s*:\s*(.*)$','tokens','once');
-    pr=regexp(line,'^\s*Reaction path\s*:\s*(.*)$','tokens','once');
-    if ~isempty(pm), metPath(motif)=string(regexp(strtrim(pm{1}),'\s*->\s*','split')); end
-    if ~isempty(pr), rxnPath(motif)=string(regexp(strtrim(pr{1}),'\s*->\s*','split')); end
-    if ~isempty(r)
-        current=template;
-        current.Motif=motif; current.Block=block;
-        current.Reaction=string(r{1}); current.Role=string(r{2});
+    bl=regexp(st,'^BLOCK\s+(\d+)','tokens','once');
+    isEnd=strcmp(st,'AUDIT')||strcmp(st,'ASSUMPTIONS AND INTERFACES');
+    if ~isempty(mo)||~isempty(candidate)||~isempty(bl)||isEnd
+        if ~isempty(fieldnames(current)) && current.ID~="", records(end+1)=current; end %#ok<AGROW>
+        current=struct(); pendLabel=""; pendUsed=true; lastBase=""; contIdx=0;
+        if ~isempty(mo), motif=str2double(mo{1}); block=NaN; end
+        if ~isempty(candidate)
+            motif=str2double(candidate{1}); block=NaN;
+            inBody=false; candidateLayout=true;
+            armIdx.fast=0; armIdx.slow=0; arm="";
+        end
+        if ~isempty(bl), block=str2double(bl{1}); armIdx.fast=0; armIdx.slow=0; arm=""; end
+        if ~isempty(mo)||~isempty(bl), inBody=true; nHeader=nHeader+1; end
+        if ~isempty(bl)
+            % "BLOCK 0: cAMP TO m_in" is itself a stage, not just a number.
+            stageTitle=st; [stage,stageIdx]=stageNameFor(st,0);
+        end
+        if ~isempty(candidate), stage=""; stageTitle=""; stageIdx=NaN; nStage=0; end
+        if isEnd, inBody=false; end
+        continue;
     end
-    if isempty(fieldnames(current)), continue; end
-    f=regexp(line,'^\s*(ID|Name|GPR|EC|Compartment\(s\)|Direction|Eqn|Names|IDs)\s*:\s*(.*)$','tokens','once');
-    if isempty(f), continue; end
-    switch f{1}
-        case 'Compartment(s)', field='Compartment';
-        case 'Eqn', field='FormulaEquation';
-        case 'Names', field='NamesEquation';
-        case 'IDs', field='IDsEquation';
-        otherwise, field=f{1};
+    % --- a stage heading inside a candidate ------------------------------
+    % Every section title in the candidate report sits BETWEEN two rows of
+    % '=' ("FAST AND SLOW BRANCHES (SIX REACTIONS)"). Detecting the fence
+    % rather than a fixed list of titles means a section added to a later
+    % revision of the report is still picked up instead of being silently
+    % folded into whichever stage preceded it -- which is why every row came
+    % out as "Block 0" when only the first four reactions belong to Block 0.
+    % NOT gated on candidateLayout any more: that gate made stage detection
+    % depend on the candidate header having matched, so one failure took out
+    % both. The '=' fence is specific to this report (the older chain format
+    % rules its sections with '-'), and the preamble above the first CANDIDATE
+    % contains no "ID:" lines, so an early stage heading creates no records.
+    if isFencedTitle(lines,i)
+        if ~isempty(fieldnames(current)) && current.ID~="", records(end+1)=current; end %#ok<AGROW>
+        current=struct(); pendLabel=""; pendUsed=true; lastBase=""; contIdx=0;
+        armIdx.fast=0; armIdx.slow=0; arm="";
+        nStage=nStage+1;
+        stageTitle=st; [stage,stageIdx]=stageNameFor(st,nStage);
+        blk=regexp(st,'^(?:EQ\.\s*)?BLOCK\s+(\d+)','tokens','once');
+        if ~isempty(blk), block=str2double(blk{1}); else, block=NaN; end
+        inBody=true; nHeader=nHeader+1;
+        continue;
     end
-    if strcmp(field,'Direction')
-        d=regexp(f{2},'^[+-]?\d+','match','once'); current.Direction=str2double(d);
-    else, current.(field)=string(strtrim(f{2})); end
+    if ~inBody, continue; end          % preamble tables and AUDIT footer
+    % The candidate report introduces r_T in a descriptive heading rather
+    % than on a standalone role line. Arm that exact label for its following
+    % ID so it is not misclassified as a continuation of r_I.
+    transportRole=regexp(st,'^MEMBRANE TRANSPORT:\s*(r_[A-Za-z0-9_]+)', ...
+        'tokens','once');
+    if ~isempty(transportRole)
+        pendLabel=string(transportRole{1});
+        pendRole="membrane transport";
+        lastBase=pendLabel; contIdx=0; pendUsed=false;
+        continue;
+    end
+    % --- adapter paths ----------------------------------------------------
+    pm=regexp(st,'^Metabolite path\s*:\s*(.*)$','tokens','once');
+    if ~isempty(pm), metPath(motif)=string(regexp(strtrim(pm{1}),'\s*->\s*','split')); continue; end
+    pr=regexp(st,'^Reaction path\s*:\s*(.*)$','tokens','once');
+    if ~isempty(pr), rxnPath(motif)=string(regexp(strtrim(pr{1}),'\s*->\s*','split')); continue; end
+    % --- field line: "KEY : VALUE", split on the FIRST colon --------------
+    key=''; value='';
+    colon=strfind(st,':');
+    if ~isempty(colon)
+        hit=find(strcmpi(strtrim(st(1:colon(1)-1)),fieldKeys),1);
+        if ~isempty(hit), key=fieldKeys{hit}; value=strtrim(st(colon(1)+1:end)); end
+    end
+    if ~isempty(key)
+        if strcmp(key,'ID')
+            % an ID line STARTS a new reaction: flush the previous one first
+            if ~isempty(fieldnames(current)) && current.ID~="", records(end+1)=current; end %#ok<AGROW>
+            current=template; current.Motif=motif; current.Block=block; current.Direction=1;
+            current.Stage=stage; current.StageTitle=stageTitle; current.StageIndex=stageIdx;
+            if ~pendUsed && strlength(pendLabel)>0
+                current.Reaction=pendLabel; current.Role=pendRole; pendUsed=true;
+            else                                   % blank-role continuation step
+                contIdx=contIdx+1;
+                if strlength(lastBase)>0, b0=lastBase; else, b0="r_b"+string(blockOrZero(block)); end
+                current.Reaction=b0+"_c"+string(contIdx); current.Role="continuation step";
+            end
+            if candidateLayout
+                current.Block=selectedCounterBlock(current.Reaction,block);
+            end
+            current.ID=string(value); nID=nID+1;
+        elseif ~isempty(fieldnames(current)) && current.ID~=""
+            switch key
+                case 'Compartment(s)', current.Compartment=string(value);
+                case 'Eqn',   current.FormulaEquation=string(value);
+                case {'Equation','Names'}
+                    % Selected_D1_Counter files label the rendered reaction
+                    % equation "Equation:"; older motif files call this
+                    % same name-and-metabolite-tag equation "Names:".
+                    current.NamesEquation=string(value); nEqn=nEqn+1;
+                case 'Resolved EC'
+                    % The yeast layout's name for the same thing as 'EC', but
+                    % it spells a missing code as the literal text
+                    % "UNRESOLVED (no annotation inferred)". Stored verbatim
+                    % that text is harmless downstream (the four-field regex
+                    % extracts nothing from it) but it would be echoed into
+                    % the "EC queried" column as if it were a code, so it is
+                    % normalised to empty and the reason kept separately.
+                    % Multi-code values ("1.2.1.12;1.2.1.59") are kept as-is:
+                    % the extraction regex already splits on the semicolon
+                    % and both codes are queried.
+                    if startsWith(strtrim(string(value)),"UNRESOLVED","IgnoreCase",true)
+                        current.EC="";
+                        current.ECAnnotationSource="report states UNRESOLVED (no annotation inferred)";
+                    else
+                        current.EC=string(value);
+                    end
+                case 'EC annotation source'
+                    % Printed EMPTY on UNRESOLVED records, and printed AFTER
+                    % 'Resolved EC', so assigning it unconditionally would
+                    % wipe the "report states UNRESOLVED" note set just above.
+                    if strlength(strtrim(string(value)))>0
+                        current.ECAnnotationSource=string(value);
+                    end
+                case 'EC annotation reference'
+                    if strlength(strtrim(string(value)))>0
+                        current.ECAnnotationRef=string(value);
+                    end
+                case 'IDs',   current.IDsEquation=string(value);
+                case 'Bounds' % new format states bounds, not model direction; keep Direction=1
+                case 'Direction'
+                    d=regexp(value,'^[+-]?\d+','match','once');
+                    if ~isempty(d), current.Direction=str2double(d); end
+                otherwise, current.(key)=string(value);   % GPR / Name / EC
+            end
+        end                                        % field before any ID: ignored
+        continue;
+    end
+    % --- role line ARMS the label for the next ID line (no fields here) ---
+    if contains(st,'|'), continue; end             % summary-table row, not a role
+    % The whole line must be the label (plus an optional parenthetical role),
+    % so prose such as "r_lk first order in m_d_k ..." is never taken as a role.
+    rLab=regexp(st,'^(r_[A-Za-z0-9_]+)\s*(?:\((.*)\))?$','tokens','once');
+    isBr=any(strcmp(st,{'fast branch','slow branch','...'}));
+    if isempty(rLab) && ~isBr, continue; end
+    nRole=nRole+1;
+    if ~isempty(rLab)
+        pendLabel=string(rLab{1});
+        if numel(rLab)>1 && ~isempty(rLab{2}), pendRole=string(rLab{2}); else, pendRole=""; end
+    else
+        lab=st;   % the branch word itself
+        if strcmp(lab,'fast branch'), arm="fast"; armIdx.fast=1; idx=1;
+        elseif strcmp(lab,'slow branch'), arm="slow"; armIdx.slow=1; idx=1;
+        else  % "..." = the next step of whichever branch is open
+            if strlength(arm)==0, arm="fast"; end
+            armIdx.(char(arm))=armIdx.(char(arm))+1; idx=armIdx.(char(arm));
+        end
+        if arm=="fast", base=ternary(idx==1,"r_Ff","r_Fd");
+        else,           base=ternary(idx==1,"r_Sf","r_Sd"); end
+        suf=""; if ~isnan(block)&&block>=2, suf="_"+string(block); end
+        pendLabel=base+suf; pendRole=string(lab);
+    end
+    lastBase=pendLabel; contIdx=0; pendUsed=false;
 end
-if ~isempty(fieldnames(current)), records(end+1)=current; end
-if isempty(records), T=table(); return; end
+if ~isempty(fieldnames(current)) && current.ID~="", records(end+1)=current; end
+if isempty(records)
+    error('brendaKineticsTable:NoReactions', ...
+        ['No reaction records found in the TXT.\n' ...
+         '  BLOCK / MOTIF headers seen : %d\n' ...
+         '  role lines (r_* or branch) : %d\n' ...
+         '  "ID : ..." lines seen      : %d\n' ...
+         '  "Equation/Names : ..." lines seen : %d\n' ...
+         'A parsable file has a BLOCK (or MOTIF) header, then per reaction a ' ...
+         'role line (e.g. "  r_Fd_1") followed by ID / Name / EC / Bounds / ' ...
+         'IDs / Equation/Names lines. If the counts above are zero, the headers or the ' ...
+         'field labels differ from both supported layouts.'],nHeader,nRole,nID,nEqn);
+end
 T=struct2table(records);
-assert(all(T.ID~="" & T.NamesEquation~="" & isfinite(T.Block)), ...
-    'Incomplete reaction record in TXT; every record needs a block, ID and Names equation.');
+T.Direction(isnan(T.Direction))=1;   % default forward where none was printed
+% A record is complete when it has an ID, an equation, and a POSITION. The
+% position may be a numbered block OR a named stage: the candidate report
+% numbers only "BLOCK 0" and "EQ. BLOCK 1..3" and gives the rest descriptive
+% headings ("COUNTER AND ONE CONSUMING NEURON"), so demanding a finite Block
+% rejected perfectly good records. r_c was the one that showed it: every other
+% counter/neuron role is mapped to a number by selectedCounterBlock, r_c is
+% not, so it alone fell through to the heading's NaN -- ten times, once per
+% candidate. Stage carries that reaction's position just as well.
+hasPosition = isfinite(T.Block) | strlength(T.Stage)>0;
+bad=~(T.ID~="" & T.NamesEquation~="" & hasPosition);
+assert(~any(bad), ...
+    ['Incomplete reaction record in TXT (%s); every record needs an ID, a ' ...
+     'Names/Equation line, and either a numbered block or a named stage.'], ...
+    strjoin(cellstr(T.Reaction(bad)),', '));
 % Resolve the consumed metabolite of each step on a printed path, then
 % translate its model ID into the printed name via the paired equations.
 for i=1:height(T)
@@ -700,6 +1238,350 @@ for i=1:height(T)
     if isempty(pos) || pos > numel(mp), continue; end
     T.PathSubstrate(i) = nameForId(T.NamesEquation(i),T.IDsEquation(i),mp(pos));
 end
+end
+
+function block=selectedCounterBlock(reaction,fallbackBlock)
+% Logical blocks used by the Selected_D1_Counter candidate report. Its
+% BLOCK 0 heading marks only the cAMP path, while differentiator, counter,
+% and neuron reactions follow under descriptive section headings.
+r=string(reaction);
+if ~isempty(regexp(char(r),'^r_CAMP_\d+$','once'))
+    block=0;
+elseif ismember(r,["r_Ff","r_Fd","r_Fr","r_Sf","r_Sd","r_Sr","r_I"])
+    block=1;
+elseif ismember(r,["r_T","r_cr"])
+    block=2;
+elseif ismember(r,["r_Nf_1","r_Nd_1","r_Nr_1"])
+    block=3;
+elseif ismember(r,["r_Nf_2","r_Nd_2","r_Nr_2"])
+    block=4;
+else
+    block=fallbackBlock;
+end
+end
+
+function [T,nDropped]=dropSentinels(T,parameter,ec)
+% BRENDA encodes "the paper reports this parameter but gives no number" as the
+% VALUE -999, not as a missing field. The commentary of such a record reads
+% "specific activity in various organs" or "overview" -- there is no
+% measurement behind it. Left in the pool it is not merely wrong, it is
+% catastrophic: it is the most extreme value present, so it survives every
+% min/median/max summary, and SA = -999 propagated into k_cat = SA*MW/60 gave
+% k_cat = -499.5 1/s for EC 2.3.1.14 and -1090 1/s for EC 2.7.1.82.
+%
+% Every pool is filtered through this ONE function, for both the flat-file and
+% the online path, so the placeholder can never reach a median again. The test
+% is value <= 0 rather than == -999: no K_M, k_cat, specific activity or
+% molecular weight can be zero or negative, so any such number is a sentinel
+% or a parse error either way, and both must go.
+nDropped=0;
+if isempty(T) || ~ismember('value',T.Properties.VariableNames), return; end
+v=T.value;
+bad = ~isfinite(v) | v<=0;
+nDropped=sum(bad);
+if nDropped>0
+    T=T(~bad,:);
+    fprintf('    %s EC %s: discarded %d placeholder record(s) (BRENDA -999 / non-positive).\n', ...
+        parameter,ec,nDropped);
+end
+end
+
+function [T,status]=flatGap(T,status,ec,opt,email,password,parameter)
+% The local flat file is a SUBSET for some ECs. When a pool comes back empty
+% from it, that is a gap in the local copy, not evidence that BRENDA has
+% nothing -- EC 2.3.1.14 holds 2 records in the flat file and no K_M at all,
+% while the live database has K_M entries. Retry that one pool online and say
+% so in the status column. Never throws: if the query fails the row simply
+% stays empty, exactly as before.
+if ~isempty(T) && height(T)>0, return; end
+try
+    [T2,s2]=fetchBothPools(ec,opt,email,password,parameter);
+catch ME
+    status=sprintf('%s; online fallback failed (%s)',status,ME.message);
+    return;
+end
+if ~isempty(T2) && height(T2)>0
+    T=T2;
+    status=sprintf('ONLINE FALLBACK (flat file had no %s for EC %s): %s', ...
+        parameter,ec,s2);
+    fprintf('    %s EC %s: flat file empty -> online fallback returned %d record(s).\n', ...
+        parameter,ec,height(T2));
+else
+    status=sprintf('%s; online fallback also returned no %s',status,parameter);
+end
+end
+
+function R=fillMissingECs(R,opt,xlsxFile)
+% Complete Reactions.EC before any BRENDA query, and record where each code
+% came from. Precedence, highest first:
+%   1. ECOverrides      -- the caller states the code explicitly.
+%   2. the model        -- whatever the motif file printed.
+%   3. BiGG             -- http://bigg.ucsd.edu/api/v2/universal/reactions/<ID>
+% A code the model already carries is NEVER silently replaced by BiGG: the two
+% are compared and a disagreement is reported as a CONFLICT, because a wrong
+% annotation that still returns BRENDA records (EC 3.1.1.3 for a methionine
+% transaminase returns 575 lipase records) produces a plausible-looking number
+% that is simply about another enzyme. Only an explicit override replaces it.
+% The one automatic exception is an annotated code BiGG does not list at all
+% AND that is syntactically dead -- see the EC-class check below.
+R.ECSource=repmat("model",height(R),1);
+R.ECNote  =repmat("",height(R),1);
+nBlank=sum(strlength(strtrim(R.EC))==0);
+% ---- 1. caller overrides -------------------------------------------------
+for i=1:height(R)
+    key="";
+    if isfield(opt.ECOverrides,char(R.Reaction(i))), key=R.Reaction(i);
+    elseif isvarname(char(R.ID(i))) && isfield(opt.ECOverrides,char(R.ID(i)))
+        key=R.ID(i);
+    end
+    if strlength(key)==0, continue; end
+    ov=cleanECList(opt.ECOverrides.(char(key)),"ECOverrides."+key);
+    had=string(regexp(char(R.EC(i)),'(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','match'));
+    if isempty(had)
+        R.ECNote(i)="EC "+strjoin(ov,", ")+" SUPPLIED BY CALLER (ECOverrides."+key+ ...
+            "); the model annotates none. Verify the source.";
+    else
+        R.ECNote(i)="EC "+strjoin(ov,", ")+" SUPPLIED BY CALLER (ECOverrides."+key+ ...
+            "), REPLACING the annotated "+strjoin(had,", ")+". Verify the source.";
+    end
+    R.EC(i)=strjoin(ov," "); R.ECSource(i)="caller";
+end
+% ---- 1b. shipped defaults, keyed by model ID ----------------------------
+if opt.UseDefaultECOverrides
+    D=defaultECOverrides(); sup=supersedingIDs();
+    for i=1:height(R)
+        if R.ECSource(i)=="caller", continue; end
+        k=find(D(:,1)==R.ID(i),1); if isempty(k), continue; end
+        had=string(regexp(char(R.EC(i)),'(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','match'));
+        if ~isempty(had) && ~ismember(R.ID(i),sup), continue; end   % fills blanks only
+        ov=cleanECList(D(k,2),"defaultECOverrides("+R.ID(i)+")");
+        if isempty(had)
+            R.ECNote(i)="EC "+strjoin(ov,", ")+" from the SHIPPED DEFAULT table for "+ ...
+                R.ID(i)+" (the model annotates none): "+D(k,3)+".";
+        else
+            R.ECNote(i)="EC "+strjoin(ov,", ")+" from the SHIPPED DEFAULT table for "+ ...
+                R.ID(i)+", REPLACING the annotated "+strjoin(had,", ")+": "+D(k,3)+".";
+        end
+        R.EC(i)=strjoin(ov," "); R.ECSource(i)="shipped default";
+    end
+end
+% ---- 2. BiGG, for the blanks and as a cross-check on the rest ------------
+if ~opt.ResolveECOnline
+    if nBlank>0
+        fprintf(['  %d reaction(s) have no EC and ResolveECOnline is false: ' ...
+                 'those rows cannot be queried.\n'],nBlank);
+    end
+    return;
+end
+cacheFile=char(opt.BiGGCacheFile);
+if isempty(cacheFile)
+    [xdir,~,~]=fileparts(char(xlsxFile)); if isempty(xdir), xdir=pwd; end
+    cacheFile=fullfile(xdir,'bigg_ec_cache.mat');
+end
+cache=containers.Map('KeyType','char','ValueType','any');
+if isfile(cacheFile)
+    try
+        S=load(cacheFile,'cache');
+        if isfield(S,'cache') && isa(S.cache,'containers.Map'), cache=S.cache; end
+    catch ME
+        warning('brendaKineticsTable:BiGGCache', ...
+            'Could not read the BiGG cache %s (%s). Continuing without it.', ...
+            cacheFile,ME.message);
+    end
+end
+nNew=0;
+for i=1:height(R)
+    if R.ECSource(i)=="caller", continue; end   % the caller already decided
+    id=char(R.ID(i)); if isempty(id), continue; end
+    if isKey(cache,id)
+        hit=cache(id);
+    else
+        % The cell-free merge prefixes every model ID ("AUXOSPDE1" for PDE1),
+        % so the raw ID 404s on BiGG while the stripped one resolves. Try the
+        % ID as printed first, then without the prefix.
+        hit=queryBiGG(id,opt.BiGGTimeout);
+        pfx=char(opt.BiGGIDPrefix);
+        if ~hit.ok && ~isempty(pfx) && startsWith(id,pfx) && numel(id)>numel(pfx)
+            hit=queryBiGG(id(numel(pfx)+1:end),opt.BiGGTimeout);
+        end
+        cache(id)=hit; nNew=nNew+1;             %#ok<NASGU>
+    end
+    had=string(regexp(char(R.EC(i)),'(?<![\d.])\d+\.\d+\.\d+\.\d+(?![\d.])','match'));
+    if ~hit.ok
+        if isempty(had)
+            R.ECNote(i)="No EC in the model and BiGG lookup failed ("+hit.why+ ...
+                "). Nothing can be queried for this reaction.";
+        end
+        continue;
+    end
+    if isempty(hit.ec)
+        if isempty(had)
+            R.ECNote(i)="No EC in the model, and BiGG lists none for "+string(id)+ ...
+                " either (database_links has no EC entry). This reaction has no EC " + ...
+                "anywhere: assign one by hand via ECOverrides, or leave the row empty.";
+        end
+        continue;
+    end
+    if isempty(had)
+        % ---- the gap this whole pass exists for --------------------------
+        R.EC(i)=strjoin(hit.ec," "); R.ECSource(i)="BiGG";
+        R.ECNote(i)="EC "+strjoin(hit.ec,", ")+" RESOLVED FROM BiGG for reaction "+ ...
+            string(id)+"; the model annotates none. Not model-derived.";
+    elseif isempty(intersect(had,hit.ec))
+        % DISJOINT only. BiGG often lists a superset (ADPT carries 2.4.2.7 and
+        % 2.4.2.8); if the model's code is among BiGG's there is no conflict,
+        % and flagging one buried the single real conflict in noise.
+        % ---- annotation and BiGG disagree -------------------------------
+        % Keep the model's code. The exception: an annotated code whose EC
+        % class cannot catalyse this chemistry at all is dead weight, but
+        % deciding that needs chemistry, not string comparison -- so it is
+        % reported loudly and left to the caller rather than auto-replaced.
+        R.ECNote(i)="EC CONFLICT for "+string(id)+": the model annotates "+ ...
+            strjoin(had,", ")+" but BiGG lists "+strjoin(hit.ec,", ")+ ...
+            ". The model's code was KEPT and queried. If BiGG is right, every " + ...
+            "number in this row describes a different enzyme -- set " + ...
+            "ECOverrides."+R.Reaction(i)+" to override.";
+        R.ECSource(i)="model (conflicts with BiGG)";
+        fprintf('  EC CONFLICT %-14s model %-10s vs BiGG %s\n', ...
+            id,char(strjoin(had,",")),char(strjoin(hit.ec,",")));
+    end
+end
+if nNew>0
+    try
+        save(cacheFile,'cache');
+    catch ME
+        warning('brendaKineticsTable:BiGGCache', ...
+            'Could not write the BiGG cache %s (%s).',cacheFile,ME.message);
+    end
+end
+fprintf(['EC completion: %d from BiGG, %d from the shipped defaults, %d from ' ...
+    'the caller, %d conflict(s), %d still blank.\n'], ...
+    sum(R.ECSource=="BiGG"),sum(R.ECSource=="shipped default"), ...
+    sum(R.ECSource=="caller"),sum(R.ECSource=="model (conflicts with BiGG)"), ...
+    sum(strlength(strtrim(R.EC))==0));
+end
+
+function D=defaultECOverrides()
+% EC codes this pipeline has already had to establish by hand, so that a rerun
+% does not start from the same blanks. Keyed by MODEL REACTION ID, which is
+% stable across circuits -- a role label like r_Sd_1 means a different reaction
+% in every chain, so keying defaults by role would silently mis-assign.
+%
+% Columns: model ID | EC | why. The reason is written into the workbook, so a
+% reader can audit every code that did not come from the model or from BiGG.
+% Applied only when the model annotates nothing OR when the entry explicitly
+% supersedes a wrong annotation (see `supersedes` below). Caller ECOverrides
+% always wins; set 'UseDefaultECOverrides',false to disable the whole table.
+D = [
+ "PUNP1"     "2.4.2.1"  "purine-nucleoside phosphorylase; the model's 3.4.2.1 is not a live EC class and returns zero BRENDA records (BiGG: 2.4.2.1)"
+ "METTRANSc" "2.6.1.88" "methionine transaminase: ExPASy 2.6.1.88 is 2-oxocarboxylate + L-Met = 4-methylsulfanyl-2-oxobutanoate + L-amino acid, which is exactly met_L + pyr -> 4mtob + ala_L. The model's 3.1.1.3 is triacylglycerol lipase and BiGG lists no EC"
+];
+end
+
+function ids=supersedingIDs()
+% Entries above that REPLACE an existing annotation rather than only filling a
+% blank. Kept as an explicit list: overwriting an annotation is a stronger act
+% than filling a gap and should be visible in one place, not inferred.
+ids=["PUNP1","METTRANSc"];
+end
+
+function hit=queryBiGG(id,timeout)
+% One universal-reaction lookup. Never throws: a dead network must degrade to
+% "no EC resolved", not abort a run that can still fill every annotated row.
+hit=struct('ok',false,'ec',strings(0,1),'why',"");
+url=['http://bigg.ucsd.edu/api/v2/universal/reactions/' urlencode(id)];
+try
+    raw=webread(url,weboptions('ContentType','text','Timeout',timeout, ...
+        'CharacterEncoding','UTF-8'));
+    d=jsondecode(raw);
+catch ME
+    hit.why=string(ME.message); return;      % 404, timeout, proxy, offline
+end
+hit.ok=true;
+if ~isfield(d,'database_links') || isempty(d.database_links), return; end
+dl=d.database_links;
+if ~isstruct(dl), return; end
+% jsondecode mangles the key "EC Number" into a legal field name (normally
+% "EC_Number"), and the mangling is not contractual -- match on the
+% normalized name instead of hard-coding it.
+fn=fieldnames(dl);
+for k=1:numel(fn)
+    if ~strcmp(lower(regexprep(fn{k},'[^A-Za-z]','')),'ecnumber'), continue; end
+    entries=dl.(fn{k});
+    ids=strings(0,1);
+    if iscell(entries)
+        for e=1:numel(entries)
+            if isstruct(entries{e}) && isfield(entries{e},'id')
+                ids(end+1,1)=string(entries{e}.id); %#ok<AGROW>
+            end
+        end
+    elseif isstruct(entries)
+        for e=1:numel(entries)
+            if isfield(entries(e),'id'), ids(end+1,1)=string(entries(e).id); end %#ok<AGROW>
+        end
+    end
+    % Keep only full four-field codes: BiGG also carries partial ones (1.14.14)
+    % and a partial code cannot be queried.
+    ok=~cellfun(@isempty,regexp(cellstr(ids),'^\d+\.\d+\.\d+\.\d+$','match','once'));
+    hit.ec=unique(ids(ok),'stable');
+    return;
+end
+end
+
+function out=cleanECList(v,label)
+% Accept 'x.y.z.w', "x.y.z.w", a string array or a cellstr; reject anything
+% that is not a full four-field code, loudly and by name.
+out=string(v); out=out(:); out=strtrim(out); out=out(strlength(out)>0);
+assert(~isempty(out),'%s is empty.',char(label));
+bad=out(cellfun(@isempty,regexp(cellstr(out),'^\d+\.\d+\.\d+\.\d+$','match','once')));
+assert(isempty(bad),'%s: "%s" is not a full four-field EC code.', ...
+    char(label),char(strjoin(bad,', ')));
+out=unique(out,'stable');
+end
+
+function tf=isFencedTitle(lines,i)
+% True when line i is a section title: a non-empty, non-rule line whose
+% nearest non-empty neighbours above and below are both rows of '='.
+% Used instead of a hard-coded list of section names so a heading added to a
+% later revision of the report still starts a new stage.
+tf=false;
+st=strtrim(lines{i});
+if isempty(st) || all(st=='='), return; end
+if ~isempty(regexp(st,'^\s','once')), return; end   % field lines are indented
+above=""; for k=i-1:-1:1, s=strtrim(lines{k}); if ~isempty(s), above=s; break; end, end
+below=""; for k=i+1:numel(lines), s=strtrim(lines{k}); if ~isempty(s), below=s; break; end, end
+tf = strlength(above)>3 && strlength(below)>3 && ...
+     all(char(above)=='=') && all(char(below)=='=');
+end
+
+function [name,idx]=stageNameFor(title,idx)
+% Compact, stable label for a section heading, for the workbook's first
+% column. The verbatim heading is kept separately in StageTitle, so nothing
+% is lost by shortening here.
+t=upper(strtrim(string(title)));
+if startsWith(t,"BLOCK 0"),                       name="Block 0";
+elseif startsWith(t,"FAST AND SLOW BRANCHES"),    name="Branches";
+elseif startsWith(t,"ANDERSON CANCELLER"),        name="Canceller";
+elseif ~isempty(regexp(char(t),'^EQ\.\s*BLOCK\s+\d+','once'))
+    n=regexp(char(t),'^EQ\.\s*BLOCK\s+(\d+)','tokens','once');
+    name="Canceller Eq."+string(n{1});
+elseif startsWith(t,"COUNTER AND ONE CONSUMING NEURON"), name="Counter+Neuron";
+elseif startsWith(t,"COUNTER"),                   name="Counter";
+else
+    % Unknown heading: keep it, trimmed to something that fits a cell.
+    s=strtrim(string(title));
+    s=regexprep(s,'\s*\(.*\)$','');          % drop a trailing parenthetical
+    s=extractBefore(s+":",":");               % drop anything after a colon
+    name=strtrim(s);
+end
+end
+
+function out=ternary(cond,a,b)
+if cond, out=a; else, out=b; end
+end
+
+function z=blockOrZero(block)
+if isnan(block), z=0; else, z=block; end
 end
 
 function name=nameForId(namesEquation,idsEquation,metaboliteId)
@@ -933,12 +1815,22 @@ if isempty(b), return; end
 f=numel(intersect(a,b))/numel(b);
 end
 
-function k=currencyKeys()
-% Cofactors and carriers that never act as the signal-carrying substrate.
-k=["h2o","water","h+","proton","h","atp","adp","amp","pi","phosphate", ...
-   "ppi","diphosphate","nad","nadh","nadp","nadph","nadp(+)","nad(+)", ...
-   "coa","coenzymea","co2","carbondioxide","o2","nh4","ammonium"];
+function [trivial,cofactor]=currencyKeys()
+% Returned in TWO tiers. `trivial` can never be the substrate of interest.
+% `cofactor` usually is not -- but can be (AMP in a phosphoribosyltransferase,
+% ATP in an adenylate kinase), so it is only excluded while something else
+% remains. Called with one output, the two are concatenated, which preserves
+% every existing caller.
+trivial=["h2o","water","h+","proton","h","pi","phosphate","orthophosphate", ...
+   "ppi","diphosphate","co2","carbondioxide","carbon dioxide","o2", ...
+   "nh4","ammonium"];
+cofactor=["atp","adp","amp","nad","nadh","nadp","nadph","nadp(+)","nad(+)", ...
+   "coa","coenzymea","coenzyme a","adenosine triphosphate", ...
+   "adenosine diphosphate","adenosine monophosphate", ...
+   "cytidine-5'-triphosphate","ctp"];
+if nargout<2, trivial=[trivial cofactor]; end
 end
+
 
 function A=defaultAliases()
 % Model metabolite name -> the BRENDA ligand name most often reported.
@@ -1250,4 +2142,247 @@ payload={ ...
     '{"reaction":"r_Nr","id":"r_0016","ec":"2.2.1.6","model_ec":"2.2.1.6","equation":"2-oxobutanoate + H+ + pyruvate(m_out)  ->  (S)-2-acetyl-2-hydroxybutanoate + carbon dioxide","direction":1,"km":{"value":2.6,"substrate":"pyruvate","organism":"Escherichia coli","literature":"395904","conditions":"Native isoenzyme II.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=2.2.1.6&r=395904"},"kcat":{"value":66.7,"substrate":"pyruvate","organism":"Escherichia coli","literature":"395904","conditions":"Native enzyme.","kind":"measured","n":1,"source":"https://www.brenda-enzymes.org/literature.php?e=2.2.1.6&r=395904"},"sa":null,"mw":null,"note":"PROVISIONAL REFERENCE; EC selected: 2.2.1.6. K_M=2.6 mM for pyruvate; Escherichia coli; BRENDA literature 395904; Native isoenzyme II. k_cat=66.7 s^-1 for pyruvate; Escherichia coli; BRENDA literature 395904; Native enzyme. Non-human pyruvate/acetolactate assay used for the model pyruvate + 2-oxobutanoate reaction; cosubstrate/product specificity remains an assumption. Sources and record counts: Reference choices sheet. Selected 2026-10-12.","assumptions":"Non-human pyruvate/acetolactate assay used for the model pyruvate + 2-oxobutanoate reaction; cosubstrate/product specificity remains an assumption."}]'; ...
     };
 records=jsondecode(strjoin(payload,newline));
+end
+
+% =====================================================================
+% Local BRENDA flat-file support (brenda_2026_1.txt, release 2026.1).
+% The file has no index, so finding an EC means scanning the text. To stay
+% fast we index ONLY the ECs the chain uses and stop as soon as they are all
+% found -- never the whole of BRENDA.
+% =====================================================================
+function [T,status]=fetchFromFlat(ec,parameter,db)
+% Return emptyRecords-schema rows for one EC/parameter from the prebuilt index.
+switch lower(char(parameter))
+    case 'km',   tag='KM'; unit='mM';
+    case 'kcat', tag='TN'; unit='1/s';
+    case 'sa',   tag='SA'; unit='umol/min/mg';
+    case 'mw',   tag='MW'; unit='Da';
+    otherwise, error('fetchFromFlat: unknown parameter %s',parameter);
+end
+T=emptyRecords(parameter,unit);
+key=char(ec);
+if ~isKey(db,key)
+    status='No records (EC absent from local BRENDA file)'; return;
+end
+recs=db(key).(tag);
+for r=1:numel(recs)
+    T(end+1,:) = {string(ec), string(recs(r).organism), string(recs(r).substrate), ...
+        recs(r).value, NaN, string(num2str(recs(r).value)), "", ...
+        string(recs(r).commentary), string(recs(r).literature), "", ...
+        string(parameter), string(unit)}; %#ok<AGROW>
+end
+status=sprintf('OK (local BRENDA flat file: %d record(s))',numel(recs));
+end
+
+function name2ec=resolveECsFromFlat(wantNames,flatFile)
+% One scan: find the EC for each requested enzyme NAME via its RN/SY lines.
+% Stops as soon as every requested name is matched. Used only for EC-less
+% reactions when opt.ResolveMissingEC is on.
+name2ec=containers.Map('KeyType','char','ValueType','char');
+wantNorm=containers.Map('KeyType','char','ValueType','logical');
+for i=1:numel(wantNames)
+    k=char(normName(wantNames(i))); if ~isempty(k), wantNorm(k)=true; end
+end
+nNeed=double(wantNorm.Count); if nNeed==0, return; end
+fid=fopen(flatFile,'r','n','UTF-8'); assert(fid>=0,'Cannot open %s',flatFile);
+closer=onCleanup(@()fclose(fid)); %#ok<NASGU>
+fprintf('Resolving %d missing EC(s) by name from local BRENDA...\n',nNeed);
+TAB=sprintf('\t'); ec=''; buf='';
+while true
+    raw=fgetl(fid); atEnd=~ischar(raw);
+    isCont=~atEnd && ~isempty(raw) && (raw(1)==' '||raw(1)==TAB);
+    if isCont, buf=[buf ' ' strtrim(raw)]; continue; end %#ok<AGROW>
+    if ~isempty(buf)
+        t=strfind(buf,TAB);
+        if ~isempty(t)
+            tag=strtrim(buf(1:t(1)-1)); body=buf(t(1)+1:end);
+            if strcmp(tag,'ID'), ec=strtrim(regexprep(body,'\s.*$',''));
+            elseif any(strcmp(tag,{'RN','SY'})) && ~isempty(ec)
+                nm=char(normName(regexprep(body,'[\(\{<#].*$','')));
+                if ~isempty(nm) && isKey(wantNorm,nm) && ~isKey(name2ec,nm)
+                    name2ec(nm)=ec;
+                    if name2ec.Count>=nNeed, break; end
+                end
+            end
+        end
+    end
+    if atEnd, break; end
+    if strcmp(strtrim(raw),'///'), buf=''; ec=''; continue; end
+    buf=raw;
+end
+end
+
+function db=loadBrendaFlat(flatFile,wantedECs,cacheFile)
+% Return a Map EC->struct(KM,TN,SA,MW records) for the requested ECs, scanning
+% the flat file ONLY for ECs not already known. The index is accumulated:
+%   * in memory across calls in this MATLAB session (persistent), and
+%   * on disk in a .mat file across sessions (cacheFile), keyed to the flat
+%     file's size+date so a new BRENDA release rebuilds it automatically.
+% So the first run scans ~18 ECs; a later run with the same chain scans none.
+persistent memSig memDb
+if nargin<3, cacheFile=''; end
+wantedECs=unique(cellstr(string(wantedECs(:)))); wantedECs=wantedECs(~cellfun(@isempty,wantedECs));
+ff=char(flatFile);
+d=dir(ff); sig='0'; if ~isempty(d), sig=sprintf('%d_%d',d(1).bytes,round(d(1).datenum*1e6)); end
+
+% ---- recover the accumulated index (memory first, then disk) ----
+if ~isempty(memDb) && strcmp(memSig,[ff '|' sig])
+    db=memDb;
+else
+    db=containers.Map('KeyType','char','ValueType','any');
+    if ~isempty(cacheFile) && exist(cacheFile,'file')==2
+        try
+            S=load(cacheFile);
+            if isfield(S,'ecIndex') && isfield(S,'ecSig') && strcmp(S.ecSig,sig)
+                db=S.ecIndex;
+                fprintf('Loaded BRENDA index cache: %d EC(s) from %s\n',db.Count,cacheFile);
+            else
+                fprintf('BRENDA flat file changed since the cache was built; rebuilding.\n');
+            end
+        catch ME
+            fprintf('Could not read index cache (%s); rebuilding.\n',ME.message);
+        end
+    end
+    memSig=[ff '|' sig]; memDb=db;
+end
+
+% ---- which requested ECs are not yet known? ----
+want=containers.Map('KeyType','char','ValueType','logical');
+for i=1:numel(wantedECs), if ~isKey(db,wantedECs{i}), want(wantedECs{i})=true; end, end
+nWant=double(want.Count);
+if nWant==0
+    fprintf('All %d requested EC(s) already in the index; no scan needed.\n',numel(wantedECs));
+    return;
+end
+
+% ---- scan the file for ONLY the missing ECs; stop once all are found ----
+fid=fopen(ff,'r','n','UTF-8'); assert(fid>=0,'Cannot open %s',ff);
+closer=onCleanup(@()fclose(fid)); %#ok<NASGU>
+fprintf('Indexing local BRENDA for %d new EC(s) (%d already cached)...\n',nWant,db.Count);
+TAB=sprintf('\t'); ec=''; keep=false; buf=''; nEntry=0; nFound=0;
+while true
+    raw=fgetl(fid); atEnd=~ischar(raw);
+    isCont=~atEnd && ~isempty(raw) && (raw(1)==' '||raw(1)==TAB);
+    if isCont, buf=[buf ' ' strtrim(raw)]; continue; end %#ok<AGROW>
+    [db,ec,keep,created]=processFlatLine(db,ec,keep,want,buf);
+    if created, nFound=nFound+1; end
+    if atEnd, break; end
+    if strcmp(strtrim(raw),'///')
+        nEntry=nEntry+1;
+        if mod(nEntry,20000)==0, fprintf('  ...scanned %d EC entries\n',nEntry); end
+        if nFound>=nWant, break; end         % every missing EC collected -> stop
+        buf=''; ec=''; keep=false; continue;
+    end
+    buf=raw;
+end
+% Attach organism names (PR) to the kinetic records of the NEWLY added ECs.
+wk=keys(want);
+for i=1:numel(wk)
+    if ~isKey(db,wk{i})
+        % EC truly absent from the file: cache an empty entry so we never
+        % re-scan for it on later runs.
+        db(wk{i})=struct('KM',emptyFlatRec(),'TN',emptyFlatRec(), ...
+            'SA',emptyFlatRec(),'MW',emptyFlatRec(), ...
+            'PR',containers.Map('KeyType','char','ValueType','char'));
+        continue;
+    end
+    dd=db(wk{i});
+    for p=["KM","TN","SA","MW"]
+        fld=char(p); arr=dd.(fld);
+        for r=1:numel(arr)
+            pr=arr(r).protein;
+            if ~isempty(pr) && isKey(dd.PR,pr), arr(r).organism=dd.PR(pr); end
+        end
+        dd.(fld)=arr;
+    end
+    db(wk{i})=dd;
+end
+fprintf('  Done: %d new EC(s) indexed (%d total cached).\n',nFound,db.Count);
+
+% Drop the per-EC protein->organism map now that organisms are attached. It is
+% a nested containers.Map, which does not serialise cleanly to a .mat file; its
+% presence is why an earlier cache save could fail silently.
+ks=keys(db);
+for i=1:numel(ks)
+    d=db(ks{i});
+    if isfield(d,'PR'), d.PR=[]; db(ks{i})=d; end
+end
+
+% ---- persist the accumulated index for next time ----
+memDb=db; memSig=[ff '|' sig];
+if ~isempty(cacheFile)
+    ecIndex=db; ecSig=sig; %#ok<NASGU>
+    try
+        save(cacheFile,'ecIndex','ecSig','-v7');
+        absPath=cacheFile;
+        try, jf=java.io.File(cacheFile); absPath=char(jf.getAbsolutePath()); catch, end
+        fprintf('Saved BRENDA index cache (%d EC(s)) to:\n  %s\n',db.Count,absPath);
+    catch ME
+        fprintf('Could not save index cache (%s); will re-scan next time.\n',ME.message);
+    end
+end
+end
+
+function [db,ec,keep,created]=processFlatLine(db,ec,keep,want,line)
+% Commit one logical (de-wrapped) BRENDA line. For a non-requested EC (keep
+% false) every record line returns immediately -- this is the whole speed-up.
+% `created` is true on the ID line that first adds a requested EC to the index.
+created=false;
+if isempty(line), return; end
+TAB=sprintf('\t'); t=strfind(line,TAB);
+if isempty(t), return; end
+tag=strtrim(line(1:t(1)-1)); body=line(t(1)+1:end);
+if strcmp(tag,'ID')
+    ec=strtrim(regexprep(body,'\s.*$',''));   % EC number before any space
+    keep=isKey(want,ec);
+    if keep && ~isKey(db,ec)
+        db(ec)=struct('KM',emptyFlatRec(),'TN',emptyFlatRec(), ...
+            'SA',emptyFlatRec(),'MW',emptyFlatRec(), ...
+            'PR',containers.Map('KeyType','char','ValueType','char'));
+        created=true;
+    end
+    return;
+end
+if ~keep, return; end                         % skip everything for other ECs
+switch tag
+    case 'PR'
+        mm=regexp(body,'^#(\d+)#\s*([^<{#]*)','tokens','once');
+        if ~isempty(mm)
+            d=db(ec); d.PR(strtrim(mm{1}))=strtrim(mm{2}); db(ec)=d;
+        end
+    case {'KM','TN','SA','MW'}
+        prot='';
+        pm=regexp(body,'^#([\d,\s]*)#','tokens','once');
+        if ~isempty(pm)
+            pp=strsplit(strtrim(pm{1}),','); prot=strtrim(pp{1});
+        end
+        rest=regexprep(body,'^#[^#]*#\s*','');      % drop protein refs
+        vm=regexp(rest,'^\s*(-?[\d.]+(?:[eE][+-]?\d+)?)','tokens','once');
+        if ~isempty(vm)
+            v=str2double(vm{1});
+            if ~isnan(v)
+                sm=regexp(rest,'\{([^}]*)\}','tokens','once');   % substrate
+                cm=regexp(rest,'\(([^)]*)\)','tokens','once');   % commentary
+                lm=regexp(rest,'<([\d,\s]*)>','tokens','once');  % citations
+                rec=emptyFlatRec();
+                rec(1).value=v; rec(1).protein=prot; rec(1).organism='';
+                if ~isempty(sm), rec(1).substrate=strtrim(sm{1}); else, rec(1).substrate=''; end
+                if ~isempty(cm), rec(1).commentary=strtrim(cm{1}); else, rec(1).commentary=''; end
+                if ~isempty(lm), rec(1).literature=strtrim(lm{1}); else, rec(1).literature=''; end
+                d=db(ec); d.(tag)(end+1)=rec; db(ec)=d;
+            end
+        end
+end
+end
+
+function s=emptyFlatRec()
+s=struct('value',{},'substrate',{},'protein',{},'organism',{}, ...
+    'commentary',{},'literature',{});
+end
+
+function out=normName(s)
+% Lower-case, collapse non-alphanumerics to single spaces, trim.
+s=lower(char(s));
+s=regexprep(s,'[^a-z0-9]+',' ');
+out=strtrim(string(s));
 end

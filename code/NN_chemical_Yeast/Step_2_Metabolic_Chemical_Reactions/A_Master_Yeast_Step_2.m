@@ -15,8 +15,22 @@ function results = A_Master(modelInput, userOptions)
 %
 % Target architecture:
 %   S controls a membrane protein (evidence separate from stoichiometry)
-%   I[outside] -> I[inside]; effective production module:
+%   that imports a CO-SUBSTRATE X of the production module:
+%   X[outside] -(S)-> X[inside]; effective production module:
 %   I[inside] + X -> 2 I[inside] + W.
+%   S MUST gate the X importer, never the I importer. A gated I import
+%   contributes k*S*I[outside], i.e. a SOURCE term in dI/dt; only a
+%   reaction in which S-controlled X meets I can realise k*S*I[inside].
+%   requireIImport=false (DEFAULT): no I import reaction is searched at
+%   all. Single-shot operation assumes I(0) > 0 is already present in the
+%   vessel, so eps = 0 and there is no Block A. I pools then come from
+%   cancellerI instead of from the transporter list. Set it true to
+%   restore the earlier import-paired search.
+%   With eps = 0 the two arms must be matched at rest or I decays
+%   exponentially while it waits; that is a calibration requirement the
+%   structural search does NOT check.
+%   Stages 06a/06b search and report the S-gated X importers; stages
+%   03/05 keep the earlier I-import pairing for reference.
 %   One OR several existing reactions may implement the production module.
 %   Actual I consumption and production must sum to 1 I -> 2 I after
 %   normalization; non-I internal intermediates must cancel. X -> I alone
@@ -365,8 +379,20 @@ if isempty(oriented.rxn) || isempty(transport)
 end
 cores = emptyCores();statsRows=cell(0,12);directProductionAudit=directProductionAuditTable(cell(0,15));
 productionDepthCoverage=productionDepthAuditTable(cell(0,8));
-signals = unique(transport.InsideIndex,'stable');signals=reshape(signals,[],1);
 wantedI=lower(strtrim(string(cfg.cancellerI(:))));wantedI=wantedI(wantedI~="");
+if cfg.requireIImport || isempty(wantedI)
+    if ~cfg.requireIImport
+        report(fid,'requireIImport=false but cancellerI is empty: falling back to the imported-I pool list.');
+    end
+    signals = unique(transport.InsideIndex,'stable');
+else
+    % No Block A: I(0) is already in the vessel, so an importer is not
+    % required and the I pools come from cancellerI directly.
+    signals = find(ismember(comp,cfg.insideCompartment) & ~currency);
+    report(fid,sprintf(['requireIImport=false: I pools taken from cancellerI, not from the ' ...
+        'transporter list (%d intracellular noncurrency pools before filtering).'],numel(signals)));
+end
+signals=reshape(signals,[],1);
 if ~isempty(wantedI)
     keepI=ismember(lower(baseMet(signals)),wantedI)|ismember(lower(string(model.mets(signals))),wantedI);
     report(fid,sprintf('cancellerI=%s: %d of %d imported I pools kept (%s).',joinText(wantedI,','), ...
@@ -425,7 +451,7 @@ writeImportProductionReport(fullfile(cfg.outputDir,'Eq_Block_1_Import_Production
 
 % Reuse protein-level discovery from the supplied code, only for transporters
 % that actually connect to a core. Never query BRENDA enzyme activators here.
-usedTransport = unique(details.TransportRow);
+usedTransport = unique(details.TransportRow);usedTransport(usedTransport<1)=[];
 [proteinMap,proteinEdges,regulators] = discoverRegulators( ...
     transport(usedTransport,:),codeRoot,cfg,fid);
 writetable(proteinMap,fullfile(cfg.outputDir,'04_Transporter_Protein_Map.csv'));
@@ -446,6 +472,22 @@ writetable(connected,fullfile(cfg.outputDir,'06_Connected_Anderson_Candidates.cs
 writeThreeReactionReport(fullfile(cfg.outputDir,'Anderson_Three_Reaction_Report.txt'), ...
     candidates,details,cores,oriented,transport,linearRemoval,quadraticRemoval, ...
     connected,connectionStats,model,cfg);
+
+% S gate on the CO-SUBSTRATE importer, not on the I importer. The I import
+% found above stays in the architecture as the basal seed term only.
+[sGateImports,sGateStats]=findSGatedCoreImports(cores,oriented,transport,model,currency,cfg);
+[gatedAnderson,gatedStats]=attachSGates(connected,details,sGateImports,cores,oriented, ...
+    transport,linearRemoval,quadraticRemoval,model,currency,Rgross,Pgross,cfg);
+writetable(sGateImports,fullfile(cfg.outputDir,'06a_S_Gated_Cosubstrate_Importers.csv'));
+writetable(gatedAnderson,fullfile(cfg.outputDir,'06b_Gated_Anderson_Candidates.csv'));
+writeSGateReport(fullfile(cfg.outputDir,'Gated_Anderson_Report.txt'), ...
+    sGateImports,gatedAnderson,sGateStats,gatedStats,cfg);
+report(fid,sprintf(['S gate: %d cores, %d feeds tested, %d importers, %d cores gated; ' ...
+    'crossed %d, reuse-rejected %d, crosstalk-rejected %d, %d connected rows had no ' ...
+    'S-gated feed -> %d gated candidates.'], ...
+    sGateStats.cores,sGateStats.feedsTested,sGateStats.importersFound, ...
+    sGateStats.coresWithSGate,gatedStats.tested,gatedStats.reuseRejected, ...
+    gatedStats.crossTalkRejected,gatedStats.candidatesWithoutSGate,height(gatedAnderson)));
 
 % Require ECs for the new rails without discarding structural cancellers.
 [branchEC,branchECAudit]=resolveBranchEC(model,baseMet,codeRoot,cfg);
@@ -518,6 +560,8 @@ upstreamCoverage=cellTable({ ...
     'Linear I-removal candidates',height(linearRemoval),cfg.connectRemovalTerms,'05_Linear_Removal_Candidates.csv'; ...
     'Pair-loss candidates',height(quadraticRemoval),cfg.connectRemovalTerms,'05_Quadratic_Removal_Candidates.csv'; ...
     'Connected Anderson cancellers',height(connected),cfg.connectRemovalTerms,'06_Connected_Anderson_Candidates.csv'; ...
+    'S-gated co-substrate importers',height(sGateImports),true,'06a_S_Gated_Cosubstrate_Importers.csv'; ...
+    'Gated Anderson candidates',height(gatedAnderson),cfg.connectRemovalTerms,'06b_Gated_Anderson_Candidates.csv'; ...
     'EC-qualified fast/slow modules',height(branchModules),cfg.connectBranches,'07_Branch_Modules.csv'; ...
     'Branch plus canceller connections',height(branchWiring),cfg.connectBranches,'08_Branches_Canceller_Wiring.csv'; ...
     'Counter components',height(counterComponents),cfg.connectCounter,'09_Counter_Components.csv'; ...
@@ -567,7 +611,11 @@ if isempty(signals)
 elseif isempty(oriented.rxn)
     report(fid,'RESULT STATUS: no eligible intracellular steps; no pathway could be tested.');
 else
-    report(fid,sprintf('RESULT STATUS: %d distinct imported I pools searched.',numel(signals)));
+    if cfg.requireIImport
+        report(fid,sprintf('RESULT STATUS: %d distinct imported I pools searched.',numel(signals)));
+    else
+        report(fid,sprintf('RESULT STATUS: %d distinct I pools searched (no import required).',numel(signals)));
+    end
 end
 report(fid,'No S is inferred from stoichiometry, GPR membership or a positive regulatory edge.');
 report(fid,'Seed checks use ALL substrates in the selected core, not graph connectivity alone.');
@@ -576,18 +624,33 @@ report(fid,'Only selected-core seed dependence is checked; native-cell bypasses 
 report(fid,'No genome-scale FBA feasibility, thermodynamic or kinetic validation is claimed.');
 report(fid,'A finite depth or reached state budget can hide other solutions.');
 report(fid,'A solver-unresolved closure is untested, not a failed biological candidate.');
-report(fid,'Spatial warning: external and internal I are distinct pools; import adds its own flux.');
-report(fid,'For each block: dI_inside/dt = J_T(S,I_outside,I_inside) + v_core(I_inside,X) + other terms.');
+if cfg.requireIImport
+    report(fid,'Spatial warning: external and internal I are distinct pools; import adds its own flux.');
+    report(fid,'For each block: dI_inside/dt = J_T(S,I_outside,I_inside) + v_core(I_inside,X) + other terms.');
+else
+    report(fid,'requireIImport=false: no import term. dI/dt = v_core(I,X(S)) + other terms, with I(0) > 0 given.');
+    report(fid,'Single-shot only: with eps = 0 the node fires once, and a resting arm mismatch kills it while it waits.');
+end
 report(fid,'This is not yet the single-pool Anderson equation +k*S*I.');
 for n=1:min(height(candidates),cfg.printTop)
-    d=details(n,:); t=transport(d.TransportRow,:); c=cores(d.CoreIndex);
-    report(fid,sprintf('\nCANDIDATE %d | %s -> %s | core size %d', ...
-        n,t.OutsideMetaboliteID,t.InsideMetaboliteID,numel(c.path)));
+    d=details(n,:); c=cores(d.CoreIndex);
+    if d.TransportRow>0
+        t=transport(d.TransportRow,:);
+        report(fid,sprintf('\nCANDIDATE %d | %s -> %s | core size %d', ...
+            n,t.OutsideMetaboliteID,t.InsideMetaboliteID,numel(c.path)));
+    else
+        report(fid,sprintf('\nCANDIDATE %d | no I import searched | I = %s | core size %d', ...
+            n,string(model.mets{c.seed}),numel(c.path)));
+    end
     report(fid,['  Gate status: ' char(candidates.GateStatus(n))]);
     report(fid,['  Annotation status: ' char(candidates.AnnotationStatus(n))]);
     report(fid,['  S from supplied evidence: ' char(candidates.S_IDs(n))]);
-    report(fid,['  r_T: ' char(t.ReactionID) ' | ' char(t.Equation)]);
-    report(fid,['  Transporter GPR: ' char(t.GPR)]);
+    if d.TransportRow>0
+        report(fid,['  r_T: ' char(t.ReactionID) ' | ' char(t.Equation)]);
+        report(fid,['  Transporter GPR: ' char(t.GPR)]);
+    else
+        report(fid,'  r_T: none searched; I(0) assumed already present in the vessel (eps = 0).');
+    end
     for k=1:numel(c.path)
         o=c.path(k); j=oriented.rxn(o);
         report(fid,sprintf('  core[%g] %s (%+d): %s | EC %s',c.flux(k), ...
@@ -598,7 +661,11 @@ for n=1:min(height(candidates),cfg.printTop)
     end
     report(fid,['  Gross I accounting: 1 consumed -> 2 produced; net +1.']);
     report(fid,['  Core net equation: ' char(candidates.CoreNetEquation(n))]);
-    report(fid,['  Full transport + core net: ' char(candidates.ModuleNetEquation(n))]);
+    if d.TransportRow>0
+        report(fid,['  Full transport + core net: ' char(candidates.ModuleNetEquation(n))]);
+    else
+        report(fid,['  Module net (no transport): ' char(candidates.ModuleNetEquation(n))]);
+    end
 end
 results = struct('options',cfg,'modelPath',modelPath,'modelLayout',layout,'poolAudit',poolAudit,'transport',transport, ...
     'cores',cores,'coreTable',coreTable,'orientedCorePool',oriented, ...
@@ -608,6 +675,8 @@ results = struct('options',cfg,'modelPath',modelPath,'modelLayout',layout,'poolA
     'linearRemoval',linearRemoval,'quadraticRemoval',quadraticRemoval, ...
     'removalCoverage',removalCoverage,'removalAudit',removalAudit, ...
     'connectedCandidates',connected,'connectionStats',connectionStats);
+results.sGateImports=sGateImports;results.sGateStats=sGateStats;
+results.gatedAndersonCandidates=gatedAnderson;results.gatedAndersonStats=gatedStats;
 results.branchEC=branchEC;results.branchECAudit=branchECAudit;results.branchRails=branchRails;
 results.branchModules=branchModules;results.branchReactionAssignments=branchAssignments;
 results.branchWiring=branchWiring;results.branchSearchStats=branchStats;
@@ -648,6 +717,8 @@ cfg = struct('outputDir',fullfile(pwd,'Anderson_Transport_Production_Results'), 
     'connectRemovalTerms',true,'requireFControlTopology',true,'requireRemovalIsolation',true, ...
     'allowPairLossAlternative',true,'maxRemovalParticipants',16, ...
     'maxTripletTests',200000,'maxConnectedCandidates',10000, ...
+    'requireSGateIrreversible',false,'requireSGateIsolation',true,'maxSGateTests',200000, ...
+    'requireIImport',false, ...
     'connectBranches',true,'branchUseVerifiedSeedMap',true, ...
     'branchECFile','Branch_EC_Evidence.tsv','branchInputID',"", ...
     'branchRequireDistinctECs',true,'branchRejectSharedKnownGenes',true, ...
@@ -684,7 +755,7 @@ end
 
 function validateOptions(c)
 for key={'maxCoreReactions','maxStatesPerI','printTop','maxECLookups','maxProductionParticipants', ...
-        'maxRemovalParticipants','maxTripletTests','maxConnectedCandidates', ...
+        'maxRemovalParticipants','maxTripletTests','maxConnectedCandidates','maxSGateTests', ...
         'branchMaxParticipants','branchMaxRails','branchMaxPairTests','branchMaxModules', ...
         'branchMaxWiringTests','branchMaxWiring','counterMaxParticipants','counterMaxComponentTests', ...
         'counterMaxComponents','counterMaxConnectionTests','counterMaxConnections', ...
@@ -715,6 +786,7 @@ assert(~isempty(string(c.insideCompartment)) && isscalar(string(c.outsideCompart
 for key={'allowReverse','requireTransportGPR','requireCoreEC','onlineEC', ...
         'requireGateEvidence','requireProteinS','onlineProteinDiscovery', ...
         'connectRemovalTerms','requireFControlTopology','requireRemovalIsolation','allowPairLossAlternative', ...
+        'requireSGateIrreversible','requireSGateIsolation','requireIImport', ...
         'connectBranches','branchUseVerifiedSeedMap','branchRequireDistinctECs', ...
         'branchRejectSharedKnownGenes','branchRequireMatchedInterfaces','connectCounter', ...
         'counterRequireLeakEC','counterUseVerifiedSeedMap','counterRequireGateEvidence', ...
@@ -1293,17 +1365,26 @@ end
 function P = describeImportProductionPairs(C,D,cores,O,T,model)
 rows=cell(0,23);
 for p=1:height(C)
-    core=cores(D.CoreIndex(p));t=T(D.TransportRow(p),:);single=numel(core.path)==1;
+    core=cores(D.CoreIndex(p));single=numel(core.path)==1;
+    if D.TransportRow(p)>0
+        t=T(D.TransportRow(p),:);
+        tID=t.ReactionID;tDir=t.Direction;tOut=t.OutsideMetaboliteID;
+        tIn=t.InsideMetaboliteID;tEq=t.Equation;
+    else
+        tID="none_no_I_import";tDir=0;tOut="";
+        tIn=string(model.mets{core.seed});
+        tEq="no import searched; I(0) assumed present in the vessel";
+    end
     reactionID=joinText(string(model.rxns(O.rxn(core.path))),';');
     direction=joinText(string(O.direction(core.path)),';');gross="not_applicable_multi_reaction_see_R1_EffectiveModuleEquation";
     if single,gross=equation(O.R(:,core.path)*core.flux(:),O.P(:,core.path)*core.flux(:),model);end
     [atomStatus,imbalance]=productionAtomBalance(core.net,model);
-    rows(end+1,:)={C.CandidateID(p),t.ReactionID,t.Direction,t.OutsideMetaboliteID,t.InsideMetaboliteID, ...
-        t.Equation,reactionID,direction,single,gross, ...
+    rows(end+1,:)={C.CandidateID(p),tID,tDir,tOut,tIn, ...
+        tEq,reactionID,direction,single,gross, ...
         joinText(string(model.mets(core.feed)),';'),joinText(string(full(-core.net(core.feed))),';'), ...
         joinText(string(model.mets(core.waste)),';'),joinText(string(full(core.net(core.waste))),';'), ...
         atomStatus,imbalance,C.GateStatus(p),C.S_IDs(p), ...
-        "I_import_is_seed_or_extra_input_R1_S_control_and_kSI_not_established", ...
+        "I0_in_vessel_no_import_S_gate_on_X_importer_kSI_not_established", ...
         productionModuleEquation(core,O,model),numel(core.path), ...
         full(O.R(core.seed,core.path)*core.flux(:)), ...
         full(O.P(core.seed,core.path)*core.flux(:))}; %#ok<AGROW>
@@ -1675,6 +1756,16 @@ function [T,D] = assembleCandidates(cores,O,transport,gates,model,cfg)
 rows=cell(0,12);drows=cell(0,2);
 for k=1:numel(cores)
     c=cores(k);
+    if ~cfg.requireIImport
+        % No Block A. One candidate per core, with no import reaction.
+        coreEq=equation(max(-c.net,0),max(c.net,0),model);
+        rows(end+1,:)={heightFromRows(rows)+1,"none_no_I_import",0, ...
+            "",string(model.mets{c.seed}),k,numel(c.path), ...
+            0,"","no_I_import_searched_S_gate_is_on_the_X_importer", ...
+            coreEq,coreEq}; %#ok<AGROW>
+        drows(end+1,:)={0,k}; %#ok<AGROW>
+        continue;
+    end
     for t=reshape(find(transport.InsideIndex==c.seed),1,[])
         tr=transport(t,:);j=tr.ModelIndex;
         if any(O.rxn(c.path)==j),continue;end
@@ -1711,16 +1802,174 @@ else
     [~,modelComp]=splitCompartments(string(model.mets));
 end
 for k=1:height(T)
-    tr=transport(D.TransportRow(k),:);c=cores(D.CoreIndex(k));
-    T.TransportHasGPR(k)=strlength(strtrim(tr.GPR))>0;
+    c=cores(D.CoreIndex(k));
     T.AllCoreECResolved(k)=all(strlength(strtrim(model.circuitResolvedEC(O.rxn(c.path))))>0);
     T.InsideCompartment(k)=modelComp(c.seed);
-    if T.TransportHasGPR(k) && T.AllCoreECResolved(k)
-        T.AnnotationStatus(k)="EC_and_GPR_present_gating_and_kinetics_unverified";
+    if D.TransportRow(k)>0
+        tr=transport(D.TransportRow(k),:);
+        T.TransportHasGPR(k)=strlength(strtrim(tr.GPR))>0;
+        if T.TransportHasGPR(k) && T.AllCoreECResolved(k)
+            T.AnnotationStatus(k)="EC_and_GPR_present_gating_and_kinetics_unverified";
+        else
+            T.AnnotationStatus(k)="structural_only_missing_EC_or_GPR";
+        end
     else
-        T.AnnotationStatus(k)="structural_only_missing_EC_or_GPR";
+        T.TransportHasGPR(k)=false;
+        if T.AllCoreECResolved(k)
+            T.AnnotationStatus(k)="core_EC_present_no_I_import_searched";
+        else
+            T.AnnotationStatus(k)="structural_only_missing_core_EC";
+        end
     end
 end
+end
+
+function [SG,stats] = findSGatedCoreImports(cores,O,T,model,currency,cfg)
+% S-GATED CO-SUBSTRATE IMPORT for the autocatalytic production core.
+% Mirrors the F_gated_cosubstrate_import branch of findRemovalTerms.
+% S gates a transporter importing a FEED metabolite X of the core. X then
+% meets I inside that core, so the realised production flux carries the
+% product S*I. Gating the I importer itself CANNOT do this: that flux is
+% proportional to I[outside] and enters dI/dt as a source term, never as
+% k*S*I[inside]. Transporter identity, gating and rate laws stay unverified.
+rows=cell(0,16);
+stats=struct('cores',numel(cores),'feedsTested',0,'importersFound',0, ...
+    'coresWithSGate',0,'rejectedCoreReuse',0,'rejectedReversible',0);
+for k=1:numel(cores)
+    c=cores(k);found=false;
+    for x=reshape(c.feed,1,[])
+        if currency(x) || x==c.seed,continue;end
+        stats.feedsTested=stats.feedsTested+1;
+        for t=reshape(find(T.InsideIndex==x),1,[])
+            if any(O.rxn(c.path)==T.ModelIndex(t))
+                stats.rejectedCoreReuse=stats.rejectedCoreReuse+1;continue;
+            end
+            % A freely reversible carrier equilibrates X across the membrane
+            % in BOTH directions, so the gate carries no sign. Reported
+            % always; rejected only when requireSGateIrreversible is set.
+            reversible=T.LowerBound(t)<0 && T.UpperBound(t)>0;
+            if cfg.requireSGateIrreversible && reversible
+                stats.rejectedReversible=stats.rejectedReversible+1;continue;
+            end
+            found=true;
+            rows(end+1,:)={size(rows,1)+1,k,numel(c.path),c.seed, ...
+                string(model.mets{c.seed}),x,string(model.mets{x}), ...
+                full(-c.net(x)),t,T.ReactionID(t),T.Direction(t), ...
+                T.OutsideMetaboliteID(t),T.Equation(t),T.GPR(t),reversible, ...
+                "S_identity_and_gating_unverified"}; %#ok<AGROW>
+        end
+    end
+    if found,stats.coresWithSGate=stats.coresWithSGate+1;end
+end
+SG=cellTable(rows,{'SGateID','CoreIndex','CoreReactionCount','I_Index','I_ID', ...
+    'X_Index','X_ID','X_PerModule','STransportRow','STransportReactionID', ...
+    'STransportDirection','X_Outside','STransportEquation','STransportGPR', ...
+    'STransportReversible','SStatus'}, ...
+    {'double','double','double','double','string','double','string','double','double', ...
+    'string','double','string','string','string','logical','string'});
+end
+
+function [G,stats] = attachSGates(C,D,SG,cores,O,T,L,Q,model,currency,Rgross,Pgross,cfg)
+% Cross every connected Anderson candidate with the S-gated co-substrate
+% importers available for ITS core, reusing the reaction-reuse and
+% isolation checks already applied to the F transporter. A connected row
+% with no S-gated feed is counted, never silently promoted.
+rows=cell(0,17);
+stats=struct('tested',0,'reuseRejected',0,'crossTalkRejected',0, ...
+    'candidatesWithoutSGate',0,'testLimitReached',false);
+tol=1e-8;stop=false;
+for i=1:height(C)
+    sgs=find(SG.CoreIndex==C.CoreIndex(i));
+    if isempty(sgs)
+        stats.candidatesWithoutSGate=stats.candidatesWithoutSGate+1;continue;
+    end
+    core=cores(C.CoreIndex(i));seed=core.seed;
+    iRow=D.TransportRow(C.ProductionCandidateID(i));
+    prodRx=O.rxn(core.path);
+    prodParts=find(any(O.R(:,core.path)+O.P(:,core.path)>tol,2));
+    if iRow>0
+        iImport=T.ModelIndex(iRow);prodRx=unique([prodRx,iImport]);
+        prodParts=union(prodParts,find(Rgross(:,iImport)+Pgross(:,iImport)>tol));
+    end
+    l=find(L.LinearID==C.LinearID(i),1);q=find(Q.QuadraticID==C.QuadraticID(i),1);
+    if isempty(l)||isempty(q),continue;end
+    linRx=L.ReactionIndex(l);
+    linParts=find(O.R(:,L.OrientationIndex(l))+O.P(:,L.OrientationIndex(l))>tol);
+    if L.FTransportRow(l)>0
+        ft=T.ModelIndex(L.FTransportRow(l));linRx=[linRx ft]; %#ok<AGROW>
+        linParts=union(linParts,find(Rgross(:,ft)+Pgross(:,ft)>tol));
+    end
+    quadRx=Q.ReactionIndex(q);
+    quadParts=find(O.R(:,Q.OrientationIndex(q))+O.P(:,Q.OrientationIndex(q))>tol);
+    for sg=reshape(sgs,1,[])
+        if stats.tested>=cfg.maxSGateTests
+            stats.testLimitReached=true;stop=true;break;
+        end
+        stats.tested=stats.tested+1;
+        st=T.ModelIndex(SG.STransportRow(sg));
+        if ismember(st,[prodRx linRx quadRx])
+            stats.reuseRejected=stats.reuseRejected+1;continue;
+        end
+        sParts=find(Rgross(:,st)+Pgross(:,st)>tol);
+        % I and X are shared with the core BY DESIGN: that shared X is
+        % precisely what makes the realised rate carry S*I. Everything
+        % else shared with the removal terms is cross-talk.
+        exempt=[seed;SG.X_Index(sg)];
+        shared=unique([setdiff(intersect(sParts,prodParts),exempt); ...
+                       setdiff(intersect(sParts,union(linParts,quadParts)),exempt)]);
+        shared(currency(shared))=[];
+        isolated=isempty(shared);
+        if cfg.requireSGateIsolation && ~isolated
+            stats.crossTalkRejected=stats.crossTalkRejected+1;continue;
+        end
+        rows(end+1,:)={size(rows,1)+1,C.ConnectedID(i),SG.SGateID(sg),C.CoreIndex(i), ...
+            C.CoreReactionCount(i),C.I_ID(i),SG.X_ID(sg),SG.X_PerModule(sg), ...
+            SG.STransportReactionID(sg),SG.STransportReversible(sg), ...
+            C.FMode(i),C.FTransportReactionID(i),C.FControlCargo(i), ...
+            C.PairClass(i),isolated,joinText(string(model.mets(shared)),';'), ...
+            "S_gates_X_import_F_gates_L_import_rate_laws_unverified"}; %#ok<AGROW>
+    end
+    if stop,break;end
+end
+G=cellTable(rows,{'GatedID','ConnectedID','SGateID','CoreIndex','CoreReactionCount', ...
+    'I_ID','S_Gated_X_ID','X_PerModule','S_TransportReactionID','S_TransportReversible', ...
+    'FMode','F_TransportReactionID','F_ControlCargo','PairClass', ...
+    'NoSharedNoncurrencyOutsideIandX','SharedNoncurrency','ArchitectureStatus'}, ...
+    {'double','double','double','double','double','string','string','double','string', ...
+    'logical','string','string','string','string','logical','string','string'});
+if ~isempty(G)
+    [~,order]=sortrows([G.CoreReactionCount, ...
+        double(G.S_TransportReversible),G.GatedID],[1 2 3]);
+    G=G(order,:);G.GatedID=(1:height(G))';
+end
+end
+
+function writeSGateReport(path,SG,G,sstats,gstats,cfg)
+fid=fopen(path,'w');assert(fid>0,'Anderson:Report','Cannot write S-gate report.');
+guard=onCleanup(@()fclose(fid)); %#ok<NASGU>
+report(fid,'ANDERSON: S-GATED CO-SUBSTRATE IMPORT ON THE AUTOCATALYTIC CORE');
+report(fid,sprintf('Started: %s.',datestr(now,31)));
+report(fid,sprintf('Cores examined: %d; noncurrency feeds tested: %d; importers found: %d.', ...
+    sstats.cores,sstats.feedsTested,sstats.importersFound));
+report(fid,sprintf('Cores with at least one S-gated feed: %d; core-reuse rejections: %d.', ...
+    sstats.coresWithSGate,sstats.rejectedCoreReuse));
+report(fid,sprintf('Reversible-carrier rejections: %d (requireSGateIrreversible=%d).', ...
+    sstats.rejectedReversible,cfg.requireSGateIrreversible));
+report(fid,sprintf('Gated candidates: %d; crossings tested: %d.',height(G),gstats.tested));
+report(fid,sprintf('Reaction-reuse rejections: %d; cross-talk rejections: %d (isolation required=%d).', ...
+    gstats.reuseRejected,gstats.crossTalkRejected,cfg.requireSGateIsolation));
+report(fid,sprintf('Connected rows with no S-gated feed: %d; test limit reached=%d.', ...
+    gstats.candidatesWithoutSGate,gstats.testLimitReached));
+if height(SG)>0
+    report(fid,sprintf('Reversible S-carrier rows retained: %d of %d.', ...
+        nnz(SG.STransportReversible),height(SG)));
+end
+report(fid,'S gates the X importer. A gated I importer yields a SOURCE term, not k*S*I.');
+report(fid,'The I importer found in stage 03 is retained ONLY as the basal seed eps.');
+report(fid,'A reversible S carrier equilibrates X both ways, so its gate carries no sign.');
+report(fid,'Shared X between importer and core is intended; it is exempt from isolation.');
+report(fid,'Gate identity, membrane control by S and all rate laws remain UNVERIFIED here.');
+report(fid,'Quasi-steady-state collapse of the core to a single I state is NOT checked here.');
 end
 
 function [L,Q,C,A] = findRemovalTerms(signals,O,T,model,comp,currency,cfg)
@@ -1844,9 +2093,13 @@ rows=cell(0,18);stats=struct('tested',0,'reactionReuseRejected',0, ...
     'crossTalkRejected',0,'testLimitReached',false,'candidateLimitReached',false);
 stop=false;tol=1e-8;
 for p=1:height(P)
-    core=cores(D.CoreIndex(p));seed=core.seed;s=T.ModelIndex(D.TransportRow(p));
-    prodRx=unique([O.rxn(core.path),s]);
-    prodParts=find(any(O.R(:,core.path)+O.P(:,core.path)>tol,2) | Rgross(:,s)+Pgross(:,s)>tol);
+    core=cores(D.CoreIndex(p));seed=core.seed;iRow=D.TransportRow(p);
+    prodRx=O.rxn(core.path);
+    prodParts=find(any(O.R(:,core.path)+O.P(:,core.path)>tol,2));
+    if iRow>0
+        s=T.ModelIndex(iRow);prodRx=unique([prodRx,s]);
+        prodParts=union(prodParts,find(Rgross(:,s)+Pgross(:,s)>tol));
+    end
     ls=find(L.I_Index==seed);
     if cfg.requireFControlTopology,ls=ls(L.FMode(ls)~="F_unassigned");end
     qs=find(Q.I_Index==seed);
@@ -1934,10 +2187,15 @@ if isempty(C)
 end
 for n=1:min(height(C),cfg.printTop)
     row=C(n,:);p=row.ProductionCandidateID;core=cores(D.CoreIndex(p));
-    tr=T(D.TransportRow(p),:);l=L(row.LinearID,:);q=Q(row.QuadraticID,:);
+    l=L(row.LinearID,:);q=Q(row.QuadraticID,:);
     report(fid,sprintf('\nCONNECTED CANDIDATE %d | I=%s | block=%s | core size=%d', ...
         n,row.I_ID,row.InsideCompartment,numel(core.path)));
-    report(fid,['  S-controlled import (S unverified): ' char(tr.ReactionID) ' | ' char(tr.Equation)]);
+    if D.TransportRow(p)>0
+        tr=T(D.TransportRow(p),:);
+        report(fid,['  I import (not the S gate): ' char(tr.ReactionID) ' | ' char(tr.Equation)]);
+    else
+        report(fid,'  I import: none searched; I(0) assumed present in the vessel (eps = 0).');
+    end
     report(fid,['  Production core net: ' char(P.CoreNetEquation(p))]);
     for k=1:numel(core.path)
         o=core.path(k);
@@ -2211,10 +2469,13 @@ for b=1:height(M)
     for c=reshape(find(C.InsideCompartment==M.InsideCompartment(b)),1,[])
         if stats.tested>=cfg.branchMaxWiringTests,stats.testLimitReached=true;stop=true;break;end
         stats.tested=stats.tested+1;prod=C.ProductionCandidateID(c);core=cores(D.CoreIndex(prod));
-        st=T.ModelIndex(D.TransportRow(prod));l=L(C.LinearID(c),:);q=Q(C.QuadraticID(c),:);
-        cancelRx=[O.rxn(core.path),st,l.ReactionIndex,q.ReactionIndex];
+        iRow=D.TransportRow(prod);l=L(C.LinearID(c),:);q=Q(C.QuadraticID(c),:);
+        cancelRx=[O.rxn(core.path),l.ReactionIndex,q.ReactionIndex];
         cancelParts=find(any(O.R(:,core.path)+O.P(:,core.path)>tol,2));
-        cancelParts=union(cancelParts,find(Rgross(:,st)+Pgross(:,st)>tol));
+        if iRow>0
+            st=T.ModelIndex(iRow);cancelRx(end+1)=st; %#ok<AGROW>
+            cancelParts=union(cancelParts,find(Rgross(:,st)+Pgross(:,st)>tol));
+        end
         cancelParts=union(cancelParts,find(O.R(:,l.OrientationIndex)+O.P(:,l.OrientationIndex)>tol));
         cancelParts=union(cancelParts,find(O.R(:,q.OrientationIndex)+O.P(:,q.OrientationIndex)>tol));
         if l.FTransportRow>0
@@ -3890,10 +4151,21 @@ fast=ctx.rails(ctx.M.FastRailIndex(b));slow=ctx.rails(ctx.M.SlowRailIndex(b));
 roles={'r_Ff','r_Fd','r_Fr','r_Sf','r_Sd','r_Sr'};os=[fast.o slow.o];
 for n=1:6,step2PrintOrientation(fid,roles{n},os(n),ctx);end
 step2Section(fid,'ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS');
-prod=ctx.C.ProductionCandidateID(c);core=ctx.cores(ctx.D.CoreIndex(prod));st=ctx.T(ctx.D.TransportRow(prod),:);
-step2Section(fid,'EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W');
+prod=ctx.C.ProductionCandidateID(c);core=ctx.cores(ctx.D.CoreIndex(prod));iRow=ctx.D.TransportRow(prod);
+if iRow>0
+    step2Section(fid,'EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W');
+else
+    step2Section(fid,'EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)');
+end
 report(fid,['  Proposed S signal: m_Sd = ' char(ctx.M.SlowSignalID(b)) '. The transporter-control link is not inferred from stoichiometry.']);
-step2PrintReaction(fid,'r_T_S',st.ModelIndex,st.Direction,ctx);report(fid,'  S-dependent opening: supplied-interface status remains separate from cargo transport.');
+if iRow>0
+    st=ctx.T(iRow,:);
+    step2PrintReaction(fid,'r_T_S',st.ModelIndex,st.Direction,ctx);
+    report(fid,'  S-dependent opening: supplied-interface status remains separate from cargo transport.');
+else
+    report(fid,'  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.');
+    report(fid,'  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.');
+end
 productionCtx=ctx;
 for n=1:numel(core.feed)
     label="X_"+string(n);productionCtx.signalIndices(end+1)=core.feed(n);productionCtx.signalLabels(end+1)=label;
@@ -4209,10 +4481,13 @@ end
 
 function [rx,parts] = counterCancellerSupport(c,C,D,cores,O,T,L,Q,R,P)
 prod=C.ProductionCandidateID(c);core=cores(D.CoreIndex(prod));
-st=T.ModelIndex(D.TransportRow(prod));l=L(C.LinearID(c),:);q=Q(C.QuadraticID(c),:);
-rx=[O.rxn(core.path),st,l.ReactionIndex,q.ReactionIndex];
+iRow=D.TransportRow(prod);l=L(C.LinearID(c),:);q=Q(C.QuadraticID(c),:);
+rx=[O.rxn(core.path),l.ReactionIndex,q.ReactionIndex];
 parts=find(any(O.R(:,core.path)+O.P(:,core.path)>1e-8,2));
-parts=union(parts,find(R(:,st)+P(:,st)>1e-8));
+if iRow>0
+    st=T.ModelIndex(iRow);rx(end+1)=st;
+    parts=union(parts,find(R(:,st)+P(:,st)>1e-8));
+end
 parts=union(parts,find(O.R(:,l.OrientationIndex)+O.P(:,l.OrientationIndex)>1e-8));
 parts=union(parts,find(O.R(:,q.OrientationIndex)+O.P(:,q.OrientationIndex)>1e-8));
 if l.FTransportRow>0
@@ -4519,7 +4794,7 @@ end
 
 function selfTestAnderson()
 % Meaningful chemistry regressions; no real model/network/toolbox required.
-cfg=defaultOptions();
+cfg=defaultOptions();cfg.requireIImport=true;
 selfTestBlock0Alternatives();
 assert(cfg.productionMode=="multi_reaction"&&cfg.maxCoreReactions==10, ...
     'Default search must permit the original multi-step production modules.');
@@ -4599,7 +4874,7 @@ assert(contains(g,'&') && genes=="ga;gb",'GPR AND rule lost.');
 assert(isempty(completeECTokens('1.2.3.-')),'Partial EC admitted.');
 % Candidate module accounting includes imported I, so total inside gain=2.
 emptyGate=cellTable(cell(0,11),gateColumns(),repmat({'string'},1,11));
-[CT,~]=assembleCandidates(found,O,T,emptyGate,m,defaultOptions());
+[CT,~]=assembleCandidates(found,O,T,emptyGate,m,setfield(defaultOptions(),'requireIImport',true));
 assert(height(CT)==1 && CT.GateEvidenceRows==0 && CT.S_IDs=="",'S was invented.');
 assert(contains(CT.ModuleNetEquation,'2 i[c]'),'Import/core module accounting wrong.');
 % Gate evidence is matched to reaction, direction, cargo AND GPR gene.
@@ -4611,14 +4886,14 @@ gate(end+1,:)=gate(1,:);gate.Effect(2)="activation";
 gate(end+1,:)=gate(1,:);gate.S_NotConsumed(3)="false";
 gate(end+1,:)=gate(1,:);gate.TargetGene(4)="wrong_gene";
 writetable(gate,gateFile,'FileType','text','Delimiter','\t');
-gateCfg=defaultOptions();gateCfg.organismName="Homo sapiens";
+gateCfg=defaultOptions();gateCfg.requireIImport=true;gateCfg.organismName="Homo sapiens";
 [accepted,audit]=readGateEvidence(gateFile,T,gateCfg);
 assert(height(accepted)==1 && nnz(audit.Accepted)==1, ...
     'Generic activation, S consumption or wrong-gene evidence admitted as gating.');
 % Missing annotations affect evidence status, not a relaxed structural screen.
 unannotated=m;unannotated.grRules=repmat({''},3,1);unannotated.rules=repmat({''},3,1);
 unannotated.circuitResolvedEC=strings(3,1);
-strictCfg=defaultOptions();strictCfg.insideCompartment="c";strictCfg.productionMode="multi_reaction";strictCfg.maxCoreReactions=3;
+strictCfg=defaultOptions();strictCfg.requireIImport=true;strictCfg.insideCompartment="c";strictCfg.productionMode="multi_reaction";strictCfg.maxCoreReactions=3;
 strictCfg.requireCoreEC=true;strictCfg.requireTransportGPR=true;
 [Os,Ts]=buildPools(unannotated,base,comp,cur,R,P,true(3,1),strictCfg);
 assert(isempty(Os.rxn)&&isempty(Ts),'Strict annotation filters were bypassed.');
@@ -4637,7 +4912,7 @@ community=struct('mets',{{'M_2hb_e';'M_AUXOSC2hb_u';'M_h_e';'M_AUXOSCh_u'; ...
     'S',sparse([-1 -1 0;1 0 -1;-1 -1 0;1 0 0;0 1 1;0 1 0]), ...
     'lb',[0;0;0],'ub',[100;100;100],'comps',{{'e';'u';'x'}},'metComps',[1;2;1;2;3;3]);
 community=normalizeModel(community);community.circuitResolvedEC=strings(3,1);
-[cb,cc,cl]=readModelLayout(community,'');communityCfg=resolveModelProfile(defaultOptions(),cl,cc);
+[cb,cc,cl]=readModelLayout(community,'');communityCfg=resolveModelProfile(setfield(defaultOptions(),'requireIImport',true),cl,cc);
 assert(cl.communityIDs&&cb(1)==cb(2)&&cb(1)==cb(5),'Community cargo identities were not recovered.');
 assert(cc(2)=="u"&&cc(5)=="x",'Independent community pools were merged.');
 currencyCommunity=ismember(cb,communityCfg.currencyBaseIDs);
@@ -4664,7 +4939,7 @@ end
 
 function selfTestSingleReactionProduction()
 % Optional synthetic regressions only; no real model or network is queried.
-cfg=defaultOptions();cfg.insideCompartment="c";cfg.maxStatesPerI=Inf;
+cfg=defaultOptions();cfg.requireIImport=true;cfg.insideCompartment="c";cfg.maxStatesPerI=Inf;
 cfg.productionMode="single_reaction"; % optional strict mode is tested explicitly
 R=sparse(4,2);P=sparse(4,2);R(1,1)=1;P(2,1)=1;
 R([2 3],2)=1;P(2,2)=2;P(4,2)=1;
@@ -4685,6 +4960,24 @@ assert(height(pairs)==1&&pairs.TransporterID=="T_seed"&&pairs.R1_ReactionID=="R1
     'The importer, production reaction, X and W were not reported as separate roles.');
 assert(contains(pairs.ImportGateStatus,"unverified")&&contains(pairs.ProductionControlStatus,"not_established"), ...
     'Missing S-import control or S-dependent R1 stopping was promoted to evidence.');
+% requireIImport=false: no Block A. The core must still yield one candidate,
+% carrying TransportRow 0, and every downstream join must tolerate it.
+noImp=cfg;noImp.requireIImport=false;
+[Cn,Dn]=assembleCandidates(cores,O,T,gates,m,noImp);
+assert(height(Cn)==1&&Dn.TransportRow==0&&Cn.TransportReactionID=="none_no_I_import", ...
+    'With requireIImport=false a core must give exactly one import-free candidate.');
+assert(Cn.CoreNetEquation==Cn.ModuleNetEquation, ...
+    'Without an import the module net equation must equal the core net equation.');
+pairsN=describeImportProductionPairs(Cn,Dn,cores,O,T,m);
+assert(height(pairsN)==1&&pairsN.TransporterID=="none_no_I_import"&&pairsN.TransportDirection==0 ...
+    &&pairsN.R1_ReactionID=="R1"&&pairsN.X_SubstrateIDs=="x[c]", ...
+    'The import-free pair lost its production roles.');
+assert(contains(pairsN.ProductionControlStatus,"not_established"), ...
+    'The import-free candidate must still disclaim the k*S*I law.');
+[SGn,sstN]=findSGatedCoreImports(cores,O,T,m,currency,noImp);
+assert(isstruct(sstN)&&sstN.cores==numel(cores), ...
+    'The S-gate stage must still run when no I import is searched.');
+assert(all(SGn.CoreIndex>=1), 'S-gate rows must reference a real core.');
 % Same net equation, different gross chemistry: X->I cannot be relabelled.
 netOnly=O;netOnly.R(2,1)=0;netOnly.P(2,1)=1;netOnly.N=netOnly.P-netOnly.R;
 [none,~,a]=findCores(2,netOnly,currency,cfg,m);
@@ -4730,7 +5023,7 @@ end
 function selfTestMinimumProduction()
 % Two known realizations: I+X->Y->2I+W (2 reactions), and
 % I+X->Z->T->2I+W (3 reactions). Tests use only this synthetic pool.
-cfg=defaultOptions();cfg.productionMode="multi_reaction";cfg.maxCoreReactions=3;
+cfg=defaultOptions();cfg.requireIImport=true;cfg.productionMode="multi_reaction";cfg.maxCoreReactions=3;
 cfg.maxStatesPerI=Inf;cfg.productionMinimumOnly=false;
 R=sparse(7,5);P=sparse(7,5);
 R([1 2],1)=1;P(3,1)=1;R(3,2)=1;P(1,2)=2;P(7,2)=1;
@@ -4838,7 +5131,7 @@ assert(known(2)&&info.parsedReactionCount==2&&info.matchedReactionCount==1, ...
 end
 
 function selfTestThreeReactionExtension()
-cfg=defaultOptions();cfg.insideCompartment="c";cfg.maxCoreReactions=3;cfg.maxStatesPerI=Inf;
+cfg=defaultOptions();cfg.requireIImport=true;cfg.insideCompartment="c";cfg.maxCoreReactions=3;cfg.maxStatesPerI=Inf;
 cfg.productionMode="multi_reaction";
 m=struct('mets',{{'i[e]';'i[c]';'x[c]';'y[c]';'w[c]';'l[e]';'l[c]'; ...
     'p[c]';'z[c]';'q[c]';'r[c]';'i[m]'}}, ...
@@ -4892,7 +5185,7 @@ end
 
 function selfTestBranchExtension(cancelModel,cancelR,cancelP)
 % Two independent three-reaction rails, plus negative EC/GPR/interface cases.
-cfg=defaultOptions();cfg.insideCompartment="c";cfg.maxCoreReactions=3;cfg.maxStatesPerI=Inf;
+cfg=defaultOptions();cfg.requireIImport=true;cfg.insideCompartment="c";cfg.maxCoreReactions=3;cfg.maxStatesPerI=Inf;
 cfg.productionMode="multi_reaction";
 b=struct('mets',{{'u[c]';'fm[c]';'fs[c]';'fw[c]';'sm[c]';'ss[c]';'sw[c]'}}, ...
     'rxns',{{'Ff';'Fd';'Fr';'Sf';'Sd';'Sr'}},'lb',zeros(6,1),'ub',ones(6,1)*100);
@@ -4958,7 +5251,7 @@ end
 
 function selfTestCounterExtension(previous,oldR,oldP,oldE)
 % Add independent counter cargo; test loading, overlap and evidence policy.
-cfg=defaultOptions();cfg.insideCompartment="c";cfg.maxCoreReactions=3;cfg.maxStatesPerI=Inf;
+cfg=defaultOptions();cfg.requireIImport=true;cfg.insideCompartment="c";cfg.maxCoreReactions=3;cfg.maxStatesPerI=Inf;
 cfg.productionMode="multi_reaction";
 cfg.counterMode="membrane";
 cfg.organismName="synthetic_test_organism";
@@ -5044,7 +5337,7 @@ selfTestConsumingCounterExtension(previous,oldR,oldP,oldE);
 end
 
 function selfTestConsumingCounterExtension(previous,oldR,oldP,oldE)
-cfg=defaultOptions();cfg.insideCompartment="c";cfg.maxCoreReactions=3;cfg.maxStatesPerI=Inf;
+cfg=defaultOptions();cfg.requireIImport=true;cfg.insideCompartment="c";cfg.maxCoreReactions=3;cfg.maxStatesPerI=Inf;
 cfg.productionMode="multi_reaction";
 nm=numel(previous.mets);nr=numel(previous.rxns);cargo=nm+1;
 R=blkdiag(oldR,sparse(2,2));P=blkdiag(oldP,sparse(2,2));
@@ -5107,7 +5400,7 @@ end
 
 function selfTestBlock0Alternatives()
 % Toy reaction supports only: these are not proposed biochemical reactions.
-cfg=defaultOptions();cfg.insideCompartment="c";cfg.block0MaxDepth=4;
+cfg=defaultOptions();cfg.requireIImport=true;cfg.insideCompartment="c";cfg.block0MaxDepth=4;
 cfg.block0MaxAlternatives=Inf;cfg.block0MaxStates=1000;cfg.block0MaxExpansions=10000;
 m=struct('mets',{{'camp[c]';'blocked_F[c]';'goal[c]';'a[c]';'b[c]';'x[c]';'w[c]';'q[c]'}}, ...
     'rxns',{{'bad_first';'bad_last';'nonunit_first';'nonunit_last'; ...
@@ -5227,7 +5520,7 @@ end
 function selfTestDirectConsumingChains(ctx,cfg,input,secondStep,oldOutput)
 % Split the two-step toy neuron into THREE conversions, then removal.
 % This distinguishes the new variable-length search from the old fixed motif.
-defaults=defaultOptions();assert(defaults.neuronPlacement=="inside",'The default neuron must consume m_c inside.');
+defaults=defaultOptions();defaults.requireIImport=true;assert(defaults.neuronPlacement=="inside",'The default neuron must consume m_c inside.');
 cfg.neuronPlacement="inside";cfg.neuronChainMinDepth=3;cfg.neuronChainMaxDepth=3;
 nm=numel(ctx.model.mets);nr=numel(ctx.model.rxns);mid=nm+1;j=nr+1;
 R=blkdiag(ctx.R,sparse(1,1));P=blkdiag(ctx.P,sparse(1,1));
@@ -5632,7 +5925,7 @@ m=struct('mets',{ids},'rxns',{rx},'S',sparse(P-R),'lb',[0;0;0;0;0;0;0;0;0;0;0], 
 m=normalizeModel(m);
 m.circuitResolvedEC=["1.1.1.1";"1.1.1.2";"";"";"";"";"";"";"";"";""];
 m.circuitSBMLEC=strings(11,1);m.circuitSourceBiGG=["";"E1m";"";"";"";"";"";"";"";"";""];
-[b,c,layout]=readModelLayout(m,'');cfg=resolveModelProfile(defaultOptions(),layout,c);
+[b,c,layout]=readModelLayout(m,'');cfg=resolveModelProfile(setfield(defaultOptions(),'requireIImport',true),layout,c);
 cur=ismember(lower(b),lower(cfg.currencyBaseIDs));
 [mm,bb,cc,cu,RR,PP,kk,~,~,A,MA,info]=mergeCellFreeCompartments(m,b,c,cur,sparse(R),sparse(P), ...
     true(11,1),repmat("other",13,1),repmat("test",13,1),layout,cfg);

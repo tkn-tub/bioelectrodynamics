@@ -43,6 +43,8 @@ Stages enabled: removal=1; branches=1; counter=1; Step2=1. Required supplied imp
   Linear I-removal candidates: 16; enabled=1; inspect 05_Linear_Removal_Candidates.csv.
   Pair-loss candidates: 2; enabled=1; inspect 05_Quadratic_Removal_Candidates.csv.
   Connected Anderson cancellers: 2; enabled=1; inspect 06_Connected_Anderson_Candidates.csv.
+  S-gated co-substrate importers: 4; enabled=1; inspect 06a_S_Gated_Cosubstrate_Importers.csv.
+  Gated Anderson candidates: 4; enabled=1; inspect 06b_Gated_Anderson_Candidates.csv.
   EC-qualified fast/slow modules: 4; enabled=1; inspect 07_Branch_Modules.csv.
   Branch plus canceller connections: 4; enabled=1; inspect 08_Branches_Canceller_Wiring.csv.
   Counter components: 14; enabled=1; inspect 09_Counter_Components.csv.
@@ -65,7 +67,7 @@ Parents with an isolated structural connector awaiting EC qualification: 0.
 Single-neuron rails passing current policies: 100760; neuron candidates tested: 100000.
 Distinct complete motifs found: 0; complete motifs printed: 0.
 Limits reached: parent=0; neuron calls=0; neuron candidate tests=1; complete retention=0; parent Block0 budget-limited calls=0.
-Step 2 time limit reached=0 (step2MaxSeconds=21600); elapsed 330 s.
+Step 2 time limit reached=0 (step2MaxSeconds=21600); elapsed 344 s.
 Block 0: shared upstream searches=0; counter variants answered from a shared search=0; full per-parent re-searches=0.
 Complete counts require one neuron and a Block 0 connector rechecked against all downstream reactions and EC assignments.
 Block 0 searched=0; Block 0 requires EC=0. With Block 0 off, look for neuronStatus neuron_found_Block0_not_searched.
@@ -85,7 +87,7 @@ No complete motif passed. Printing 10 of 96 PARTIAL parents with all known react
 Parents with a passing neuron are printed first: 88 of 96 parents have one.
 Within each group: fewest canceller reactions first, then fewest Block 0 reactions.
 
-RANK 1 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 1 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 1 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -242,21 +244,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSC6pgl[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O
@@ -429,7 +421,7 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 2 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 2 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 2 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -586,21 +578,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSCg3p[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O
@@ -773,7 +755,7 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 3 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 3 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 3 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -930,21 +912,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSC6pgl[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O
@@ -1127,7 +1099,7 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 4 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 4 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 4 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -1284,21 +1256,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSCg3p[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O
@@ -1481,7 +1443,7 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 5 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 5 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 5 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -1638,21 +1600,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSC6pgl[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O
@@ -1834,7 +1786,7 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 6 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 6 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 6 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -1991,21 +1943,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSCg3p[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O
@@ -2187,7 +2129,7 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 7 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 7 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 7 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -2344,21 +2286,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSC6pgl[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O
@@ -2540,7 +2472,7 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 8 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 8 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 8 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -2697,21 +2629,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSCg3p[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O
@@ -2893,7 +2815,7 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 9 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 9 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 9 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -3050,21 +2972,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSC6pgl[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O
@@ -3246,7 +3158,7 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 10 | neuron found=1 | canceller reactions=8 | Block 0 reactions=Inf
+RANK 10 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 10 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
@@ -3403,21 +3315,11 @@ ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
 ============================================================
 
 ============================================================
-EQ. BLOCK 1: I_OUT IMPORT + I + X -> 2 I + W
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
 ============================================================
   Proposed S signal: m_Sd = AUXOSCg3p[u]. The transporter-control link is not inferred from stoichiometry.
-r_T_S
-  ID: AUXOSPYRt2
-  Name: R_pyruvate_transport_in_via_proton_symport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_H_H [h[e]] + M_Pyruvate_C3H3O3 [pyr[e]] -> M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  S-dependent opening: supplied-interface status remains separate from cargo transport.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
   X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
   X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
   X_3      : AUXOSCh2o[u] | M_H2O_H2O

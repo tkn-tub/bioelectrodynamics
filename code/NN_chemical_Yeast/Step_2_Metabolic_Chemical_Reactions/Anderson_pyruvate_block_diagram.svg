@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="860" viewBox="0 0 1120 860" font-family="Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1076" viewBox="0 0 1180 1076" font-family="Helvetica, Arial, sans-serif">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#333"/>
@@ -6,15 +6,21 @@
     <marker id="ahI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#1f5fa8"/>
     </marker>
+    <marker id="ahS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1d7a35"/>
+    </marker>
     <style>
-      .blk{fill:#fafafa;stroke:#555;stroke-width:1.4;rx:10}
+      .blk{fill:#fafafa;stroke:#555;stroke-width:1.4}
+      .blkS{fill:#f3faf4;stroke:#1d7a35;stroke-width:1.8}
       .hdr{font-size:15px;font-weight:bold;fill:#222}
+      .hdrS{font-size:15px;font-weight:bold;fill:#1d7a35}
       .fml{font-size:13.5px;font-style:italic;fill:#444}
       .rx{fill:#fff;stroke:#888;stroke-width:1.1}
-      .rid{font-size:12.5px;font-weight:bold;fill:#222}
+      .rid{font-size:12px;font-weight:bold;fill:#222}
       .eq{font-size:13px;fill:#222}
       .note{font-size:11.5px;fill:#666}
       .warn{font-size:11.5px;fill:#a24b00}
+      .ok{font-size:11.5px;fill:#1d7a35}
       .X{fill:#1d7a35;font-weight:bold}
       .W{fill:#9a5b00;font-weight:bold}
       .I{fill:#1f5fa8;font-weight:bold}
@@ -22,113 +28,147 @@
       .B{fill:#9a9a9a}
       .flow{stroke:#333;stroke-width:1.4;fill:none;marker-end:url(#ah)}
       .flowI{stroke:#1f5fa8;stroke-width:2;fill:none;marker-end:url(#ahI)}
+      .flowS{stroke:#1d7a35;stroke-width:2;fill:none;marker-end:url(#ahS);stroke-dasharray:6 3}
       .lg{font-size:12.5px;fill:#222}
     </style>
   </defs>
-  <rect width="1120" height="860" fill="#ffffff"/>
+  <rect width="1180" height="1076" fill="#ffffff"/>
 
-  <text x="30" y="34" font-size="20" font-weight="bold" fill="#111">Anderson canceller mapped on yeast enzymes (iMM904, cell-free): I = pyruvate</text>
-  <text x="30" y="56" class="note">Formal reactions (italic) follow the paper; boxes are the selected model reactions. X = supplied precursors, W = released products, I = pyruvate; grey = buffered (H₂O, H⁺).</text>
+  <text x="30" y="32" font-size="19" font-weight="bold" fill="#111">Anderson canceller on iMM904 yeast (cell-free) &#8212; CANDIDATE 1,  I = pyruvate</text>
+  <text x="30" y="53" class="note">Parent=5; module=1; canceller=1; counter=3; block=u.  All reaction IDs, ECs and metabolites taken from Step_2_Results_Yeast.txt.</text>
+  <text x="30" y="70" class="note">Model IDs carry the AUXOS block prefix (AUXOSALATA_L, AUXOSCpyr[u]).  (&#8592;) = reaction used opposite to its model direction.  Grey = buffered.</text>
 
-  <!-- ===================== Block A: S-gated import ===================== -->
-  <rect x="30" y="74" width="500" height="118" class="blk"/>
-  <text x="46" y="98" class="hdr">Block A · S-gated supply of I  (r_T_S)</text>
-  <text x="46" y="118" class="fml">I_ext  →(S)  I_int</text>
-  <rect x="46" y="128" width="468" height="54" class="rx" rx="6"/>
-  <text x="56" y="148" class="rid">PYRt2 · H⁺/pyruvate symporter · no EC</text>
-  <text x="56" y="170" class="eq">pyr<tspan font-size="10">ext</tspan> + <tspan class="B">H⁺<tspan font-size="10">ext</tspan></tspan> → <tspan class="I">I</tspan> + <tspan class="B">H⁺</tspan></text>
-  <text x="300" y="170" class="note">S gate: m_Sd (hypothesis)</text>
+  <!-- ============ Block S ============ -->
+  <rect x="30" y="86" width="530" height="138" rx="10" class="blkS"/>
+  <text x="46" y="110" class="hdrS">Block S &#183; S-gated co-substrate import  (r_T_X)</text>
+  <text x="46" y="129" class="fml">X&#8321;_ext &#8212;(S)&#8594; X&#8321;_int</text>
+  <rect x="46" y="137" width="498" height="32" rx="5" class="rx"/>
+  <text x="56" y="158" class="eq">glu_L<tspan font-size="10">[e]</tspan> &#8212;(S)&#8594; <tspan class="X">X&#8321;</tspan>   &#183; ID: see 06a_S_Gated_Cosubstrate_Importers.csv (4 rows)</text>
+  <text x="46" y="187" class="ok">S = m_Sd = AUXOSC6pgl[u]. X&#8321; is the only feed that meets I &#8212; in r_P1.</text>
+  <text x="46" y="203" class="warn">Gating X&#8322; or X&#8324; instead leaves the steady-state rate unchanged.</text>
+  <text x="46" y="219" class="warn">Check STransportReversible in 06a: a reversible carrier gives no sign.</text>
 
-  <!-- ===================== Block B: production module ===================== -->
-  <rect x="30" y="212" width="500" height="436" class="blk"/>
-  <text x="46" y="236" class="hdr">Block B · Autocatalytic production  (R1, 4 reactions)</text>
-  <text x="46" y="256" class="fml">I_int + X  →  2 I_int + W</text>
+  <!-- ============ Block B ============ -->
+  <rect x="30" y="236" width="530" height="452" rx="10" class="blk"/>
+  <text x="46" y="260" class="hdr">Block B &#183; Autocatalytic production  R1 (4 reactions)</text>
+  <text x="46" y="279" class="fml">I + X&#8321; + X&#8322; + X&#8323; + X&#8324; &#8594; 2 I + W&#8321; + W&#8322; + W&#8323;</text>
 
-  <!-- P1 -->
-  <rect x="120" y="270" width="394" height="58" class="rx" rx="6"/>
-  <text x="130" y="290" class="rid">r_P1 · alanine transaminase (ALATA_L, ←) · EC 2.6.1.2</text>
-  <text x="130" y="314" class="eq"><tspan class="I">I</tspan> + <tspan class="X">X1</tspan> → Ala + <tspan class="W">W1</tspan></text>
-  <!-- P2 -->
-  <rect x="120" y="364" width="394" height="58" class="rx" rx="6"/>
-  <text x="130" y="384" class="rid">r_P2 · alanine–glyoxylate transaminase (AGTi) · EC 2.6.1.44</text>
-  <text x="130" y="408" class="eq">Ala + <tspan class="X">X2</tspan> → Gly + <tspan class="I">I</tspan></text>
-  <!-- P3 -->
-  <rect x="120" y="458" width="394" height="58" class="rx" rx="6"/>
-  <text x="130" y="478" class="rid">r_P3 · Ser hydroxymethyltransferase (GHMT2r, ←) · EC 2.1.2.1</text>
-  <text x="130" y="502" class="eq">Gly + <tspan class="X">X3</tspan> + <tspan class="B">H₂O</tspan> → Ser + <tspan class="W">W3</tspan></text>
-  <!-- P4 -->
-  <rect x="120" y="552" width="394" height="58" class="rx" rx="6"/>
-  <text x="130" y="572" class="rid">r_P4 · L-serine dehydratase (SERD_L) · EC 4.3.1.17</text>
-  <text x="130" y="596" class="eq">Ser → <tspan class="I">I</tspan> + <tspan class="W">W2</tspan></text>
+  <rect x="128" y="290" width="416" height="62" rx="6" class="rx"/>
+  <text x="138" y="309" class="rid">r_P1 &#183; AUXOSALATA_L (&#8592;) &#183; L-alanine transaminase &#183; EC 2.6.1.2</text>
+  <text x="138" y="330" class="eq"><tspan class="I">I</tspan> + <tspan class="X">X&#8321;</tspan> &#8594; Ala + <tspan class="W">W&#8321;</tspan></text>
+  <text x="300" y="330" class="note">rate-setting step &#183; S acts here</text>
+  <text x="138" y="346" class="note">cell-free merged copies: ALATA_L; ALATA_Lm</text>
 
-  <!-- internal intermediates -->
-  <path d="M150,328 L150,362" class="flow"/><text x="72" y="350" class="mid">Ala</text>
-  <path d="M150,422 L150,456" class="flow"/><text x="72" y="444" class="mid">Gly</text>
-  <path d="M150,516 L150,550" class="flow"/><text x="72" y="538" class="mid">Ser</text>
-  <text x="46" y="636" class="note">Net R1:  I + X1 + X2 + X3 (+ H₂O) → 2 I + W1 + W2 + W3   (Ala, Gly, Ser cancel)</text>
+  <rect x="128" y="378" width="416" height="52" rx="6" class="rx"/>
+  <text x="138" y="397" class="rid">r_P2 &#183; AUXOSAGTi &#183; Ala&#8211;glyoxylate aminotransferase (irrev.) &#183; EC 2.6.1.44</text>
+  <text x="138" y="420" class="eq">Ala + <tspan class="X">X&#8322;</tspan> &#8594; Gly + <tspan class="I">I</tspan></text>
 
-  <!-- ===================== I pool ===================== -->
-  <circle cx="588" cy="420" r="44" fill="#e8f0fb" stroke="#1f5fa8" stroke-width="2.2"/>
-  <text x="588" y="414" text-anchor="middle" font-size="22" class="I">I</text>
-  <text x="588" y="436" text-anchor="middle" font-size="12" fill="#1f5fa8">pyruvate</text>
+  <rect x="128" y="456" width="416" height="62" rx="6" class="rx"/>
+  <text x="138" y="475" class="rid">r_P3 &#183; AUXOSGHMT2r (&#8592;) &#183; Gly hydroxymethyltransferase &#183; EC 2.1.2.1</text>
+  <text x="138" y="496" class="eq">Gly + <tspan class="X">X&#8323;</tspan> + <tspan class="X">X&#8324;</tspan> &#8594; Ser + <tspan class="W">W&#8323;</tspan></text>
+  <text x="138" y="512" class="note">cell-free merged copies: GHMT2r; GHMT2rm</text>
 
-  <!-- I flows -->
-  <path d="M530,150 C575,170 590,300 588,374" class="flowI"/>
-  <path d="M546,404 C540,360 530,320 516,306" class="flowI"/>
-  <text x="508" y="350" text-anchor="end" class="note">1 I consumed</text>
-  <path d="M516,394 L544,410" class="flowI"/>
-  <path d="M516,580 C560,560 590,520 588,466" class="flowI"/>
-  <text x="508" y="540" text-anchor="end" class="note">2 I produced (r_P2, r_P4)</text>
+  <rect x="128" y="544" width="416" height="52" rx="6" class="rx"/>
+  <text x="138" y="563" class="rid">r_P4 &#183; AUXOSSERD_L &#183; L-serine deaminase &#183; EC 4.3.1.17</text>
+  <text x="138" y="586" class="eq">Ser &#8594; <tspan class="I">I</tspan> + <tspan class="W">W&#8322;</tspan></text>
 
-  <!-- ===================== Block C: F-linked linear removal ===================== -->
-  <rect x="650" y="74" width="440" height="296" class="blk"/>
-  <text x="666" y="98" class="hdr">Block C · F-linked linear removal  (r_L)</text>
-  <text x="666" y="118" class="fml">I_int  →(F)  I_ext</text>
-  <rect x="666" y="130" width="408" height="58" class="rx" rx="6"/>
-  <text x="676" y="150" class="rid">r_T_F · ACALDt · acetaldehyde uptake · no EC</text>
-  <text x="676" y="174" class="eq">acald<tspan font-size="10">ext</tspan> → <tspan class="X">X4</tspan></text>
-  <text x="790" y="174" class="note">F gate = m_Fd (G3P): hypothesis</text>
-  <path d="M760,188 L760,214" class="flow"/>
-  <rect x="666" y="216" width="408" height="58" class="rx" rx="6"/>
-  <text x="676" y="236" class="rid">r_L · pyruvate decarboxylase (PYRDC2) · EC 4.1.1.1</text>
-  <text x="676" y="260" class="eq"><tspan class="I">I</tspan> + <tspan class="X">X4</tspan> + <tspan class="B">H⁺</tspan> → <tspan class="W">W4</tspan> + <tspan class="W">W5</tspan></text>
-  <text x="666" y="296" class="warn">Deviation: I is consumed by an enzyme, not exported; F acts</text>
-  <text x="666" y="312" class="warn">only through the supply of X4. The same enzyme (PDC) also</text>
-  <text x="666" y="328" class="warn">decarboxylates I without X4 (PYRDC), so the F gate leaks.</text>
-  <text x="666" y="352" class="note">Rate ≈ k_L·[I] only while X4 is held constant.</text>
+  <path d="M156,352 L156,376" class="flow"/><text x="76" y="372" class="mid">Ala</text>
+  <path d="M156,430 L156,454" class="flow"/><text x="76" y="450" class="mid">Gly</text>
+  <path d="M156,518 L156,542" class="flow"/><text x="76" y="538" class="mid">Ser</text>
 
-  <!-- ===================== Block D: pair loss ===================== -->
-  <rect x="650" y="470" width="440" height="178" class="blk"/>
-  <text x="666" y="494" class="hdr">Block D · Pair loss  (r_Q)</text>
-  <text x="666" y="514" class="fml">2 I_int + Q  →  I_int</text>
-  <rect x="666" y="526" width="408" height="58" class="rx" rx="6"/>
-  <text x="676" y="546" class="rid">r_Q · acetolactate synthase (ACLS) · EC 4.1.3.18 → 2.2.1.6</text>
-  <text x="676" y="570" class="eq">2 <tspan class="I">I</tspan> + <tspan class="B">H⁺</tspan> → <tspan class="W">W6</tspan> + <tspan class="W">W5</tspan></text>
-  <text x="666" y="606" class="warn">Deviation: removes 2 I per event (formal: 1). Same I² form,</text>
-  <text x="666" y="622" class="warn">rate constant doubled. Q = H⁺ (buffered, no extra co-substrate).</text>
+  <text x="46" y="622" class="note">I accounting: r_P1 consumes 1; r_P2 and r_P4 each produce 1; net +1 per turn.</text>
+  <text x="46" y="638" class="note">Smallest module for this I: 4 steps; minimum proven within the search class.</text>
+  <text x="46" y="656" class="warn">Collapsing R1 to one I state assumes r_P2..r_P4 are fast; near k_cat &#8776; 1 s&#8315;&#185; it is invalid.</text>
+  <text x="46" y="672" class="warn">R1 module atom balance: unresolved &#8212; no metabolite formulas in the model.</text>
 
-  <!-- I consumption by the removal blocks (drawn on top) -->
-  <path d="M624,396 C640,380 640,340 648,322" class="flowI"/>
-  <path d="M624,444 C640,462 640,500 648,522" class="flowI"/>
-  <text x="600" y="492" class="note" fill="#1f5fa8">×2</text>
+  <!-- ============ Single-shot note ============ -->
+  <rect x="30" y="700" width="530" height="112" rx="10" class="blk"/>
+  <text x="46" y="724" class="hdr">Single-shot operation  (&#949; = 0, no import of I)</text>
+  <text x="46" y="746" class="note">I(0) &#8776; 3&#215;10&#8315;&#8310; mM pyruvate is already in the vessel. No transporter, no feed, no gate.</text>
+  <text x="46" y="764" class="warn">I(0) sets the output amplitude: 3e-6 &#8594; 91% of full scale, 1e-7 &#8594; 55%, exactly 0 &#8594; nothing.</text>
+  <text x="46" y="782" class="note">Rest decay is algebraic, I&#8320;/(1+k_q&#183;I&#8320;&#183;t): 24 h idle still leaves 20% of full scale.</text>
+  <text x="46" y="800" class="warn">That holds ONLY while the arms are matched &#8212; see the two lines under Notation.</text>
 
-  <!-- ===================== Legend ===================== -->
-  <rect x="30" y="670" width="1060" height="170" class="blk"/>
-  <text x="46" y="694" class="hdr">Notation</text>
-  <text x="46" y="718" class="lg"><tspan class="X">X1</tspan>  L-glutamate (glu_L)</text>
-  <text x="46" y="740" class="lg"><tspan class="X">X2</tspan>  glyoxylate (glx)</text>
-  <text x="46" y="762" class="lg"><tspan class="X">X3</tspan>  5,10-methylene-THF (mlthf)</text>
-  <text x="46" y="784" class="lg"><tspan class="X">X4</tspan>  acetaldehyde (acald), F-gated supply</text>
-  <text x="46" y="806" class="lg"><tspan class="B" font-weight="bold">Buffered</tspan>  H₂O (solvent, ~55 M), H⁺ (pH buffer)</text>
-  <text x="380" y="718" class="lg"><tspan class="W">W1</tspan>  2-oxoglutarate (akg)</text>
-  <text x="380" y="740" class="lg"><tspan class="W">W2</tspan>  NH₄⁺</text>
-  <text x="380" y="762" class="lg"><tspan class="W">W3</tspan>  tetrahydrofolate (thf)</text>
-  <text x="380" y="784" class="lg"><tspan class="W">W4</tspan>  (R)-acetoin (actn_R)</text>
-  <text x="380" y="806" class="lg"><tspan class="W">W5</tspan>  CO₂     <tspan class="W">W6</tspan>  (S)-2-acetolactate (alac_S)</text>
-  <text x="700" y="718" class="lg">Internal (cancel in R1): Ala, Gly, Ser</text>
-  <text x="700" y="740" class="lg">Buffered species fold into the rate constants</text>
-  <text x="700" y="762" class="lg">(←) = reaction used opposite to its model direction</text>
-  <text x="700" y="784" class="lg">Do not supply Ala, Gly or Ser: they bypass the seed I.</text>
-  <text x="700" y="806" class="lg">ECs: iMM904 PROTEIN_CLASS (2009). Report X_3 = H₂O.</text>
-  <text x="46" y="830" class="note">Model IDs carry the AUXOS block prefix (e.g. AUXOSALATA_L). Kinetics, S/F control and thermodynamics are not validated by the structural search.</text>
+  <!-- ============ I pool ============ -->
+  <circle cx="624" cy="430" r="46" fill="#e8f0fb" stroke="#1f5fa8" stroke-width="2.2"/>
+  <text x="624" y="424" text-anchor="middle" font-size="22" class="I">I</text>
+  <text x="624" y="446" text-anchor="middle" font-size="11" fill="#1f5fa8">AUXOSCpyr[u]</text>
+  <text x="624" y="461" text-anchor="middle" font-size="11" fill="#1f5fa8">pyruvate</text>
+  <text x="624" y="496" text-anchor="middle" font-size="10.5" fill="#1f5fa8">net +1 I</text>
+
+  <path d="M560,158 C606,200 606,276 548,304" class="flowS"/>
+  <path d="M590,404 C570,382 558,348 548,330" class="flowI"/>
+  <path d="M548,402 L576,418" class="flowI"/>
+  <path d="M548,572 C588,556 610,500 616,474" class="flowI"/>
+  <path d="M664,400 C692,358 692,300 702,264" class="flowI"/>
+  <path d="M662,458 C684,478 692,496 702,500" class="flowI"/>
+  <text x="664" y="486" class="note" fill="#1f5fa8">&#215;2</text>
+
+  <!-- ============ Block C ============ -->
+  <rect x="690" y="86" width="460" height="330" rx="10" class="blk"/>
+  <text x="706" y="110" class="hdr">Block C &#183; F-linked linear removal  (r_L)</text>
+  <text x="706" y="129" class="fml">I &#8212;(F)&#8594; removed</text>
+  <rect x="706" y="139" width="428" height="54" rx="6" class="rx"/>
+  <text x="716" y="158" class="rid">r_T_F &#183; AUXOSACALDt &#183; acetaldehyde transport &#183; EC unresolved</text>
+  <text x="716" y="181" class="eq">acald<tspan font-size="10">[e]</tspan> &#8212;(F)&#8594; <tspan class="X">X&#8325;</tspan></text>
+  <path d="M790,193 L790,217" class="flow"/>
+  <rect x="706" y="219" width="428" height="54" rx="6" class="rx"/>
+  <text x="716" y="238" class="rid">r_L &#183; AUXOSPYRDC2 &#183; pyruvate decarboxylase (acetoin) &#183; EC 4.1.1.1</text>
+  <text x="716" y="261" class="eq"><tspan class="I">I</tspan> + <tspan class="X">X&#8325;</tspan> + <tspan class="B">H&#8314;</tspan> &#8594; <tspan class="W">W&#8324;</tspan> + <tspan class="W">W&#8325;</tspan></text>
+  <text x="706" y="294" class="ok">F = m_Fd = AUXOSCg3p[u] &#183; glyceraldehyde 3-phosphate.</text>
+  <text x="706" y="314" class="warn">Model calls AUXOSACALDt a REVERSIBLE transport: it equilibrates X&#8325;</text>
+  <text x="706" y="330" class="warn">both ways, so as recorded the F gate carries no sign. Fix this first.</text>
+  <text x="706" y="352" class="warn">I is consumed by an enzyme, not exported; F acts only through the</text>
+  <text x="706" y="368" class="warn">supply of X&#8325;. PDC also decarboxylates I without X&#8325; (PYRDC), so the</text>
+  <text x="706" y="384" class="warn">gate leaks and the zero crossing drifts off S = F.</text>
+  <text x="706" y="404" class="note">Rate &#8776; k_L&#183;[I] only while X&#8325; is held constant.</text>
+
+  <!-- ============ Block D ============ -->
+  <rect x="690" y="432" width="460" height="186" rx="10" class="blk"/>
+  <text x="706" y="456" class="hdr">Block D &#183; Pair loss  (r_Q)</text>
+  <text x="706" y="475" class="fml">2 I + Q &#8594; products</text>
+  <rect x="706" y="485" width="428" height="54" rx="6" class="rx"/>
+  <text x="716" y="504" class="rid">r_Q &#183; AUXOSACLSm &#183; acetolactate synthase (mito.) &#183; EC 4.1.3.18</text>
+  <text x="716" y="527" class="eq">2 <tspan class="I">I</tspan> + <tspan class="B">H&#8314;</tspan> &#8594; <tspan class="W">W&#8326;</tspan> + <tspan class="W">W&#8325;</tspan></text>
+  <text x="706" y="560" class="warn">I loss per primitive event = 2 (formal: 1); no exact 2I &#8594; I found.</text>
+  <text x="706" y="576" class="warn">Same I&#178; form, rate constant doubled: use k_q = k/2 to match &#8722;k&#183;I&#178;.</text>
+  <text x="706" y="596" class="note">Q = H&#8314; (buffered, no extra co-substrate). Product alac_S sits in the</text>
+  <text x="706" y="612" class="note">AUXOSM block; cell-free merge puts it in the same vessel.</text>
+
+  <!-- ============ Signal map ============ -->
+  <rect x="690" y="634" width="460" height="174" rx="10" class="blk"/>
+  <text x="706" y="658" class="hdr">Signal metabolite map (Candidate 1)</text>
+  <text x="706" y="681" class="lg">m_in  AUXOSCf6p[u]  &#183; fructose 6-phosphate</text>
+  <text x="706" y="701" class="lg">m_Ff  AUXOSCfdp[u]  &#183; fructose 1,6-bisphosphate</text>
+  <text x="706" y="721" class="lg">m_Fd  AUXOSCg3p[u]  &#183; glyceraldehyde 3-phosphate  &#8592; <tspan font-weight="bold">F</tspan></text>
+  <text x="706" y="741" class="lg">m_Sf  AUXOSCg6p[u]  &#183; glucose 6-phosphate</text>
+  <text x="706" y="761" class="lg">m_Sd  AUXOSC6pgl[u] &#183; 6-phosphogluconolactone  &#8592; <tspan font-weight="bold">S</tspan></text>
+  <text x="706" y="781" class="lg">I     AUXOSCpyr[u]  &#183; pyruvate</text>
+  <text x="706" y="801" class="lg">m_c   AUXOSCoaa[u]  &#183; oxaloacetate (counter output)</text>
+
+  <!-- ============ Notation ============ -->
+  <rect x="30" y="822" width="1120" height="224" rx="10" class="blk"/>
+  <text x="46" y="846" class="hdr">Notation</text>
+  <text x="46" y="870" class="lg"><tspan class="X">X&#8321;</tspan>  L-glutamate (glu_L) &#8212; <tspan class="X">S-gated</tspan></text>
+  <text x="46" y="890" class="lg"><tspan class="X">X&#8322;</tspan>  glyoxylate (glx)</text>
+  <text x="46" y="910" class="lg"><tspan class="X">X&#8323;</tspan>  H&#8322;O  (report numbering; buffered in the ODE)</text>
+  <text x="46" y="930" class="lg"><tspan class="X">X&#8324;</tspan>  5,10-methylene-THF (mlthf)</text>
+  <text x="46" y="950" class="lg"><tspan class="X">X&#8325;</tspan>  acetaldehyde (acald) &#8212; F-gated supply</text>
+  <text x="46" y="970" class="lg"><tspan class="B" font-weight="bold">Buffered</tspan>  H&#8322;O (~55 M), H&#8314; (pH buffer)</text>
+  <text x="430" y="870" class="lg"><tspan class="W">W&#8321;</tspan>  2-oxoglutarate (akg)</text>
+  <text x="430" y="890" class="lg"><tspan class="W">W&#8322;</tspan>  NH&#8324;&#8314;</text>
+  <text x="430" y="910" class="lg"><tspan class="W">W&#8323;</tspan>  tetrahydrofolate (thf)</text>
+  <text x="430" y="930" class="lg"><tspan class="W">W&#8324;</tspan>  (R)-acetoin (actn_R)</text>
+  <text x="430" y="950" class="lg"><tspan class="W">W&#8325;</tspan>  CO&#8322;</text>
+  <text x="430" y="970" class="lg"><tspan class="W">W&#8326;</tspan>  (S)-2-acetolactate (alac_S)</text>
+  <text x="760" y="870" class="lg">Do not supply Ala, Gly or Ser: they bypass I.</text>
+  <text x="760" y="890" class="lg">ECs: iMM904 PROTEIN_CLASS (Mo, Palsson &amp; Herrg&#229;rd 2009).</text>
+  <text x="760" y="910" class="lg">Transporter ECs are unresolved in the model.</text>
+  <text x="760" y="930" class="lg">Dashed green = proposed gate control, not stoichiometry.</text>
+  <text x="760" y="950" class="lg">S/F control interfaces matched: 0.</text>
+  <text x="760" y="970" class="lg">Internal to R1 (cancel): Ala, Gly, Ser.</text>
+  <text x="46" y="990" class="warn">CRITICAL with &#949;=0: the two arms must be matched at rest, k_P1&#183;X&#8321;max = k_L&#183;X&#8325;max, to about 0.1%. A mismatch makes the rest decay exponential.</text>
+  <text x="46" y="1006" class="warn">F high by 1% leaves only 8% of full scale by the time the event arrives; by 3%, only 1%.</text>
+  <text x="46" y="1022" class="warn">OPEN: Block S transporter ID and its reversibility; AUXOSACALDt reversibility; PYRDC leak in Block C; k_cat of r_P2..r_P4 for the QSS collapse.</text>
+  <text x="46" y="1038" class="note">Structural candidate only. Kinetics, S/F membrane control, thermodynamics and atom balance are NOT validated by this search.</text>
 </svg>
