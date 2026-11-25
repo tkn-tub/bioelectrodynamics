@@ -216,7 +216,16 @@ function results = A_Master(modelInput, userOptions)
 % In membrane mode, rows without gate evidence are STRUCTURAL HYPOTHESES.
 % In default consume_I mode, the gate is not part of the counter. Read
 % 10_Consuming_Counter_Connection_Audit.csv for missing EC/reuse/overlap
-% rejections. counterRequireRemoval=true demands a separate C-removal step.
+% rejections. counterRequireRemoval (DEFAULT true) demands the separate
+% C-removal step r_cr. That reaction is the counter RESET: a C-consuming
+% enzyme driven by C itself, with no extra control species. Held near
+% saturation it removes C at a constant rate, cancelling the baseline
+% formation flux, so the counter integrates only the excursion of I and
+% returns to zero between events. Saturation (K_M << peak C) is a KINETIC
+% requirement for the BRENDA step; this structural search only selects the
+% reaction. Set counterRequireRemoval=false to allow the earlier
+% formation-only counter, which integrates the DC level of I and never
+% resets.
 % Gate_Evidence_TEMPLATE.tsv is written if there is no supplied evidence file.
 % Fill it only from mechanism-specific evidence. It uses exact reaction ID,
 % direction (+1/-1), intracellular cargo ID and model gene ID. Effect must be
@@ -726,7 +735,7 @@ cfg = struct('outputDir',fullfile(pwd,'Anderson_Transport_Production_Results'), 
     'branchMaxRails',5000,'branchMaxPairTests',200000,'branchMaxModules',500, ...
     'branchMaxWiringTests',100000,'branchMaxWiring',10000, ...
     'connectCounter',true,'counterMode',"consume_I",'counterRequireFormationEC',false, ...
-    'counterRequireRemoval',false,'counterRequireLeakEC',false,'counterUseVerifiedSeedMap',true, ...
+    'counterRequireRemoval',true,'counterRequireLeakEC',false,'counterUseVerifiedSeedMap',true, ...
     'counterECFile','Counter_EC_Evidence.tsv','counterGateEvidenceFile','Counter_Gate_Evidence.tsv', ...
     'counterCargoID',"",'counterRequireGateEvidence',false,'counterRequireIsolation',true, ...
     'counterDistinctECFromBranches',true,'counterRequireBoundaryFeed',false, ...
@@ -4220,8 +4229,17 @@ report(fid,sprintf('  I loss per primitive quadratic event: %g; exact formal 2I-
 step2Section(fid,'COUNTER AND ONE CONSUMING NEURON');
 step2PrintOrientation(fid,'r_c',ctx.F.OrientationIndex(f),ctx);
 report(fid,sprintf('  Counter consumes I; primitive I loss=%g; C gain=%g.',ctx.F.I_LossPerEvent(f),ctx.F.C_GainPerEvent(f)));
-if ctx.X.LeakOrientationIndex(x)>0,step2PrintOrientation(fid,'r_cr',ctx.X.LeakOrientationIndex(x),ctx);
-else,report(fid,'r_cr');report(fid,'  UNASSIGNED: formation-only counter has no selected independent C-removal reaction.');end
+if ctx.X.LeakOrientationIndex(x)>0
+    step2PrintOrientation(fid,'r_cr',ctx.X.LeakOrientationIndex(x),ctx);
+    report(fid,'  Counter RESET: consumes C, driven by C itself; no extra control species.');
+    report(fid,'  Must run near saturation (K_M << peak C) so the removal is zero order and');
+    report(fid,'  cancels the baseline formation flux. Kinetics are NOT verified here.');
+    report(fid,'  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.');
+else
+    report(fid,'r_cr');
+    report(fid,'  UNASSIGNED: formation-only counter has no selected independent C-removal reaction.');
+    report(fid,'  Without it the counter integrates the DC level of I and never returns to zero.');
+end
 if cfg.neuronPlacement=="outside"
     if ~isempty(selectedTransport)
         report(fid,'  Counter-to-neuron interface:');

@@ -48,8 +48,8 @@ Stages enabled: removal=1; branches=1; counter=1; Step2=1. Required supplied imp
   EC-qualified fast/slow modules: 4; enabled=1; inspect 07_Branch_Modules.csv.
   Branch plus canceller connections: 4; enabled=1; inspect 08_Branches_Canceller_Wiring.csv.
   Counter components: 14; enabled=1; inspect 09_Counter_Components.csv.
-  Canceller plus counter connections: 54; enabled=1; inspect 10_Canceller_Counter_Connections.csv.
-  Branch-canceller-counter parents: 108; enabled=1; inspect 11_Branches_Canceller_Counter_Wiring.csv.
+  Canceller plus counter connections: 48; enabled=1; inspect 10_Canceller_Counter_Connections.csv.
+  Branch-canceller-counter parents: 96; enabled=1; inspect 11_Branches_Canceller_Counter_Wiring.csv.
 Production coverage: budget reached for 2 I pools; solver-unresolved closures=0. See 02_Search_Coverage.csv.
 Production minimum sizes proven within the enumerated search class for 2 I pools. See Minimum_Production_Report.txt.
 A minimum applies to production alone. Longer modules may be needed to satisfy downstream isolation and wiring.
@@ -57,40 +57,736 @@ A minimum applies to production alone. Longer modules may be needed to satisfy d
 ============================================================
 SEARCH COUNTS: FOUND VERSUS PRINTED
 ============================================================
-Branch-canceller-counter parents available: 108; examined: 96.
+Branch-canceller-counter parents available: 96; examined: 88.
 EC-qualified isolated neuron candidates, without requiring Block 0: 100000. See 15_Transported_Neuron_Candidates.csv.
-Isolated-search path states=75660; diagnostic path states=16; diagnostic budget-limited calls=0; consuming-path inventory rows=75572.
+Isolated-search path states=75248; diagnostic path states=8; diagnostic budget-limited calls=0; consuming-path inventory rows=75164.
 15_Consuming_Neuron_Chains.csv separates clean prefixes from flagged feedback/overlap diagnostics; 15_Isolated_Neuron_Candidates.csv contains only qualified neurons.
 15_Neuron_Chain_Coverage.csv records both search passes. A reached state, depth or test limit is incomplete coverage.
 Parents with an EC-qualified isolated cAMP-to-m_in connector: 0.
 Parents with an isolated structural connector awaiting EC qualification: 0.
-Single-neuron rails passing current policies: 100760; neuron candidates tested: 100000.
+Single-neuron rails passing current policies: 100152; neuron candidates tested: 100000.
 Distinct complete motifs found: 0; complete motifs printed: 0.
 Limits reached: parent=0; neuron calls=0; neuron candidate tests=1; complete retention=0; parent Block0 budget-limited calls=0.
-Step 2 time limit reached=0 (step2MaxSeconds=21600); elapsed 344 s.
+Step 2 time limit reached=0 (step2MaxSeconds=21600); elapsed 333 s.
 Block 0: shared upstream searches=0; counter variants answered from a shared search=0; full per-parent re-searches=0.
 Complete counts require one neuron and a Block 0 connector rechecked against all downstream reactions and EC assignments.
 Block 0 searched=0; Block 0 requires EC=0. With Block 0 off, look for neuronStatus neuron_found_Block0_not_searched.
-Parents with at least one passing neuron: 88; passing neuron candidates: 100000.
+Parents with at least one passing neuron: 84; passing neuron candidates: 100000.
 Partial parents and rejected diagnostic paths never contribute to the complete count. Printing does not determine search limits.
 No whole-cell flux, atom-transfer, thermodynamic or kinetic validation is claimed. Additional co-substrates remain required.
 
 ============================================================
 NEURON ENTRY REJECTIONS
 ============================================================
-  eligible_entry_for_neuron_search: 1256
-  entry_reuses_upstream_reaction: 84
-  entry_shares_noncurrency_outside_neuron_input: 320
-  entry_EC_unresolved: 80
+  entry_reuses_upstream_reaction: 88
+  entry_shares_noncurrency_outside_neuron_input: 316
+  eligible_entry_for_neuron_search: 1236
+  entry_EC_unresolved: 76
 
-No complete motif passed. Printing 10 of 96 PARTIAL parents with all known reactions and explicit missing roles.
-Parents with a passing neuron are printed first: 88 of 96 parents have one.
+No complete motif passed. Printing 10 of 88 PARTIAL parents with all known reactions and explicit missing roles.
+Parents with a passing neuron are printed first: 84 of 88 parents have one.
 Within each group: fewest canceller reactions first, then fewest Block 0 reactions.
 
 RANK 1 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
 CANDIDATE 1 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
+============================================================
+Parent=3; module=1; canceller=1; counter=2; block=u.
+Neuron status: neuron_found_Block0_not_searched
+S/F control interfaces matched: 0.
+SIGNAL METABOLITE MAP
+  m_in     : AUXOSCf6p[u] | M_D_Fructose_6_phosphate_C6H11O9P
+  m_Ff     : AUXOSCfdp[u] | M_D_Fructose_1_6_bisphosphate_C6H10O12P2
+  m_Fd     : AUXOSCg3p[u] | M_Glyceraldehyde_3_phosphate_C3H5O6P
+  m_Sf     : AUXOSCg6p[u] | M_D_Glucose_6_phosphate_C6H11O9P
+  m_Sd     : AUXOSC6pgl[u] | M_6_phospho_D_glucono_1_5_lactone_C6H9O9P
+  I        : AUXOSCpyr[u] | M_Pyruvate_C3H3O3
+  m_c      : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
+  m_Nin_1  : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
+  m_Nf_1   : AUXOSCmal_L[u] | M_L_Malate_C4H4O5
+  m_Nd_1   : AUXOSCfum[u] | M_Fumarate_C4H2O4
+  m_out    : AUXOSCfum[u] | M_Fumarate_C4H2O4
+  Neuron roles below are a NEURON-ONLY candidate; Block 0/full-circuit completion is pending.
+  r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
+
+============================================================
+BLOCK 0: cAMP TO m_in
+============================================================
+  Connection status: Block0_not_searched_step2SearchBlock0_false
+  Search termination: not_started
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
+  No isolated cAMP-to-m_in connector accepted within the configured search.
+  REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
+  Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
+  Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
+r_CAMP_DIAGNOSTIC_1
+  ID: AUXOSPDE1
+  Name: R_3__5__cyclic_nucleotide_phosphodiesterase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.4.17
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PDE1 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_cAMP_C10H11N5O6P [AUXOSCcamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+r_CAMP_DIAGNOSTIC_2
+  ID: AUXOSAMPN
+  Name: R_AMP_nucleosidase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.2.2.4
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for AMPN (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Adenine_C5H5N5 [AUXOSCade[u]] + M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]]
+  GPR: 
+  Resolved genes: 
+
+r_CAMP_DIAGNOSTIC_3
+  ID: AUXOSTKT1
+  Name: R_transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for TKT1 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]] + M_D_Xylulose_5_phosphate_C5H9O8P [AUXOSCxu5p_D[u]] -> M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]]
+  GPR: 
+  Resolved genes: 
+
+r_CAMP_DIAGNOSTIC_4
+  ID: AUXOSTALA
+  Name: R_transaldolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.2
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for TALA (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]] -> M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]]
+  GPR: 
+  Resolved genes: 
+
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
+
+============================================================
+FAST AND SLOW BRANCHES (SIX REACTIONS)
+============================================================
+r_Ff
+  ID: AUXOSPFK
+  Name: R_phosphofructokinase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.7.1.11
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PFK
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Ff) [AUXOSCfdp[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Fd
+  ID: AUXOSFBA
+  Name: R_fructose_bisphosphate_aldolase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.2.13
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FBA
+  Equation: M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Ff) [AUXOSCfdp[u]] -> M_Dihydroxyacetone_phosphate_C3H5O6P [AUXOSCdhap[u]] + M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Fr
+  ID: AUXOSGAPD
+  Name: R_glyceraldehyde_3_phosphate_dehydrogenase
+  Direction: +1 relative to model.S
+  Resolved EC: 1.2.1.12;1.2.1.59
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GAPD
+  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] + M_Phosphate_HO4P [AUXOSCpi[u]] -> M_3_Phospho_D_glyceroyl_phosphate_C3H4O10P2 [AUXOSC13dpg[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Sf
+  ID: AUXOSPGI
+  Name: R_glucose_6_phosphate_isomerase
+  Direction: -1 relative to model.S
+  Resolved EC: 5.3.1.9
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGI
+  Equation: M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_D_Glucose_6_phosphate_C6H11O9P (m_Sf) [AUXOSCg6p[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Sd
+  ID: AUXOSG6PDH2
+  Name: R_glucose_6_phosphate_dehydrogenase
+  Cell-free merged copies: AUXOSG6PDH2;AUXOSG6PDH2er
+  Direction: +1 relative to model.S
+  Resolved EC: 1.1.1.49;1.1.1.363
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/G6PDH2r
+  Equation: M_D_Glucose_6_phosphate_C6H11O9P (m_Sf) [AUXOSCg6p[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate_C21H25N7O17P3 [AUXOSCnadp[u]] -> M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Sd) [AUXOSC6pgl[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate___reduced_C21H26N7O17P3 [AUXOSCnadph[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Sr
+  ID: AUXOSPGL
+  Name: R_6_phosphogluconolactonase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.1.31
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGL
+  Equation: M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Sd) [AUXOSC6pgl[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_6_Phospho_D_gluconate_C6H10O10P [AUXOSC6pgc[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+
+============================================================
+ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
+============================================================
+
+============================================================
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
+============================================================
+  Proposed S signal: m_Sd = AUXOSC6pgl[u]. The transporter-control link is not inferred from stoichiometry.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
+  X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
+  X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
+  X_3      : AUXOSCh2o[u] | M_H2O_H2O
+  X_4      : AUXOSCmlthf[u] | M_5_10_Methylenetetrahydrofolate_C20H21N7O6
+  W_1      : AUXOSCakg[u] | M_2_Oxoglutarate_C5H4O5
+  W_2      : AUXOSCnh4[u] | M_Ammonium_H4N
+  W_3      : AUXOSCthf[u] | M_5_6_7_8_Tetrahydrofolate_C19H21N7O6
+  R1 effective module equation (non-I intermediates cancelled): M_L_Glutamate_C5H8NO4 (X_1) [AUXOSCglu_L[u]] + M_Glyoxylate_C2H1O3 (X_2) [AUXOSCglx[u]] + M_H2O_H2O (X_3) [AUXOSCh2o[u]] + M_5_10_Methylenetetrahydrofolate_C20H21N7O6 (X_4) [AUXOSCmlthf[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_2_Oxoglutarate_C5H4O5 (W_1) [AUXOSCakg[u]] + M_Ammonium_H4N (W_2) [AUXOSCnh4[u]] + 2 M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] + M_5_6_7_8_Tetrahydrofolate_C19H21N7O6 (W_3) [AUXOSCthf[u]]
+  Actual I accounting: 1 consumed -> 2 produced across 4 reaction(s).
+  Smallest production module found for this I: 4 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
+  R1 is the effective production role, implemented by the following recorded reactions.
+  Eq. Block 1 / R1 module step 1 of 4:
+r_I_production_01
+  ID: AUXOSALATA_L
+  Name: R_L_alanine_transaminase
+  Cell-free merged copies: AUXOSALATA_L;AUXOSALATA_Lm
+  Direction: -1 relative to model.S
+  Resolved EC: 2.6.1.2
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ALATA_L (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_L_Glutamate_C5H8NO4 (X_1) [AUXOSCglu_L[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_2_Oxoglutarate_C5H4O5 (W_1) [AUXOSCakg[u]] + M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]]
+  GPR: 
+  Resolved genes: 
+
+  Core flux multiplier per normalized turnover: 1
+  Eq. Block 1 / R1 module step 2 of 4:
+r_I_production_02
+  ID: AUXOSAGTi
+  Name: R_Alanine_glyoxylate_aminotransferase__irreversible_
+  Direction: +1 relative to model.S
+  Resolved EC: 2.6.1.44
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for AGTi (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]] + M_Glyoxylate_C2H1O3 (X_2) [AUXOSCglx[u]] -> M_Glycine_C2H5NO2 [AUXOSCgly[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
+  GPR: 
+  Resolved genes: 
+
+  Core flux multiplier per normalized turnover: 1
+  Eq. Block 1 / R1 module step 3 of 4:
+r_I_production_03
+  ID: AUXOSGHMT2r
+  Name: R_glycine_hydroxymethyltransferase__reversible
+  Cell-free merged copies: AUXOSGHMT2r;AUXOSGHMT2rm
+  Direction: -1 relative to model.S
+  Resolved EC: 2.1.2.1
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for GHMT2r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Glycine_C2H5NO2 [AUXOSCgly[u]] + M_H2O_H2O (X_3) [AUXOSCh2o[u]] + M_5_10_Methylenetetrahydrofolate_C20H21N7O6 (X_4) [AUXOSCmlthf[u]] -> M_L_Serine_C3H7NO3 [AUXOSCser_L[u]] + M_5_6_7_8_Tetrahydrofolate_C19H21N7O6 (W_3) [AUXOSCthf[u]]
+  GPR: 
+  Resolved genes: 
+
+  Core flux multiplier per normalized turnover: 1
+  Eq. Block 1 / R1 module step 4 of 4:
+r_I_production_04
+  ID: AUXOSSERD_L
+  Name: R_L_serine_deaminase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.3.1.17
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for SERD_L (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_L_Serine_C3H7NO3 [AUXOSCser_L[u]] -> M_Ammonium_H4N (W_2) [AUXOSCnh4[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
+  GPR: 
+  Resolved genes: 
+
+  Core flux multiplier per normalized turnover: 1
+  X comprises all net-consumed precursors/energy substrates; W comprises other net-produced products.
+  R1 module atom balance: unresolved_no_metabolite_formulas | 
+  S-controlled I import supplies seed/additional I. S-dependent stopping of R1 or a k*S*I law has not been established.
+
+============================================================
+EQ. BLOCK 2: F-LINKED I REMOVAL
+============================================================
+  Proposed F signal: m_Fd = AUXOSCg3p[u]. A consumed co-substrate is not F.
+r_I_linear_removal
+  ID: AUXOSPYRDC2
+  Name: R_pyruvate_decarboxylase__acetoin_forming_
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.1.1
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PYRDC2 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Acetaldehyde_C2H4O [AUXOSCacald[u]] + M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M__R__Acetoin_C4H8O2 [AUXOSCactn_R[u]] + M_CO2_CO2 [AUXOSCco2[u]]
+  GPR: 
+  Resolved genes: 
+
+r_T_F
+  ID: AUXOSACALDt
+  Name: R_acetaldehyde_reversible_transport
+  Direction: +1 relative to model.S
+  Resolved EC: UNRESOLVED (no annotation inferred)
+  EC annotation source: 
+  EC annotation reference: 
+  Equation: M_Acetaldehyde_C2H4O [acald[e]] -> M_Acetaldehyde_C2H4O [AUXOSCacald[u]]
+  GPR: 
+  Resolved genes: 
+
+  Imported co-substrate is consumed; it is not automatically the F controller.
+
+============================================================
+EQ. BLOCK 3: I PAIR LOSS
+============================================================
+r_I_quadratic_removal
+  ID: AUXOSACLSm
+  Name: R_acetolactate_synthase__mitochondrial
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.3.18
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACLSm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_H_H [AUXOSCh[u]] + 2 M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M__S__2_Acetolactate_C5H7O4 [AUXOSMalac_S[u]] + M_CO2_CO2 [AUXOSCco2[u]]
+  GPR: 
+  Resolved genes: 
+
+  I loss per primitive quadratic event: 2; exact formal 2I->I=0; quadratic kinetics unverified.
+
+============================================================
+COUNTER AND ONE CONSUMING NEURON
+============================================================
+r_c
+  ID: AUXOSPC
+  Name: R_pyruvate_carboxylase
+  Direction: +1 relative to model.S
+  Resolved EC: 6.4.1.1
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PC (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Bicarbonate_CHO3 [AUXOSChco3[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_H_H [AUXOSCh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
+  GPR: 
+  Resolved genes: 
+
+  Counter consumes I; primitive I loss=1; C gain=1.
+r_cr
+  ID: AUXOSCSm
+  Name: R_citrate_synthase
+  Cell-free merged copies: AUXOSCSm;AUXOSCSp
+  Direction: +1 relative to model.S
+  Resolved EC: UNRESOLVED (no annotation inferred)
+  EC annotation source: 
+  EC annotation reference: 
+  Equation: M_Acetyl_CoA_C23H34N7O17P3S [AUXOSCaccoa[u]] + M_H2O_H2O [AUXOSCh2o[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_Citrate_C6H5O7 [AUXOSCcit[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
+  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
+r_Nf_1
+  ID: AUXOSMDH
+  Name: R_malate_dehydrogenase
+  Cell-free merged copies: AUXOSMDH;AUXOSMDHm;AUXOSMDHp
+  Direction: -1 relative to model.S
+  Resolved EC: 1.1.1.37
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MDH (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Nd_1
+  ID: AUXOSFUM
+  Name: R_fumarase
+  Cell-free merged copies: AUXOSFUM;AUXOSFUMm
+  Direction: -1 relative to model.S
+  Resolved EC: 4.2.1.2
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for FUM (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] -> M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] + M_H2O_H2O [AUXOSCh2o[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Nr_1
+  ID: AUXOSADSL1r
+  Name: R_adenylsuccinate_lyase
+  Direction: -1 relative to model.S
+  Resolved EC: 4.3.2.2
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ADSL1r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] -> M_N6__1_2_Dicarboxyethyl__AMP_C14H14N5O11P [AUXOSCdcamp[u]]
+  GPR: 
+  Resolved genes: 
+
+  The neuron conversion chain, independent removal and prefix EC assignments passed, but this parent is not a complete circuit.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
+
+RANK 2 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
+
+============================================================
+CANDIDATE 2 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
+============================================================
+Parent=4; module=2; canceller=1; counter=2; block=u.
+Neuron status: neuron_found_Block0_not_searched
+S/F control interfaces matched: 0.
+SIGNAL METABOLITE MAP
+  m_in     : AUXOSCf6p[u] | M_D_Fructose_6_phosphate_C6H11O9P
+  m_Ff     : AUXOSCg6p[u] | M_D_Glucose_6_phosphate_C6H11O9P
+  m_Fd     : AUXOSC6pgl[u] | M_6_phospho_D_glucono_1_5_lactone_C6H9O9P
+  m_Sf     : AUXOSCfdp[u] | M_D_Fructose_1_6_bisphosphate_C6H10O12P2
+  m_Sd     : AUXOSCg3p[u] | M_Glyceraldehyde_3_phosphate_C3H5O6P
+  I        : AUXOSCpyr[u] | M_Pyruvate_C3H3O3
+  m_c      : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
+  m_Nin_1  : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
+  m_Nf_1   : AUXOSCmal_L[u] | M_L_Malate_C4H4O5
+  m_Nd_1   : AUXOSCfum[u] | M_Fumarate_C4H2O4
+  m_out    : AUXOSCfum[u] | M_Fumarate_C4H2O4
+  Neuron roles below are a NEURON-ONLY candidate; Block 0/full-circuit completion is pending.
+  r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
+
+============================================================
+BLOCK 0: cAMP TO m_in
+============================================================
+  Connection status: Block0_not_searched_step2SearchBlock0_false
+  Search termination: not_started
+  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
+  No isolated cAMP-to-m_in connector accepted within the configured search.
+  REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
+  Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
+  Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
+  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
+r_CAMP_DIAGNOSTIC_1
+  ID: AUXOSPDE1
+  Name: R_3__5__cyclic_nucleotide_phosphodiesterase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.4.17
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PDE1 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_cAMP_C10H11N5O6P [AUXOSCcamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+r_CAMP_DIAGNOSTIC_2
+  ID: AUXOSAMPN
+  Name: R_AMP_nucleosidase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.2.2.4
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for AMPN (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Adenine_C5H5N5 [AUXOSCade[u]] + M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]]
+  GPR: 
+  Resolved genes: 
+
+r_CAMP_DIAGNOSTIC_3
+  ID: AUXOSTKT1
+  Name: R_transketolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.1
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for TKT1 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]] + M_D_Xylulose_5_phosphate_C5H9O8P [AUXOSCxu5p_D[u]] -> M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]]
+  GPR: 
+  Resolved genes: 
+
+r_CAMP_DIAGNOSTIC_4
+  ID: AUXOSTALA
+  Name: R_transaldolase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.2.1.2
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for TALA (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]] -> M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]]
+  GPR: 
+  Resolved genes: 
+
+  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
+  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
+
+============================================================
+FAST AND SLOW BRANCHES (SIX REACTIONS)
+============================================================
+r_Ff
+  ID: AUXOSPGI
+  Name: R_glucose_6_phosphate_isomerase
+  Direction: -1 relative to model.S
+  Resolved EC: 5.3.1.9
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGI
+  Equation: M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_D_Glucose_6_phosphate_C6H11O9P (m_Ff) [AUXOSCg6p[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Fd
+  ID: AUXOSG6PDH2
+  Name: R_glucose_6_phosphate_dehydrogenase
+  Cell-free merged copies: AUXOSG6PDH2;AUXOSG6PDH2er
+  Direction: +1 relative to model.S
+  Resolved EC: 1.1.1.49;1.1.1.363
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/G6PDH2r
+  Equation: M_D_Glucose_6_phosphate_C6H11O9P (m_Ff) [AUXOSCg6p[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate_C21H25N7O17P3 [AUXOSCnadp[u]] -> M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Fd) [AUXOSC6pgl[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate___reduced_C21H26N7O17P3 [AUXOSCnadph[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Fr
+  ID: AUXOSPGL
+  Name: R_6_phosphogluconolactonase
+  Direction: +1 relative to model.S
+  Resolved EC: 3.1.1.31
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGL
+  Equation: M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Fd) [AUXOSC6pgl[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_6_Phospho_D_gluconate_C6H10O10P [AUXOSC6pgc[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Sf
+  ID: AUXOSPFK
+  Name: R_phosphofructokinase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.7.1.11
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PFK
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Sf) [AUXOSCfdp[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Sd
+  ID: AUXOSFBA
+  Name: R_fructose_bisphosphate_aldolase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.2.13
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FBA
+  Equation: M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Sf) [AUXOSCfdp[u]] -> M_Dihydroxyacetone_phosphate_C3H5O6P [AUXOSCdhap[u]] + M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Sr
+  ID: AUXOSGAPD
+  Name: R_glyceraldehyde_3_phosphate_dehydrogenase
+  Direction: +1 relative to model.S
+  Resolved EC: 1.2.1.12;1.2.1.59
+  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
+  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GAPD
+  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] + M_Phosphate_HO4P [AUXOSCpi[u]] -> M_3_Phospho_D_glyceroyl_phosphate_C3H4O10P2 [AUXOSC13dpg[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
+  GPR: 
+  Resolved genes: 
+
+
+============================================================
+ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
+============================================================
+
+============================================================
+EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
+============================================================
+  Proposed S signal: m_Sd = AUXOSCg3p[u]. The transporter-control link is not inferred from stoichiometry.
+  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
+  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
+  X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
+  X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
+  X_3      : AUXOSCh2o[u] | M_H2O_H2O
+  X_4      : AUXOSCmlthf[u] | M_5_10_Methylenetetrahydrofolate_C20H21N7O6
+  W_1      : AUXOSCakg[u] | M_2_Oxoglutarate_C5H4O5
+  W_2      : AUXOSCnh4[u] | M_Ammonium_H4N
+  W_3      : AUXOSCthf[u] | M_5_6_7_8_Tetrahydrofolate_C19H21N7O6
+  R1 effective module equation (non-I intermediates cancelled): M_L_Glutamate_C5H8NO4 (X_1) [AUXOSCglu_L[u]] + M_Glyoxylate_C2H1O3 (X_2) [AUXOSCglx[u]] + M_H2O_H2O (X_3) [AUXOSCh2o[u]] + M_5_10_Methylenetetrahydrofolate_C20H21N7O6 (X_4) [AUXOSCmlthf[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_2_Oxoglutarate_C5H4O5 (W_1) [AUXOSCakg[u]] + M_Ammonium_H4N (W_2) [AUXOSCnh4[u]] + 2 M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] + M_5_6_7_8_Tetrahydrofolate_C19H21N7O6 (W_3) [AUXOSCthf[u]]
+  Actual I accounting: 1 consumed -> 2 produced across 4 reaction(s).
+  Smallest production module found for this I: 4 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
+  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
+  R1 is the effective production role, implemented by the following recorded reactions.
+  Eq. Block 1 / R1 module step 1 of 4:
+r_I_production_01
+  ID: AUXOSALATA_L
+  Name: R_L_alanine_transaminase
+  Cell-free merged copies: AUXOSALATA_L;AUXOSALATA_Lm
+  Direction: -1 relative to model.S
+  Resolved EC: 2.6.1.2
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ALATA_L (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_L_Glutamate_C5H8NO4 (X_1) [AUXOSCglu_L[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_2_Oxoglutarate_C5H4O5 (W_1) [AUXOSCakg[u]] + M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]]
+  GPR: 
+  Resolved genes: 
+
+  Core flux multiplier per normalized turnover: 1
+  Eq. Block 1 / R1 module step 2 of 4:
+r_I_production_02
+  ID: AUXOSAGTi
+  Name: R_Alanine_glyoxylate_aminotransferase__irreversible_
+  Direction: +1 relative to model.S
+  Resolved EC: 2.6.1.44
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for AGTi (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]] + M_Glyoxylate_C2H1O3 (X_2) [AUXOSCglx[u]] -> M_Glycine_C2H5NO2 [AUXOSCgly[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
+  GPR: 
+  Resolved genes: 
+
+  Core flux multiplier per normalized turnover: 1
+  Eq. Block 1 / R1 module step 3 of 4:
+r_I_production_03
+  ID: AUXOSGHMT2r
+  Name: R_glycine_hydroxymethyltransferase__reversible
+  Cell-free merged copies: AUXOSGHMT2r;AUXOSGHMT2rm
+  Direction: -1 relative to model.S
+  Resolved EC: 2.1.2.1
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for GHMT2r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Glycine_C2H5NO2 [AUXOSCgly[u]] + M_H2O_H2O (X_3) [AUXOSCh2o[u]] + M_5_10_Methylenetetrahydrofolate_C20H21N7O6 (X_4) [AUXOSCmlthf[u]] -> M_L_Serine_C3H7NO3 [AUXOSCser_L[u]] + M_5_6_7_8_Tetrahydrofolate_C19H21N7O6 (W_3) [AUXOSCthf[u]]
+  GPR: 
+  Resolved genes: 
+
+  Core flux multiplier per normalized turnover: 1
+  Eq. Block 1 / R1 module step 4 of 4:
+r_I_production_04
+  ID: AUXOSSERD_L
+  Name: R_L_serine_deaminase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.3.1.17
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for SERD_L (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_L_Serine_C3H7NO3 [AUXOSCser_L[u]] -> M_Ammonium_H4N (W_2) [AUXOSCnh4[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
+  GPR: 
+  Resolved genes: 
+
+  Core flux multiplier per normalized turnover: 1
+  X comprises all net-consumed precursors/energy substrates; W comprises other net-produced products.
+  R1 module atom balance: unresolved_no_metabolite_formulas | 
+  S-controlled I import supplies seed/additional I. S-dependent stopping of R1 or a k*S*I law has not been established.
+
+============================================================
+EQ. BLOCK 2: F-LINKED I REMOVAL
+============================================================
+  Proposed F signal: m_Fd = AUXOSC6pgl[u]. A consumed co-substrate is not F.
+r_I_linear_removal
+  ID: AUXOSPYRDC2
+  Name: R_pyruvate_decarboxylase__acetoin_forming_
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.1.1
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PYRDC2 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Acetaldehyde_C2H4O [AUXOSCacald[u]] + M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M__R__Acetoin_C4H8O2 [AUXOSCactn_R[u]] + M_CO2_CO2 [AUXOSCco2[u]]
+  GPR: 
+  Resolved genes: 
+
+r_T_F
+  ID: AUXOSACALDt
+  Name: R_acetaldehyde_reversible_transport
+  Direction: +1 relative to model.S
+  Resolved EC: UNRESOLVED (no annotation inferred)
+  EC annotation source: 
+  EC annotation reference: 
+  Equation: M_Acetaldehyde_C2H4O [acald[e]] -> M_Acetaldehyde_C2H4O [AUXOSCacald[u]]
+  GPR: 
+  Resolved genes: 
+
+  Imported co-substrate is consumed; it is not automatically the F controller.
+
+============================================================
+EQ. BLOCK 3: I PAIR LOSS
+============================================================
+r_I_quadratic_removal
+  ID: AUXOSACLSm
+  Name: R_acetolactate_synthase__mitochondrial
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.3.18
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACLSm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_H_H [AUXOSCh[u]] + 2 M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M__S__2_Acetolactate_C5H7O4 [AUXOSMalac_S[u]] + M_CO2_CO2 [AUXOSCco2[u]]
+  GPR: 
+  Resolved genes: 
+
+  I loss per primitive quadratic event: 2; exact formal 2I->I=0; quadratic kinetics unverified.
+
+============================================================
+COUNTER AND ONE CONSUMING NEURON
+============================================================
+r_c
+  ID: AUXOSPC
+  Name: R_pyruvate_carboxylase
+  Direction: +1 relative to model.S
+  Resolved EC: 6.4.1.1
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PC (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Bicarbonate_CHO3 [AUXOSChco3[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_H_H [AUXOSCh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
+  GPR: 
+  Resolved genes: 
+
+  Counter consumes I; primitive I loss=1; C gain=1.
+r_cr
+  ID: AUXOSCSm
+  Name: R_citrate_synthase
+  Cell-free merged copies: AUXOSCSm;AUXOSCSp
+  Direction: +1 relative to model.S
+  Resolved EC: UNRESOLVED (no annotation inferred)
+  EC annotation source: 
+  EC annotation reference: 
+  Equation: M_Acetyl_CoA_C23H34N7O17P3S [AUXOSCaccoa[u]] + M_H2O_H2O [AUXOSCh2o[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_Citrate_C6H5O7 [AUXOSCcit[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
+  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
+r_Nf_1
+  ID: AUXOSMDH
+  Name: R_malate_dehydrogenase
+  Cell-free merged copies: AUXOSMDH;AUXOSMDHm;AUXOSMDHp
+  Direction: -1 relative to model.S
+  Resolved EC: 1.1.1.37
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MDH (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Nd_1
+  ID: AUXOSFUM
+  Name: R_fumarase
+  Cell-free merged copies: AUXOSFUM;AUXOSFUMm
+  Direction: -1 relative to model.S
+  Resolved EC: 4.2.1.2
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for FUM (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] -> M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] + M_H2O_H2O [AUXOSCh2o[u]]
+  GPR: 
+  Resolved genes: 
+
+r_Nr_1
+  ID: AUXOSADSL1r
+  Name: R_adenylsuccinate_lyase
+  Direction: -1 relative to model.S
+  Resolved EC: 4.3.2.2
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ADSL1r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] -> M_N6__1_2_Dicarboxyethyl__AMP_C14H14N5O11P [AUXOSCdcamp[u]]
+  GPR: 
+  Resolved genes: 
+
+  The neuron conversion chain, independent removal and prefix EC assignments passed, but this parent is not a complete circuit.
+MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
+STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
+
+RANK 3 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
+
+============================================================
+CANDIDATE 3 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
 Parent=5; module=1; canceller=1; counter=3; block=u.
 Neuron status: neuron_found_Block0_not_searched
@@ -379,7 +1075,20 @@ r_c
 
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
-  UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
+  ID: AUXOSMCITSm
+  Name: R_2_methylcitrate_synthase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.3.31
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MCITSm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_H2O_H2O [AUXOSCh2o[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Propanoyl_CoA_C24H36N7O17P3S [AUXOSMppcoa[u]] -> M_2_Methylcitrate_C7H7O7 [AUXOSM2mcit[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
   r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
   Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
 r_Nf_1
@@ -421,10 +1130,10 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 2 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
+RANK 4 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
-CANDIDATE 2 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
+CANDIDATE 4 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
 Parent=6; module=2; canceller=1; counter=3; block=u.
 Neuron status: neuron_found_Block0_not_searched
@@ -713,7 +1422,20 @@ r_c
 
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
-  UNASSIGNED: formation-only counter has no selected independent C-removal reaction.
+  ID: AUXOSMCITSm
+  Name: R_2_methylcitrate_synthase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.3.31
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MCITSm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_H2O_H2O [AUXOSCh2o[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Propanoyl_CoA_C24H36N7O17P3S [AUXOSMppcoa[u]] -> M_2_Methylcitrate_C7H7O7 [AUXOSM2mcit[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
+  GPR: 
+  Resolved genes: 
+
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
   r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
   Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
 r_Nf_1
@@ -755,10 +1477,10 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 3 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
+RANK 5 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
-CANDIDATE 3 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
+CANDIDATE 5 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
 Parent=7; module=1; canceller=1; counter=4; block=u.
 Neuron status: neuron_found_Block0_not_searched
@@ -772,9 +1494,9 @@ SIGNAL METABOLITE MAP
   I        : AUXOSCpyr[u] | M_Pyruvate_C3H3O3
   m_c      : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
   m_Nin_1  : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nf_1   : AUXOSCmal_L[u] | M_L_Malate_C4H4O5
-  m_Nd_1   : AUXOSCfum[u] | M_Fumarate_C4H2O4
-  m_out    : AUXOSCfum[u] | M_Fumarate_C4H2O4
+  m_Nf_1   : AUXOSCpep[u] | M_Phosphoenolpyruvate_C3H2O6P
+  m_Nd_1   : AUXOSC2dda7p[u] | M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P
+  m_out    : AUXOSC2dda7p[u] | M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P
   Neuron roles below are a NEURON-ONLY candidate; Block 0/full-circuit completion is pending.
   r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
 
@@ -1047,20 +1769,6 @@ r_c
 
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
-  ID: AUXOSCSm
-  Name: R_citrate_synthase
-  Cell-free merged copies: AUXOSCSm;AUXOSCSp
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_Acetyl_CoA_C23H34N7O17P3S [AUXOSCaccoa[u]] + M_H2O_H2O [AUXOSCh2o[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_Citrate_C6H5O7 [AUXOSCcit[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
-  GPR: 
-  Resolved genes: 
-
-  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
-  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
-r_Nf_1
   ID: AUXOSMDH
   Name: R_malate_dehydrogenase
   Cell-free merged copies: AUXOSMDH;AUXOSMDHm;AUXOSMDHp
@@ -1068,30 +1776,47 @@ r_Nf_1
   Resolved EC: 1.1.1.37
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
   EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MDH (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
+  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCpep[u] -> AUXOSC2dda7p[u]
+r_Nf_1
+  ID: AUXOSPPCK
+  Name: R_phosphoenolpyruvate_carboxykinase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.1.49
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PPCK (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Phosphoenolpyruvate_C3H2O6P (m_Nf_1) [AUXOSCpep[u]]
   GPR: 
   Resolved genes: 
 
 r_Nd_1
-  ID: AUXOSFUM
-  Name: R_fumarase
-  Cell-free merged copies: AUXOSFUM;AUXOSFUMm
-  Direction: -1 relative to model.S
-  Resolved EC: 4.2.1.2
+  ID: AUXOSDDPA
+  Name: R_3_deoxy_D_arabino_heptulosonate_7_phosphate_synthetase
+  Cell-free merged copies: AUXOSDDPA;AUXOSDDPAm
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.2.15
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for FUM (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] -> M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] + M_H2O_H2O [AUXOSCh2o[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for DDPA (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_H2O_H2O [AUXOSCh2o[u]] + M_Phosphoenolpyruvate_C3H2O6P (m_Nf_1) [AUXOSCpep[u]] -> M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P (m_Nd_1 / m_out) [AUXOSC2dda7p[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
 r_Nr_1
-  ID: AUXOSADSL1r
-  Name: R_adenylsuccinate_lyase
-  Direction: -1 relative to model.S
-  Resolved EC: 4.3.2.2
+  ID: AUXOSDHQS
+  Name: R_3_dehydroquinate_synthase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.2.3.4
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ADSL1r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] -> M_N6__1_2_Dicarboxyethyl__AMP_C14H14N5O11P [AUXOSCdcamp[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for DHQS (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P (m_Nd_1 / m_out) [AUXOSC2dda7p[u]] -> M_3_Dehydroquinate_C7H9O6 [AUXOSC3dhq[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
@@ -1099,10 +1824,10 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 4 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
+RANK 6 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
-CANDIDATE 4 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
+CANDIDATE 6 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
 Parent=8; module=2; canceller=1; counter=4; block=u.
 Neuron status: neuron_found_Block0_not_searched
@@ -1116,9 +1841,9 @@ SIGNAL METABOLITE MAP
   I        : AUXOSCpyr[u] | M_Pyruvate_C3H3O3
   m_c      : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
   m_Nin_1  : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nf_1   : AUXOSCmal_L[u] | M_L_Malate_C4H4O5
-  m_Nd_1   : AUXOSCfum[u] | M_Fumarate_C4H2O4
-  m_out    : AUXOSCfum[u] | M_Fumarate_C4H2O4
+  m_Nf_1   : AUXOSCpep[u] | M_Phosphoenolpyruvate_C3H2O6P
+  m_Nd_1   : AUXOSC2dda7p[u] | M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P
+  m_out    : AUXOSC2dda7p[u] | M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P
   Neuron roles below are a NEURON-ONLY candidate; Block 0/full-circuit completion is pending.
   r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
 
@@ -1391,20 +2116,6 @@ r_c
 
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
-  ID: AUXOSCSm
-  Name: R_citrate_synthase
-  Cell-free merged copies: AUXOSCSm;AUXOSCSp
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_Acetyl_CoA_C23H34N7O17P3S [AUXOSCaccoa[u]] + M_H2O_H2O [AUXOSCh2o[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_Citrate_C6H5O7 [AUXOSCcit[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
-  GPR: 
-  Resolved genes: 
-
-  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
-  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
-r_Nf_1
   ID: AUXOSMDH
   Name: R_malate_dehydrogenase
   Cell-free merged copies: AUXOSMDH;AUXOSMDHm;AUXOSMDHp
@@ -1412,30 +2123,47 @@ r_Nf_1
   Resolved EC: 1.1.1.37
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
   EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MDH (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  GPR: 
+  Resolved genes: 
+
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
+  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
+  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCpep[u] -> AUXOSC2dda7p[u]
+r_Nf_1
+  ID: AUXOSPPCK
+  Name: R_phosphoenolpyruvate_carboxykinase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.1.49
+  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PPCK (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Phosphoenolpyruvate_C3H2O6P (m_Nf_1) [AUXOSCpep[u]]
   GPR: 
   Resolved genes: 
 
 r_Nd_1
-  ID: AUXOSFUM
-  Name: R_fumarase
-  Cell-free merged copies: AUXOSFUM;AUXOSFUMm
-  Direction: -1 relative to model.S
-  Resolved EC: 4.2.1.2
+  ID: AUXOSDDPA
+  Name: R_3_deoxy_D_arabino_heptulosonate_7_phosphate_synthetase
+  Cell-free merged copies: AUXOSDDPA;AUXOSDDPAm
+  Direction: +1 relative to model.S
+  Resolved EC: 4.1.2.15
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for FUM (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] -> M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] + M_H2O_H2O [AUXOSCh2o[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for DDPA (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_H2O_H2O [AUXOSCh2o[u]] + M_Phosphoenolpyruvate_C3H2O6P (m_Nf_1) [AUXOSCpep[u]] -> M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P (m_Nd_1 / m_out) [AUXOSC2dda7p[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
 r_Nr_1
-  ID: AUXOSADSL1r
-  Name: R_adenylsuccinate_lyase
-  Direction: -1 relative to model.S
-  Resolved EC: 4.3.2.2
+  ID: AUXOSDHQS
+  Name: R_3_dehydroquinate_synthase
+  Direction: +1 relative to model.S
+  Resolved EC: 4.2.3.4
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ADSL1r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] -> M_N6__1_2_Dicarboxyethyl__AMP_C14H14N5O11P [AUXOSCdcamp[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for DHQS (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P (m_Nd_1 / m_out) [AUXOSC2dda7p[u]] -> M_3_Dehydroquinate_C7H9O6 [AUXOSC3dhq[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
@@ -1443,10 +2171,10 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 5 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
+RANK 7 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
-CANDIDATE 5 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
+CANDIDATE 7 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
 Parent=9; module=1; canceller=1; counter=5; block=u.
 Neuron status: neuron_found_Block0_not_searched
@@ -1735,16 +2463,20 @@ r_c
 
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
-  ID: AUXOSMCITSm
-  Name: R_2_methylcitrate_synthase
+  ID: AUXOSPPCK
+  Name: R_phosphoenolpyruvate_carboxykinase
   Direction: +1 relative to model.S
-  Resolved EC: 4.1.3.31
+  Resolved EC: 4.1.1.49
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MCITSm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H2O_H2O [AUXOSCh2o[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Propanoyl_CoA_C24H36N7O17P3S [AUXOSMppcoa[u]] -> M_2_Methylcitrate_C7H7O7 [AUXOSM2mcit[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PPCK (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Phosphoenolpyruvate_C3H2O6P [AUXOSCpep[u]]
   GPR: 
   Resolved genes: 
 
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
   r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
   Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
 r_Nf_1
@@ -1786,10 +2518,10 @@ r_Nr_1
 MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
 STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
 
-RANK 6 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
+RANK 8 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 
 ============================================================
-CANDIDATE 6 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
+CANDIDATE 8 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
 Parent=10; module=2; canceller=1; counter=5; block=u.
 Neuron status: neuron_found_Block0_not_searched
@@ -2078,16 +2810,20 @@ r_c
 
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
-  ID: AUXOSMCITSm
-  Name: R_2_methylcitrate_synthase
+  ID: AUXOSPPCK
+  Name: R_phosphoenolpyruvate_carboxykinase
   Direction: +1 relative to model.S
-  Resolved EC: 4.1.3.31
+  Resolved EC: 4.1.1.49
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MCITSm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H2O_H2O [AUXOSCh2o[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Propanoyl_CoA_C24H36N7O17P3S [AUXOSMppcoa[u]] -> M_2_Methylcitrate_C7H7O7 [AUXOSM2mcit[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PPCK (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Phosphoenolpyruvate_C3H2O6P [AUXOSCpep[u]]
   GPR: 
   Resolved genes: 
 
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
   r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
   Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
 r_Nf_1
@@ -2122,692 +2858,6 @@ r_Nr_1
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
   EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ADSL1r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
   Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] -> M_N6__1_2_Dicarboxyethyl__AMP_C14H14N5O11P [AUXOSCdcamp[u]]
-  GPR: 
-  Resolved genes: 
-
-  The neuron conversion chain, independent removal and prefix EC assignments passed, but this parent is not a complete circuit.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
-STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
-
-RANK 7 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
-
-============================================================
-CANDIDATE 7 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
-============================================================
-Parent=11; module=1; canceller=1; counter=6; block=u.
-Neuron status: neuron_found_Block0_not_searched
-S/F control interfaces matched: 0.
-SIGNAL METABOLITE MAP
-  m_in     : AUXOSCf6p[u] | M_D_Fructose_6_phosphate_C6H11O9P
-  m_Ff     : AUXOSCfdp[u] | M_D_Fructose_1_6_bisphosphate_C6H10O12P2
-  m_Fd     : AUXOSCg3p[u] | M_Glyceraldehyde_3_phosphate_C3H5O6P
-  m_Sf     : AUXOSCg6p[u] | M_D_Glucose_6_phosphate_C6H11O9P
-  m_Sd     : AUXOSC6pgl[u] | M_6_phospho_D_glucono_1_5_lactone_C6H9O9P
-  I        : AUXOSCpyr[u] | M_Pyruvate_C3H3O3
-  m_c      : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nin_1  : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nf_1   : AUXOSCpep[u] | M_Phosphoenolpyruvate_C3H2O6P
-  m_Nd_1   : AUXOSC2dda7p[u] | M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P
-  m_out    : AUXOSC2dda7p[u] | M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P
-  Neuron roles below are a NEURON-ONLY candidate; Block 0/full-circuit completion is pending.
-  r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
-
-============================================================
-BLOCK 0: cAMP TO m_in
-============================================================
-  Connection status: Block0_not_searched_step2SearchBlock0_false
-  Search termination: not_started
-  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
-  No isolated cAMP-to-m_in connector accepted within the configured search.
-  REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
-  Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
-  Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
-r_CAMP_DIAGNOSTIC_1
-  ID: AUXOSPDE1
-  Name: R_3__5__cyclic_nucleotide_phosphodiesterase
-  Direction: +1 relative to model.S
-  Resolved EC: 3.1.4.17
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PDE1 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_cAMP_C10H11N5O6P [AUXOSCcamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H_H [AUXOSCh[u]]
-  GPR: 
-  Resolved genes: 
-
-r_CAMP_DIAGNOSTIC_2
-  ID: AUXOSAMPN
-  Name: R_AMP_nucleosidase
-  Direction: +1 relative to model.S
-  Resolved EC: 3.2.2.4
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for AMPN (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Adenine_C5H5N5 [AUXOSCade[u]] + M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]]
-  GPR: 
-  Resolved genes: 
-
-r_CAMP_DIAGNOSTIC_3
-  ID: AUXOSTKT1
-  Name: R_transketolase
-  Direction: +1 relative to model.S
-  Resolved EC: 2.2.1.1
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for TKT1 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]] + M_D_Xylulose_5_phosphate_C5H9O8P [AUXOSCxu5p_D[u]] -> M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]]
-  GPR: 
-  Resolved genes: 
-
-r_CAMP_DIAGNOSTIC_4
-  ID: AUXOSTALA
-  Name: R_transaldolase
-  Direction: +1 relative to model.S
-  Resolved EC: 2.2.1.2
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for TALA (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]] -> M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]]
-  GPR: 
-  Resolved genes: 
-
-  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
-  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
-
-============================================================
-FAST AND SLOW BRANCHES (SIX REACTIONS)
-============================================================
-r_Ff
-  ID: AUXOSPFK
-  Name: R_phosphofructokinase
-  Direction: +1 relative to model.S
-  Resolved EC: 2.7.1.11
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PFK
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Ff) [AUXOSCfdp[u]] + M_H_H [AUXOSCh[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Fd
-  ID: AUXOSFBA
-  Name: R_fructose_bisphosphate_aldolase
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.2.13
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FBA
-  Equation: M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Ff) [AUXOSCfdp[u]] -> M_Dihydroxyacetone_phosphate_C3H5O6P [AUXOSCdhap[u]] + M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Fr
-  ID: AUXOSGAPD
-  Name: R_glyceraldehyde_3_phosphate_dehydrogenase
-  Direction: +1 relative to model.S
-  Resolved EC: 1.2.1.12;1.2.1.59
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GAPD
-  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Fd) [AUXOSCg3p[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] + M_Phosphate_HO4P [AUXOSCpi[u]] -> M_3_Phospho_D_glyceroyl_phosphate_C3H4O10P2 [AUXOSC13dpg[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Sf
-  ID: AUXOSPGI
-  Name: R_glucose_6_phosphate_isomerase
-  Direction: -1 relative to model.S
-  Resolved EC: 5.3.1.9
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGI
-  Equation: M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_D_Glucose_6_phosphate_C6H11O9P (m_Sf) [AUXOSCg6p[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Sd
-  ID: AUXOSG6PDH2
-  Name: R_glucose_6_phosphate_dehydrogenase
-  Cell-free merged copies: AUXOSG6PDH2;AUXOSG6PDH2er
-  Direction: +1 relative to model.S
-  Resolved EC: 1.1.1.49;1.1.1.363
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/G6PDH2r
-  Equation: M_D_Glucose_6_phosphate_C6H11O9P (m_Sf) [AUXOSCg6p[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate_C21H25N7O17P3 [AUXOSCnadp[u]] -> M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Sd) [AUXOSC6pgl[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate___reduced_C21H26N7O17P3 [AUXOSCnadph[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Sr
-  ID: AUXOSPGL
-  Name: R_6_phosphogluconolactonase
-  Direction: +1 relative to model.S
-  Resolved EC: 3.1.1.31
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGL
-  Equation: M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Sd) [AUXOSC6pgl[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_6_Phospho_D_gluconate_C6H10O10P [AUXOSC6pgc[u]] + M_H_H [AUXOSCh[u]]
-  GPR: 
-  Resolved genes: 
-
-
-============================================================
-ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
-============================================================
-
-============================================================
-EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
-============================================================
-  Proposed S signal: m_Sd = AUXOSC6pgl[u]. The transporter-control link is not inferred from stoichiometry.
-  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
-  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
-  X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
-  X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
-  X_3      : AUXOSCh2o[u] | M_H2O_H2O
-  X_4      : AUXOSCmlthf[u] | M_5_10_Methylenetetrahydrofolate_C20H21N7O6
-  W_1      : AUXOSCakg[u] | M_2_Oxoglutarate_C5H4O5
-  W_2      : AUXOSCnh4[u] | M_Ammonium_H4N
-  W_3      : AUXOSCthf[u] | M_5_6_7_8_Tetrahydrofolate_C19H21N7O6
-  R1 effective module equation (non-I intermediates cancelled): M_L_Glutamate_C5H8NO4 (X_1) [AUXOSCglu_L[u]] + M_Glyoxylate_C2H1O3 (X_2) [AUXOSCglx[u]] + M_H2O_H2O (X_3) [AUXOSCh2o[u]] + M_5_10_Methylenetetrahydrofolate_C20H21N7O6 (X_4) [AUXOSCmlthf[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_2_Oxoglutarate_C5H4O5 (W_1) [AUXOSCakg[u]] + M_Ammonium_H4N (W_2) [AUXOSCnh4[u]] + 2 M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] + M_5_6_7_8_Tetrahydrofolate_C19H21N7O6 (W_3) [AUXOSCthf[u]]
-  Actual I accounting: 1 consumed -> 2 produced across 4 reaction(s).
-  Smallest production module found for this I: 4 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
-  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
-  R1 is the effective production role, implemented by the following recorded reactions.
-  Eq. Block 1 / R1 module step 1 of 4:
-r_I_production_01
-  ID: AUXOSALATA_L
-  Name: R_L_alanine_transaminase
-  Cell-free merged copies: AUXOSALATA_L;AUXOSALATA_Lm
-  Direction: -1 relative to model.S
-  Resolved EC: 2.6.1.2
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ALATA_L (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Glutamate_C5H8NO4 (X_1) [AUXOSCglu_L[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_2_Oxoglutarate_C5H4O5 (W_1) [AUXOSCakg[u]] + M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]]
-  GPR: 
-  Resolved genes: 
-
-  Core flux multiplier per normalized turnover: 1
-  Eq. Block 1 / R1 module step 2 of 4:
-r_I_production_02
-  ID: AUXOSAGTi
-  Name: R_Alanine_glyoxylate_aminotransferase__irreversible_
-  Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.44
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for AGTi (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]] + M_Glyoxylate_C2H1O3 (X_2) [AUXOSCglx[u]] -> M_Glycine_C2H5NO2 [AUXOSCgly[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  Core flux multiplier per normalized turnover: 1
-  Eq. Block 1 / R1 module step 3 of 4:
-r_I_production_03
-  ID: AUXOSGHMT2r
-  Name: R_glycine_hydroxymethyltransferase__reversible
-  Cell-free merged copies: AUXOSGHMT2r;AUXOSGHMT2rm
-  Direction: -1 relative to model.S
-  Resolved EC: 2.1.2.1
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for GHMT2r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_Glycine_C2H5NO2 [AUXOSCgly[u]] + M_H2O_H2O (X_3) [AUXOSCh2o[u]] + M_5_10_Methylenetetrahydrofolate_C20H21N7O6 (X_4) [AUXOSCmlthf[u]] -> M_L_Serine_C3H7NO3 [AUXOSCser_L[u]] + M_5_6_7_8_Tetrahydrofolate_C19H21N7O6 (W_3) [AUXOSCthf[u]]
-  GPR: 
-  Resolved genes: 
-
-  Core flux multiplier per normalized turnover: 1
-  Eq. Block 1 / R1 module step 4 of 4:
-r_I_production_04
-  ID: AUXOSSERD_L
-  Name: R_L_serine_deaminase
-  Direction: +1 relative to model.S
-  Resolved EC: 4.3.1.17
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for SERD_L (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Serine_C3H7NO3 [AUXOSCser_L[u]] -> M_Ammonium_H4N (W_2) [AUXOSCnh4[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  Core flux multiplier per normalized turnover: 1
-  X comprises all net-consumed precursors/energy substrates; W comprises other net-produced products.
-  R1 module atom balance: unresolved_no_metabolite_formulas | 
-  S-controlled I import supplies seed/additional I. S-dependent stopping of R1 or a k*S*I law has not been established.
-
-============================================================
-EQ. BLOCK 2: F-LINKED I REMOVAL
-============================================================
-  Proposed F signal: m_Fd = AUXOSCg3p[u]. A consumed co-substrate is not F.
-r_I_linear_removal
-  ID: AUXOSPYRDC2
-  Name: R_pyruvate_decarboxylase__acetoin_forming_
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.1.1
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PYRDC2 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_Acetaldehyde_C2H4O [AUXOSCacald[u]] + M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M__R__Acetoin_C4H8O2 [AUXOSCactn_R[u]] + M_CO2_CO2 [AUXOSCco2[u]]
-  GPR: 
-  Resolved genes: 
-
-r_T_F
-  ID: AUXOSACALDt
-  Name: R_acetaldehyde_reversible_transport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_Acetaldehyde_C2H4O [acald[e]] -> M_Acetaldehyde_C2H4O [AUXOSCacald[u]]
-  GPR: 
-  Resolved genes: 
-
-  Imported co-substrate is consumed; it is not automatically the F controller.
-
-============================================================
-EQ. BLOCK 3: I PAIR LOSS
-============================================================
-r_I_quadratic_removal
-  ID: AUXOSACLSm
-  Name: R_acetolactate_synthase__mitochondrial
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.3.18
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACLSm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H_H [AUXOSCh[u]] + 2 M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M__S__2_Acetolactate_C5H7O4 [AUXOSMalac_S[u]] + M_CO2_CO2 [AUXOSCco2[u]]
-  GPR: 
-  Resolved genes: 
-
-  I loss per primitive quadratic event: 2; exact formal 2I->I=0; quadratic kinetics unverified.
-
-============================================================
-COUNTER AND ONE CONSUMING NEURON
-============================================================
-r_c
-  ID: AUXOSPC
-  Name: R_pyruvate_carboxylase
-  Direction: +1 relative to model.S
-  Resolved EC: 6.4.1.1
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PC (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Bicarbonate_CHO3 [AUXOSChco3[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_H_H [AUXOSCh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
-  GPR: 
-  Resolved genes: 
-
-  Counter consumes I; primitive I loss=1; C gain=1.
-r_cr
-  ID: AUXOSMDH
-  Name: R_malate_dehydrogenase
-  Cell-free merged copies: AUXOSMDH;AUXOSMDHm;AUXOSMDHp
-  Direction: -1 relative to model.S
-  Resolved EC: 1.1.1.37
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MDH (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
-  GPR: 
-  Resolved genes: 
-
-  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
-  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCpep[u] -> AUXOSC2dda7p[u]
-r_Nf_1
-  ID: AUXOSPPCK
-  Name: R_phosphoenolpyruvate_carboxykinase
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.1.49
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PPCK (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Phosphoenolpyruvate_C3H2O6P (m_Nf_1) [AUXOSCpep[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Nd_1
-  ID: AUXOSDDPA
-  Name: R_3_deoxy_D_arabino_heptulosonate_7_phosphate_synthetase
-  Cell-free merged copies: AUXOSDDPA;AUXOSDDPAm
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.2.15
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for DDPA (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_H2O_H2O [AUXOSCh2o[u]] + M_Phosphoenolpyruvate_C3H2O6P (m_Nf_1) [AUXOSCpep[u]] -> M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P (m_Nd_1 / m_out) [AUXOSC2dda7p[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Nr_1
-  ID: AUXOSDHQS
-  Name: R_3_dehydroquinate_synthase
-  Direction: +1 relative to model.S
-  Resolved EC: 4.2.3.4
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for DHQS (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P (m_Nd_1 / m_out) [AUXOSC2dda7p[u]] -> M_3_Dehydroquinate_C7H9O6 [AUXOSC3dhq[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
-  GPR: 
-  Resolved genes: 
-
-  The neuron conversion chain, independent removal and prefix EC assignments passed, but this parent is not a complete circuit.
-MODEL REQUIREMENTS: r_Nf_1 consumes m_Nin_1; m_out is m_Nd_1; r_Nr_1 removes m_out; Block0 ends at m_in and shares no other noncurrency state.
-STATUS: structural topology only; S/F control, buffered feeds, driving forces, fluxes and rate constants require validation.
-
-RANK 8 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
-
-============================================================
-CANDIDATE 8 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
-============================================================
-Parent=12; module=2; canceller=1; counter=6; block=u.
-Neuron status: neuron_found_Block0_not_searched
-S/F control interfaces matched: 0.
-SIGNAL METABOLITE MAP
-  m_in     : AUXOSCf6p[u] | M_D_Fructose_6_phosphate_C6H11O9P
-  m_Ff     : AUXOSCg6p[u] | M_D_Glucose_6_phosphate_C6H11O9P
-  m_Fd     : AUXOSC6pgl[u] | M_6_phospho_D_glucono_1_5_lactone_C6H9O9P
-  m_Sf     : AUXOSCfdp[u] | M_D_Fructose_1_6_bisphosphate_C6H10O12P2
-  m_Sd     : AUXOSCg3p[u] | M_Glyceraldehyde_3_phosphate_C3H5O6P
-  I        : AUXOSCpyr[u] | M_Pyruvate_C3H3O3
-  m_c      : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nin_1  : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nf_1   : AUXOSCpep[u] | M_Phosphoenolpyruvate_C3H2O6P
-  m_Nd_1   : AUXOSC2dda7p[u] | M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P
-  m_out    : AUXOSC2dda7p[u] | M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P
-  Neuron roles below are a NEURON-ONLY candidate; Block 0/full-circuit completion is pending.
-  r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
-
-============================================================
-BLOCK 0: cAMP TO m_in
-============================================================
-  Connection status: Block0_not_searched_step2SearchBlock0_false
-  Search termination: not_started
-  Limits reached: state=0; expansion=0; depth=0; alternative retention=0; unresolved flux solves=0.
-  No isolated cAMP-to-m_in connector accepted within the configured search.
-  REJECTED SHORTEST GRAPH ROUTE (diagnostic only; not a Block 0 solution):
-  Path: AUXOSCcamp[u] -> AUXOSCamp[u] -> AUXOSCr5p[u] -> AUXOSCg3p[u] -> AUXOSCf6p[u]
-  Shared downstream noncurrency species outside m_in: AUXOSCg3p[u]
-  This route is diagnostic only. Cross-block overlap, failed internal balance/startup or EC/gene conflicts prevent acceptance.
-r_CAMP_DIAGNOSTIC_1
-  ID: AUXOSPDE1
-  Name: R_3__5__cyclic_nucleotide_phosphodiesterase
-  Direction: +1 relative to model.S
-  Resolved EC: 3.1.4.17
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PDE1 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_cAMP_C10H11N5O6P [AUXOSCcamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H_H [AUXOSCh[u]]
-  GPR: 
-  Resolved genes: 
-
-r_CAMP_DIAGNOSTIC_2
-  ID: AUXOSAMPN
-  Name: R_AMP_nucleosidase
-  Direction: +1 relative to model.S
-  Resolved EC: 3.2.2.4
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for AMPN (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_Adenine_C5H5N5 [AUXOSCade[u]] + M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]]
-  GPR: 
-  Resolved genes: 
-
-r_CAMP_DIAGNOSTIC_3
-  ID: AUXOSTKT1
-  Name: R_transketolase
-  Direction: +1 relative to model.S
-  Resolved EC: 2.2.1.1
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for TKT1 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_alpha_D_Ribose_5_phosphate_C5H9O8P [AUXOSCr5p[u]] + M_D_Xylulose_5_phosphate_C5H9O8P [AUXOSCxu5p_D[u]] -> M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]]
-  GPR: 
-  Resolved genes: 
-
-r_CAMP_DIAGNOSTIC_4
-  ID: AUXOSTALA
-  Name: R_transaldolase
-  Direction: +1 relative to model.S
-  Resolved EC: 2.2.1.2
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for TALA (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]] + M_Sedoheptulose_7_phosphate_C7H13O10P [AUXOSCs7p[u]] -> M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]]
-  GPR: 
-  Resolved genes: 
-
-  Parent-stage Block 0 alternatives retained: 0 (before neuron rechecking).
-  Full alternative reaction/direction/flux/feed/internal-state lists: 16_Block0_Alternatives.csv.
-
-============================================================
-FAST AND SLOW BRANCHES (SIX REACTIONS)
-============================================================
-r_Ff
-  ID: AUXOSPGI
-  Name: R_glucose_6_phosphate_isomerase
-  Direction: -1 relative to model.S
-  Resolved EC: 5.3.1.9
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGI
-  Equation: M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_D_Glucose_6_phosphate_C6H11O9P (m_Ff) [AUXOSCg6p[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Fd
-  ID: AUXOSG6PDH2
-  Name: R_glucose_6_phosphate_dehydrogenase
-  Cell-free merged copies: AUXOSG6PDH2;AUXOSG6PDH2er
-  Direction: +1 relative to model.S
-  Resolved EC: 1.1.1.49;1.1.1.363
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/G6PDH2r
-  Equation: M_D_Glucose_6_phosphate_C6H11O9P (m_Ff) [AUXOSCg6p[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate_C21H25N7O17P3 [AUXOSCnadp[u]] -> M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Fd) [AUXOSC6pgl[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide_phosphate___reduced_C21H26N7O17P3 [AUXOSCnadph[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Fr
-  ID: AUXOSPGL
-  Name: R_6_phosphogluconolactonase
-  Direction: +1 relative to model.S
-  Resolved EC: 3.1.1.31
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PGL
-  Equation: M_6_phospho_D_glucono_1_5_lactone_C6H9O9P (m_Fd) [AUXOSC6pgl[u]] + M_H2O_H2O [AUXOSCh2o[u]] -> M_6_Phospho_D_gluconate_C6H10O10P [AUXOSC6pgc[u]] + M_H_H [AUXOSCh[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Sf
-  ID: AUXOSPFK
-  Name: R_phosphofructokinase
-  Direction: +1 relative to model.S
-  Resolved EC: 2.7.1.11
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/PFK
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_D_Fructose_6_phosphate_C6H11O9P (m_in) [AUXOSCf6p[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Sf) [AUXOSCfdp[u]] + M_H_H [AUXOSCh[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Sd
-  ID: AUXOSFBA
-  Name: R_fructose_bisphosphate_aldolase
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.2.13
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/FBA
-  Equation: M_D_Fructose_1_6_bisphosphate_C6H10O12P2 (m_Sf) [AUXOSCfdp[u]] -> M_Dihydroxyacetone_phosphate_C3H5O6P [AUXOSCdhap[u]] + M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Sr
-  ID: AUXOSGAPD
-  Name: R_glyceraldehyde_3_phosphate_dehydrogenase
-  Direction: +1 relative to model.S
-  Resolved EC: 1.2.1.12;1.2.1.59
-  EC annotation source: verified_partial_BiGG_seed_map_2026_11_13
-  EC annotation reference: https://bigg.ucsd.edu/universal/reactions/GAPD
-  Equation: M_Glyceraldehyde_3_phosphate_C3H5O6P (m_Sd) [AUXOSCg3p[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] + M_Phosphate_HO4P [AUXOSCpi[u]] -> M_3_Phospho_D_glyceroyl_phosphate_C3H4O10P2 [AUXOSC13dpg[u]] + M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
-  GPR: 
-  Resolved genes: 
-
-
-============================================================
-ANDERSON CANCELLER: PRODUCTION CORE AND TWO REMOVAL TERMS
-============================================================
-
-============================================================
-EQ. BLOCK 1: I + X -> 2 I + W   (no I import; I(0) present in the vessel)
-============================================================
-  Proposed S signal: m_Sd = AUXOSCg3p[u]. The transporter-control link is not inferred from stoichiometry.
-  No I import searched (requireIImport=false): eps = 0 and I(0) is assumed already present.
-  S gates the co-substrate importer instead; see 06a/06b and Gated_Anderson_Report.txt.
-  X_1      : AUXOSCglu_L[u] | M_L_Glutamate_C5H8NO4
-  X_2      : AUXOSCglx[u] | M_Glyoxylate_C2H1O3
-  X_3      : AUXOSCh2o[u] | M_H2O_H2O
-  X_4      : AUXOSCmlthf[u] | M_5_10_Methylenetetrahydrofolate_C20H21N7O6
-  W_1      : AUXOSCakg[u] | M_2_Oxoglutarate_C5H4O5
-  W_2      : AUXOSCnh4[u] | M_Ammonium_H4N
-  W_3      : AUXOSCthf[u] | M_5_6_7_8_Tetrahydrofolate_C19H21N7O6
-  R1 effective module equation (non-I intermediates cancelled): M_L_Glutamate_C5H8NO4 (X_1) [AUXOSCglu_L[u]] + M_Glyoxylate_C2H1O3 (X_2) [AUXOSCglx[u]] + M_H2O_H2O (X_3) [AUXOSCh2o[u]] + M_5_10_Methylenetetrahydrofolate_C20H21N7O6 (X_4) [AUXOSCmlthf[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_2_Oxoglutarate_C5H4O5 (W_1) [AUXOSCakg[u]] + M_Ammonium_H4N (W_2) [AUXOSCnh4[u]] + 2 M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] + M_5_6_7_8_Tetrahydrofolate_C19H21N7O6 (W_3) [AUXOSCthf[u]]
-  Actual I accounting: 1 consumed -> 2 produced across 4 reaction(s).
-  Smallest production module found for this I: 4 steps; minimum proven within search class=1; minimum-layer alternatives complete=1.
-  Production-only minimum status: minimum_proven_within_search_class. Import adds one separate reaction.
-  R1 is the effective production role, implemented by the following recorded reactions.
-  Eq. Block 1 / R1 module step 1 of 4:
-r_I_production_01
-  ID: AUXOSALATA_L
-  Name: R_L_alanine_transaminase
-  Cell-free merged copies: AUXOSALATA_L;AUXOSALATA_Lm
-  Direction: -1 relative to model.S
-  Resolved EC: 2.6.1.2
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ALATA_L (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Glutamate_C5H8NO4 (X_1) [AUXOSCglu_L[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_2_Oxoglutarate_C5H4O5 (W_1) [AUXOSCakg[u]] + M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]]
-  GPR: 
-  Resolved genes: 
-
-  Core flux multiplier per normalized turnover: 1
-  Eq. Block 1 / R1 module step 2 of 4:
-r_I_production_02
-  ID: AUXOSAGTi
-  Name: R_Alanine_glyoxylate_aminotransferase__irreversible_
-  Direction: +1 relative to model.S
-  Resolved EC: 2.6.1.44
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for AGTi (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Alanine_C3H7NO2 [AUXOSCala_L[u]] + M_Glyoxylate_C2H1O3 (X_2) [AUXOSCglx[u]] -> M_Glycine_C2H5NO2 [AUXOSCgly[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  Core flux multiplier per normalized turnover: 1
-  Eq. Block 1 / R1 module step 3 of 4:
-r_I_production_03
-  ID: AUXOSGHMT2r
-  Name: R_glycine_hydroxymethyltransferase__reversible
-  Cell-free merged copies: AUXOSGHMT2r;AUXOSGHMT2rm
-  Direction: -1 relative to model.S
-  Resolved EC: 2.1.2.1
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for GHMT2r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_Glycine_C2H5NO2 [AUXOSCgly[u]] + M_H2O_H2O (X_3) [AUXOSCh2o[u]] + M_5_10_Methylenetetrahydrofolate_C20H21N7O6 (X_4) [AUXOSCmlthf[u]] -> M_L_Serine_C3H7NO3 [AUXOSCser_L[u]] + M_5_6_7_8_Tetrahydrofolate_C19H21N7O6 (W_3) [AUXOSCthf[u]]
-  GPR: 
-  Resolved genes: 
-
-  Core flux multiplier per normalized turnover: 1
-  Eq. Block 1 / R1 module step 4 of 4:
-r_I_production_04
-  ID: AUXOSSERD_L
-  Name: R_L_serine_deaminase
-  Direction: +1 relative to model.S
-  Resolved EC: 4.3.1.17
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for SERD_L (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Serine_C3H7NO3 [AUXOSCser_L[u]] -> M_Ammonium_H4N (W_2) [AUXOSCnh4[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]]
-  GPR: 
-  Resolved genes: 
-
-  Core flux multiplier per normalized turnover: 1
-  X comprises all net-consumed precursors/energy substrates; W comprises other net-produced products.
-  R1 module atom balance: unresolved_no_metabolite_formulas | 
-  S-controlled I import supplies seed/additional I. S-dependent stopping of R1 or a k*S*I law has not been established.
-
-============================================================
-EQ. BLOCK 2: F-LINKED I REMOVAL
-============================================================
-  Proposed F signal: m_Fd = AUXOSC6pgl[u]. A consumed co-substrate is not F.
-r_I_linear_removal
-  ID: AUXOSPYRDC2
-  Name: R_pyruvate_decarboxylase__acetoin_forming_
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.1.1
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PYRDC2 (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_Acetaldehyde_C2H4O [AUXOSCacald[u]] + M_H_H [AUXOSCh[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M__R__Acetoin_C4H8O2 [AUXOSCactn_R[u]] + M_CO2_CO2 [AUXOSCco2[u]]
-  GPR: 
-  Resolved genes: 
-
-r_T_F
-  ID: AUXOSACALDt
-  Name: R_acetaldehyde_reversible_transport
-  Direction: +1 relative to model.S
-  Resolved EC: UNRESOLVED (no annotation inferred)
-  EC annotation source: 
-  EC annotation reference: 
-  Equation: M_Acetaldehyde_C2H4O [acald[e]] -> M_Acetaldehyde_C2H4O [AUXOSCacald[u]]
-  GPR: 
-  Resolved genes: 
-
-  Imported co-substrate is consumed; it is not automatically the F controller.
-
-============================================================
-EQ. BLOCK 3: I PAIR LOSS
-============================================================
-r_I_quadratic_removal
-  ID: AUXOSACLSm
-  Name: R_acetolactate_synthase__mitochondrial
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.3.18
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACLSm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H_H [AUXOSCh[u]] + 2 M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M__S__2_Acetolactate_C5H7O4 [AUXOSMalac_S[u]] + M_CO2_CO2 [AUXOSCco2[u]]
-  GPR: 
-  Resolved genes: 
-
-  I loss per primitive quadratic event: 2; exact formal 2I->I=0; quadratic kinetics unverified.
-
-============================================================
-COUNTER AND ONE CONSUMING NEURON
-============================================================
-r_c
-  ID: AUXOSPC
-  Name: R_pyruvate_carboxylase
-  Direction: +1 relative to model.S
-  Resolved EC: 6.4.1.1
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PC (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Bicarbonate_CHO3 [AUXOSChco3[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_H_H [AUXOSCh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
-  GPR: 
-  Resolved genes: 
-
-  Counter consumes I; primitive I loss=1; C gain=1.
-r_cr
-  ID: AUXOSMDH
-  Name: R_malate_dehydrogenase
-  Cell-free merged copies: AUXOSMDH;AUXOSMDHm;AUXOSMDHp
-  Direction: -1 relative to model.S
-  Resolved EC: 1.1.1.37
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MDH (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
-  GPR: 
-  Resolved genes: 
-
-  r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
-  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCpep[u] -> AUXOSC2dda7p[u]
-r_Nf_1
-  ID: AUXOSPPCK
-  Name: R_phosphoenolpyruvate_carboxykinase
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.1.49
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PPCK (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Phosphoenolpyruvate_C3H2O6P (m_Nf_1) [AUXOSCpep[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Nd_1
-  ID: AUXOSDDPA
-  Name: R_3_deoxy_D_arabino_heptulosonate_7_phosphate_synthetase
-  Cell-free merged copies: AUXOSDDPA;AUXOSDDPAm
-  Direction: +1 relative to model.S
-  Resolved EC: 4.1.2.15
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for DDPA (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_D_Erythrose_4_phosphate_C4H7O7P [AUXOSCe4p[u]] + M_H2O_H2O [AUXOSCh2o[u]] + M_Phosphoenolpyruvate_C3H2O6P (m_Nf_1) [AUXOSCpep[u]] -> M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P (m_Nd_1 / m_out) [AUXOSC2dda7p[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
-  GPR: 
-  Resolved genes: 
-
-r_Nr_1
-  ID: AUXOSDHQS
-  Name: R_3_dehydroquinate_synthase
-  Direction: +1 relative to model.S
-  Resolved EC: 4.2.3.4
-  EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for DHQS (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_2_Dehydro_3_deoxy_D_arabino_heptonate_7_phosphate_C7H10O10P (m_Nd_1 / m_out) [AUXOSC2dda7p[u]] -> M_3_Dehydroquinate_C7H9O6 [AUXOSC3dhq[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
@@ -2820,7 +2870,7 @@ RANK 9 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 ============================================================
 CANDIDATE 9 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=13; module=1; canceller=1; counter=7; block=u.
+Parent=11; module=1; canceller=1; counter=6; block=u.
 Neuron status: neuron_found_Block0_not_searched
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -2830,11 +2880,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : AUXOSCg6p[u] | M_D_Glucose_6_phosphate_C6H11O9P
   m_Sd     : AUXOSC6pgl[u] | M_6_phospho_D_glucono_1_5_lactone_C6H9O9P
   I        : AUXOSCpyr[u] | M_Pyruvate_C3H3O3
-  m_c      : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nin_1  : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nf_1   : AUXOSCmal_L[u] | M_L_Malate_C4H4O5
-  m_Nd_1   : AUXOSCfum[u] | M_Fumarate_C4H2O4
-  m_out    : AUXOSCfum[u] | M_Fumarate_C4H2O4
+  m_c      : AUXOSCaccoa[u] | M_Acetyl_CoA_C23H34N7O17P3S
+  m_Nin_1  : AUXOSCaccoa[u] | M_Acetyl_CoA_C23H34N7O17P3S
+  m_Nf_1   : AUXOSCacgam6p[u] | M_N_Acetyl_D_glucosamine_6_phosphate_C8H14NO9P
+  m_Nd_1   : AUXOSCacgam1p[u] | M_N_Acetyl_D_glucosamine_1_phosphate_C8H14NO9P
+  m_out    : AUXOSCacgam1p[u] | M_N_Acetyl_D_glucosamine_1_phosphate_C8H14NO9P
   Neuron roles below are a NEURON-ONLY candidate; Block 0/full-circuit completion is pending.
   r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
 
@@ -3095,62 +3145,65 @@ r_I_quadratic_removal
 COUNTER AND ONE CONSUMING NEURON
 ============================================================
 r_c
-  ID: AUXOSPC
-  Name: R_pyruvate_carboxylase
+  ID: AUXOSPDHm
+  Name: R_pyruvate_dehydrogenase
   Direction: +1 relative to model.S
-  Resolved EC: 6.4.1.1
+  Resolved EC: 1.2.4.1
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PC (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Bicarbonate_CHO3 [AUXOSChco3[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_H_H [AUXOSCh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PDHm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_Acetyl_CoA_C23H34N7O17P3S (m_c / m_Nin_1) [AUXOSCaccoa[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
   GPR: 
   Resolved genes: 
 
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
-  ID: AUXOSPPCK
-  Name: R_phosphoenolpyruvate_carboxykinase
+  ID: AUXOSACCOACr
+  Name: R_acetyl_CoA_carboxylase__reversible_reaction
+  Cell-free merged copies: AUXOSACCOACr;AUXOSACCOACrm
   Direction: +1 relative to model.S
-  Resolved EC: 4.1.1.49
+  Resolved EC: 6.4.1.2
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PPCK (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Phosphoenolpyruvate_C3H2O6P [AUXOSCpep[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACCOACr (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Acetyl_CoA_C23H34N7O17P3S (m_c / m_Nin_1) [AUXOSCaccoa[u]] + M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Bicarbonate_CHO3 [AUXOSChco3[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_H_H [AUXOSCh[u]] + M_Malonyl_CoA_C24H33N7O19P3S [AUXOSCmalcoa[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
   r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
-  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
+  Neuron consuming path: AUXOSCaccoa[u] -> AUXOSCacgam6p[u] -> AUXOSCacgam1p[u]
 r_Nf_1
-  ID: AUXOSMDH
-  Name: R_malate_dehydrogenase
-  Cell-free merged copies: AUXOSMDH;AUXOSMDHm;AUXOSMDHp
-  Direction: -1 relative to model.S
-  Resolved EC: 1.1.1.37
+  ID: AUXOSACGAM6PS
+  Name: R_N_acetylglucosamine_6_phosphate_synthase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.3.1.4
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MDH (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACGAM6PS (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Acetyl_CoA_C23H34N7O17P3S (m_c / m_Nin_1) [AUXOSCaccoa[u]] + M_D_Glucosamine_6_phosphate_C6H13NO8P [AUXOSCgam6p[u]] -> M_N_Acetyl_D_glucosamine_6_phosphate_C8H14NO9P (m_Nf_1) [AUXOSCacgam6p[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
 r_Nd_1
-  ID: AUXOSFUM
-  Name: R_fumarase
-  Cell-free merged copies: AUXOSFUM;AUXOSFUMm
-  Direction: -1 relative to model.S
-  Resolved EC: 4.2.1.2
+  ID: AUXOSACGAMPM
+  Name: R_phosphoacetylglucosamine_mutase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.4.2.3
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for FUM (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] -> M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] + M_H2O_H2O [AUXOSCh2o[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACGAMPM (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_N_Acetyl_D_glucosamine_6_phosphate_C8H14NO9P (m_Nf_1) [AUXOSCacgam6p[u]] -> M_N_Acetyl_D_glucosamine_1_phosphate_C8H14NO9P (m_Nd_1 / m_out) [AUXOSCacgam1p[u]]
   GPR: 
   Resolved genes: 
 
 r_Nr_1
-  ID: AUXOSADSL1r
-  Name: R_adenylsuccinate_lyase
-  Direction: -1 relative to model.S
-  Resolved EC: 4.3.2.2
+  ID: AUXOSUDPACGLP
+  Name: R_UDP_N_acetylglucosamine_diphosphorylase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.7.7.23
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ADSL1r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] -> M_N6__1_2_Dicarboxyethyl__AMP_C14H14N5O11P [AUXOSCdcamp[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for UDPACGLP (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_N_Acetyl_D_glucosamine_1_phosphate_C8H14NO9P (m_Nd_1 / m_out) [AUXOSCacgam1p[u]] + M_H_H [AUXOSCh[u]] + M_UTP_C9H11N2O15P3 [AUXOSCutp[u]] -> M_Diphosphate_HO7P2 [AUXOSCppi[u]] + M_UDP_N_acetyl_D_galactosamine_C17H25N3O17P2 [AUXOSCudpacgal[u]]
   GPR: 
   Resolved genes: 
 
@@ -3163,7 +3216,7 @@ RANK 10 | neuron found=1 | canceller reactions=7 | Block 0 reactions=Inf
 ============================================================
 CANDIDATE 10 | PARTIAL PARENT, NOT A COMPLETE CIRCUIT
 ============================================================
-Parent=14; module=2; canceller=1; counter=7; block=u.
+Parent=12; module=2; canceller=1; counter=6; block=u.
 Neuron status: neuron_found_Block0_not_searched
 S/F control interfaces matched: 0.
 SIGNAL METABOLITE MAP
@@ -3173,11 +3226,11 @@ SIGNAL METABOLITE MAP
   m_Sf     : AUXOSCfdp[u] | M_D_Fructose_1_6_bisphosphate_C6H10O12P2
   m_Sd     : AUXOSCg3p[u] | M_Glyceraldehyde_3_phosphate_C3H5O6P
   I        : AUXOSCpyr[u] | M_Pyruvate_C3H3O3
-  m_c      : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nin_1  : AUXOSCoaa[u] | M_Oxaloacetate_C4H2O5
-  m_Nf_1   : AUXOSCmal_L[u] | M_L_Malate_C4H4O5
-  m_Nd_1   : AUXOSCfum[u] | M_Fumarate_C4H2O4
-  m_out    : AUXOSCfum[u] | M_Fumarate_C4H2O4
+  m_c      : AUXOSCaccoa[u] | M_Acetyl_CoA_C23H34N7O17P3S
+  m_Nin_1  : AUXOSCaccoa[u] | M_Acetyl_CoA_C23H34N7O17P3S
+  m_Nf_1   : AUXOSCacgam6p[u] | M_N_Acetyl_D_glucosamine_6_phosphate_C8H14NO9P
+  m_Nd_1   : AUXOSCacgam1p[u] | M_N_Acetyl_D_glucosamine_1_phosphate_C8H14NO9P
+  m_out    : AUXOSCacgam1p[u] | M_N_Acetyl_D_glucosamine_1_phosphate_C8H14NO9P
   Neuron roles below are a NEURON-ONLY candidate; Block 0/full-circuit completion is pending.
   r_Nr_1 is the neuron output-removal reaction; it does not introduce an m_Nr state.
 
@@ -3438,62 +3491,65 @@ r_I_quadratic_removal
 COUNTER AND ONE CONSUMING NEURON
 ============================================================
 r_c
-  ID: AUXOSPC
-  Name: R_pyruvate_carboxylase
+  ID: AUXOSPDHm
+  Name: R_pyruvate_dehydrogenase
   Direction: +1 relative to model.S
-  Resolved EC: 6.4.1.1
+  Resolved EC: 1.2.4.1
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PC (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Bicarbonate_CHO3 [AUXOSChco3[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_H_H [AUXOSCh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PDHm (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]] + M_Pyruvate_C3H3O3 (I) [AUXOSCpyr[u]] -> M_Acetyl_CoA_C23H34N7O17P3S (m_c / m_Nin_1) [AUXOSCaccoa[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]]
   GPR: 
   Resolved genes: 
 
   Counter consumes I; primitive I loss=1; C gain=1.
 r_cr
-  ID: AUXOSPPCK
-  Name: R_phosphoenolpyruvate_carboxykinase
+  ID: AUXOSACCOACr
+  Name: R_acetyl_CoA_carboxylase__reversible_reaction
+  Cell-free merged copies: AUXOSACCOACr;AUXOSACCOACrm
   Direction: +1 relative to model.S
-  Resolved EC: 4.1.1.49
+  Resolved EC: 6.4.1.2
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for PPCK (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_CO2_CO2 [AUXOSCco2[u]] + M_Phosphoenolpyruvate_C3H2O6P [AUXOSCpep[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACCOACr (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Acetyl_CoA_C23H34N7O17P3S (m_c / m_Nin_1) [AUXOSCaccoa[u]] + M_ATP_C10H12N5O13P3 [AUXOSCatp[u]] + M_Bicarbonate_CHO3 [AUXOSChco3[u]] -> M_ADP_C10H12N5O10P2 [AUXOSCadp[u]] + M_H_H [AUXOSCh[u]] + M_Malonyl_CoA_C24H33N7O19P3S [AUXOSCmalcoa[u]] + M_Phosphate_HO4P [AUXOSCpi[u]]
   GPR: 
   Resolved genes: 
 
+  Counter RESET: consumes C, driven by C itself; no extra control species.
+  Must run near saturation (K_M << peak C) so the removal is zero order and
+  cancels the baseline formation flux. Kinetics are NOT verified here.
+  It must stay distinct from the neuron draw r_Nf_1, which is first order in C.
   r_Nf_1 consumes m_c = m_Nin_1 and supplies a counter loss flux.
-  Neuron consuming path: AUXOSCoaa[u] -> AUXOSCmal_L[u] -> AUXOSCfum[u]
+  Neuron consuming path: AUXOSCaccoa[u] -> AUXOSCacgam6p[u] -> AUXOSCacgam1p[u]
 r_Nf_1
-  ID: AUXOSMDH
-  Name: R_malate_dehydrogenase
-  Cell-free merged copies: AUXOSMDH;AUXOSMDHm;AUXOSMDHp
-  Direction: -1 relative to model.S
-  Resolved EC: 1.1.1.37
+  ID: AUXOSACGAM6PS
+  Name: R_N_acetylglucosamine_6_phosphate_synthase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.3.1.4
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for MDH (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_H_H [AUXOSCh[u]] + M_Nicotinamide_adenine_dinucleotide___reduced_C21H27N7O14P2 [AUXOSCnadh[u]] + M_Oxaloacetate_C4H2O5 (m_c / m_Nin_1) [AUXOSCoaa[u]] -> M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] + M_Nicotinamide_adenine_dinucleotide_C21H26N7O14P2 [AUXOSCnad[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACGAM6PS (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_Acetyl_CoA_C23H34N7O17P3S (m_c / m_Nin_1) [AUXOSCaccoa[u]] + M_D_Glucosamine_6_phosphate_C6H13NO8P [AUXOSCgam6p[u]] -> M_N_Acetyl_D_glucosamine_6_phosphate_C8H14NO9P (m_Nf_1) [AUXOSCacgam6p[u]] + M_Coenzyme_A_C21H32N7O16P3S [AUXOSCcoa[u]] + M_H_H [AUXOSCh[u]]
   GPR: 
   Resolved genes: 
 
 r_Nd_1
-  ID: AUXOSFUM
-  Name: R_fumarase
-  Cell-free merged copies: AUXOSFUM;AUXOSFUMm
-  Direction: -1 relative to model.S
-  Resolved EC: 4.2.1.2
+  ID: AUXOSACGAMPM
+  Name: R_phosphoacetylglucosamine_mutase
+  Direction: +1 relative to model.S
+  Resolved EC: 5.4.2.3
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for FUM (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_L_Malate_C4H4O5 (m_Nf_1) [AUXOSCmal_L[u]] -> M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] + M_H2O_H2O [AUXOSCh2o[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ACGAMPM (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_N_Acetyl_D_glucosamine_6_phosphate_C8H14NO9P (m_Nf_1) [AUXOSCacgam6p[u]] -> M_N_Acetyl_D_glucosamine_1_phosphate_C8H14NO9P (m_Nd_1 / m_out) [AUXOSCacgam1p[u]]
   GPR: 
   Resolved genes: 
 
 r_Nr_1
-  ID: AUXOSADSL1r
-  Name: R_adenylsuccinate_lyase
-  Direction: -1 relative to model.S
-  Resolved EC: 4.3.2.2
+  ID: AUXOSUDPACGLP
+  Name: R_UDP_N_acetylglucosamine_diphosphorylase
+  Direction: +1 relative to model.S
+  Resolved EC: 2.7.7.23
   EC annotation source: embedded_iMM904_PROTEIN_CLASS_2009
-  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for ADSL1r (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
-  Equation: M_AMP_C10H12N5O7P [AUXOSCamp[u]] + M_Fumarate_C4H2O4 (m_Nd_1 / m_out) [AUXOSCfum[u]] -> M_N6__1_2_Dicarboxyethyl__AMP_C14H14N5O11P [AUXOSCdcamp[u]]
+  EC annotation reference: iMM904 SBML reaction notes PROTEIN_CLASS for UDPACGLP (Mo, Palsson & Herrgard 2009, BMC Syst Biol 3:37)
+  Equation: M_N_Acetyl_D_glucosamine_1_phosphate_C8H14NO9P (m_Nd_1 / m_out) [AUXOSCacgam1p[u]] + M_H_H [AUXOSCh[u]] + M_UTP_C9H11N2O15P3 [AUXOSCutp[u]] -> M_Diphosphate_HO7P2 [AUXOSCppi[u]] + M_UDP_N_acetyl_D_galactosamine_C17H25N3O17P2 [AUXOSCudpacgal[u]]
   GPR: 
   Resolved genes: 
 
